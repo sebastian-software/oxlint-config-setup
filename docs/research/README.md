@@ -1,0 +1,11 @@
+# Research notes
+
+Research notes capture dated observations used by RFCs and ADRs. They are evidence,
+not an API or promise. Each note must identify versions, inputs, method, caveats,
+and the event that should cause it to be rerun.
+
+## Index
+
+| Date | Note |
+| --- | --- |
+| 2026-08-04 | [Legacy coverage baseline](2026-08-04-legacy-coverage-baseline.md) |
