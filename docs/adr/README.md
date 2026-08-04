@@ -1,0 +1,24 @@
+# Architecture Decision Records
+
+ADRs preserve durable technical decisions and their trade-offs. Files use a
+zero-padded sequence and a short descriptive slug.
+
+## Lifecycle
+
+- `proposed`: under discussion and not yet binding;
+- `accepted`: the current decision;
+- `deprecated`: retained for history but no longer recommended;
+- `superseded`: replaced by a newer ADR that links back to it;
+- `rejected`: considered and deliberately not chosen.
+
+Accepted ADRs are immutable apart from typo or link fixes. Changed circumstances
+are handled by a new ADR that supersedes the previous decision.
+
+## Index
+
+| ADR | Decision | Status |
+| --- | --- | --- |
+| [0001](0001-use-oxlint-as-the-only-linter-runtime.md) | Use Oxlint as the only standard linter runtime | Accepted |
+| [0002](0002-prefer-native-rules-over-javascript-plugins.md) | Prefer native rules over JavaScript plugins | Accepted |
+| [0003](0003-use-native-type-aware-linting.md) | Use native type-aware linting for TypeScript | Accepted |
+| [0004](0004-separate-non-code-quality-tools.md) | Separate non-code quality tools | Accepted |
