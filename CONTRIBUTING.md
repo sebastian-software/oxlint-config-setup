@@ -37,7 +37,7 @@ production package gate from the repository root:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm run check
+pnpm run release:check
 ```
 
 All repository scripts are TypeScript. `tsx` executes them, `tsc --noEmit`
@@ -45,6 +45,12 @@ checks them, and tsdown builds the publishable ESM and declarations. The package
 verifier performs two clean byte-identical builds, verifies the exact tarball,
 and installs it into clean npm and pnpm consumers.
 
-Do not commit `dist` or generated JSON configs. They are deterministic release
-output created by `build` and `prepack`; CI rejects tracked generated output and
-tracked changes caused by the package gate.
+Every enabled rule starts in `src/ledger.ts` with complete rationale, ownership,
+source, fixture, conflict, replacement, and review-trigger metadata. Add its
+valid and invalid case under `fixtures/rules/`, then run `pnpm generate`.
+The generated rule catalog and effective-config snapshots are committed source
+artifacts; `pnpm generate:check` rejects drift.
+
+Do not commit `dist` or its generated release JSON. Those files are deterministic
+package output created by `build` and `prepack`; CI rejects tracked release output
+and tracked changes caused by the package gate.
