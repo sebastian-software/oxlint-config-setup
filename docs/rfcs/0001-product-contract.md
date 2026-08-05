@@ -1,6 +1,6 @@
 # RFC 0001: Oxlint-first product contract
 
-- **Status:** Proposed
+- **Status:** Accepted for v0.1 beta
 - **Date:** 2026-08-04
 - **Owners:** Sebastian Software
 

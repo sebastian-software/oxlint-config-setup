@@ -3,6 +3,18 @@
 The project combines design records with an executable pre-beta package. Small,
 reviewable pull requests are preferred over a single large specification dump.
 
+## Project language
+
+US English (`en-US`) is the canonical language for project-authored text. Use
+American spelling, vocabulary, and punctuation in documentation, code comments,
+package metadata, diagnostics, release notes, issues, and pull requests.
+
+Keep API names, code identifiers, product and organization names, URLs, verbatim
+quotations, and external titles unchanged. Localized user-facing surfaces may
+define an explicit alternative locale; otherwise, US English is their source and
+fallback language. [ADR 0006](docs/adr/0006-use-us-english-as-the-project-language.md)
+records the scope and rationale.
+
 ## Proposal types
 
 - **RFCs** live in `docs/rfcs/` and specify product behavior, user experience,
@@ -37,7 +49,7 @@ production package gate from the repository root:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm run check
+pnpm run release:check
 ```
 
 All repository scripts are TypeScript. `tsx` executes them, `tsc --noEmit`
@@ -45,6 +57,12 @@ checks them, and tsdown builds the publishable ESM and declarations. The package
 verifier performs two clean byte-identical builds, verifies the exact tarball,
 and installs it into clean npm and pnpm consumers.
 
-Do not commit `dist` or generated JSON configs. They are deterministic release
-output created by `build` and `prepack`; CI rejects tracked generated output and
-tracked changes caused by the package gate.
+Every enabled rule starts in `src/ledger.ts` with complete rationale, ownership,
+source, fixture, conflict, replacement, and review-trigger metadata. Add its
+valid and invalid case under `fixtures/rules/`, then run `pnpm generate`.
+The generated rule catalog and effective-config snapshots are committed source
+artifacts; `pnpm generate:check` rejects drift.
+
+Do not commit `dist` or its generated release JSON. Those files are deterministic
+package output created by `build` and `prepack`; CI rejects tracked release output
+and tracked changes caused by the package gate.

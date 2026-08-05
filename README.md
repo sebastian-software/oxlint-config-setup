@@ -1,36 +1,21 @@
 # Oxlint Config Setup
 
-An opinionated, Oxlint-first linting preset for modern TypeScript projects.
+An opinionated, Oxlint-only linting preset for modern JavaScript and TypeScript projects.
 
 > [!IMPORTANT]
-> This project is pre-beta. The production package and its deterministic release
-> path exist, but the curated rule ledger and framework profiles are still being
-> implemented. Do not treat the current rule selection as the final v0.1 preset.
+> v0.1 is a reviewed beta candidate, not a published stable release. The package,
+> rule ledger, generated JSON, behavioral fixtures, and release gate are complete;
+> publishing remains an explicit maintainer action.
 
-## Goal
+## Install
 
-Provide a high-signal linting setup with one primary runtime: Oxlint. The project
-optimizes for developer value, speed, and a small operational surface—not for
-rule-by-rule ESLint parity.
-
-The intended stack is:
-
-- native Oxlint rules wherever possible;
-- Oxlint's type-aware linting for TypeScript correctness;
-- JavaScript plugins only for valuable rule families that have no suitable
-  native implementation;
-- separate tools for concerns Oxlint does not own, such as formatting or prose.
-
-## Package usage
-
-Once a package version is published, install the config together with its exact
-tested Oxlint and type-aware backend peers:
+Install the config with the exact peer versions tested as one compatibility trio:
 
 ```sh
 pnpm add -D oxlint-config-setup oxlint@1.77.0 oxlint-tsgolint@7.0.2001
 ```
 
-Create `oxlint.config.ts` in the project root:
+Create `oxlint.config.ts` and invoke Oxlint directly:
 
 ```ts
 import { getOxlintConfig } from "oxlint-config-setup";
@@ -42,62 +27,123 @@ export default getOxlintConfig({
 });
 ```
 
-`react`, `node`, and `ai` default to `false`. The loader validates the options
-and selects one of eight complete JSON artifacts generated at package build
-time. It does not compose rules at runtime. Every permutation enables native
-type-aware linting, so consumers need a valid TypeScript project graph and the
-matching `oxlint-tsgolint` backend.
+```sh
+pnpm oxlint .
+```
 
-The AI option is already behavioral rather than an artifact-name placeholder:
-the initial package slice enables `no-warning-comments`. This is deliberately a
-provisional rule until the rule ledger defines the reviewed production AI
-selection. React and Node currently establish the native plugin boundaries; the
-curated framework rules follow in their profile issues.
+`react`, `node`, and `ai` default to `false`. The loader selects one of eight
+complete, prebuilt JSON configurations. It never composes rules at runtime.
+Every standard configuration includes core, import, TypeScript syntax, and
+type-aware TypeScript behavior.
 
-## Supported toolchain
+## Shipped surfaces
 
-| Context                    | Supported version                  |
-| -------------------------- | ---------------------------------- |
-| Package consumer Node.js   | `^22.18.0 \|\| >=24.0.0`           |
-| Oxlint peer                | `1.77.0`                           |
-| `oxlint-tsgolint` peer     | `7.0.2001`                         |
-| Clean consumer installers  | npm `^10 \|\| ^11`; pnpm `11.20.0` |
-| Repository package manager | pnpm `11.20.0`                     |
-| Repository build Node.js   | `^22.18.0 \|\| >=24.11.0`          |
-| TypeScript authoring       | `7.0.2`                            |
+| Need | TypeScript package export | Public JSON subpath | Stability |
+| --- | --- | --- | --- |
+| Core + complete TypeScript | `getOxlintConfig()` | `oxlint-config-setup/json/default` | Stable, version-pinned type-aware backend |
+| React + JSX accessibility | `getOxlintConfig({ react: true })` | `oxlint-config-setup/json/react` | Stable |
+| Node.js | `getOxlintConfig({ node: true })` | `oxlint-config-setup/json/node` | Stable |
+| AI-assisted-development marker | `getOxlintConfig({ ai: true })` | `oxlint-config-setup/json/ai` | Stable warning |
+| TypeScript without a project graph | `getSyntaxOnlyOxlintConfig()` | `oxlint-config-setup/json/typescript-syntax` | Stable |
+| Vitest | `getVitestOxlintConfig()` | `oxlint-config-setup/json/vitest` | Stable |
+| Jest | `getJestOxlintConfig()` | `oxlint-config-setup/json/jest` | Stable |
+| React Compiler diagnostics | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler` | Experimental warning |
 
-The build range is intentionally different from the consumer range. The pinned
-tsdown build tool requires Node `^22.18.0 || >=24.11.0`, while the emitted ESM
-targets Node 22 and remains installable on Node 24.0. Consumers execute only the
-built JavaScript and prebuilt JSON from `node_modules`; package installation
-does not run TypeScript or repository lifecycle scripts.
+The standard Boolean permutations also expose public JSON subpaths for
+`react-node`, `react-ai`, `node-ai`, and `react-node-ai`.
 
-Oxlint, `oxlint-tsgolint`, and TypeScript are tested as one version trio because
-the type-aware backend is outside Oxlint's normal semantic-versioning policy.
-Support for another version starts with an explicit compatibility run, not an
-open peer range.
+For a syntax-only project:
 
-## Principles
+```ts
+import { getSyntaxOnlyOxlintConfig } from "oxlint-config-setup";
 
-1. One linter command should cover the normal JavaScript and TypeScript workflow.
-2. Native rules take precedence over compatibility layers.
-3. React is covered by Oxlint's native React rules, not by loading an ESLint React
-   plugin to chase numerical parity.
-4. Every enabled rule must justify its signal, cost, and maintenance risk.
-5. Compatibility percentages are evidence, not product requirements.
+export default getSyntaxOnlyOxlintConfig();
+```
 
-## Relationship to the predecessor
+For Vitest (use the corresponding Jest export for Jest):
 
-This is a new project, not a rewrite in place. The earlier
-[`eslint-config-setup`](https://github.com/sebastian-software/eslint-config-setup)
-project remains the historical reference for rule intent and real-world usage.
-It combines ESLint and Oxlint; this repository explores what a deliberately
-Oxlint-native successor should look like.
+```ts
+import { getVitestOxlintConfig } from "oxlint-config-setup";
+
+export default getVitestOxlintConfig();
+```
+
+The React Compiler export is intentionally separate from stable React defaults:
+
+```ts
+import { getExperimentalReactCompilerOxlintConfig } from "oxlint-config-setup";
+
+export default getExperimentalReactCompilerOxlintConfig();
+```
+
+## JSON consumption
+
+JSON artifacts contain the same complete objects as the TypeScript loaders. Copy
+one through its public package export, then run the supported Oxlint CLI directly:
+
+```sh
+node --input-type=module -e \
+  'import { copyFileSync } from "node:fs"; copyFileSync(new URL(import.meta.resolve("oxlint-config-setup/json/default")), ".oxlintrc.json")'
+pnpm oxlint --config .oxlintrc.json .
+```
+
+This is the low-startup and standalone-binary path. Do not extend an internal
+hashed file from `node_modules`; hashes are deliberately not public API.
+
+## What the beta proves
+
+The beta enables 27 ledger-owned rules across core, imports, TypeScript, React,
+accessibility, Node.js, Vitest, Jest, AI, and experimental compiler concerns.
+Each rule has valid and invalid fixtures asserting diagnostic file, location,
+and identity. Type-aware fixtures execute `oxlint-tsgolint`, including a
+TypeScript project-reference case.
+
+This is **behavioral coverage**, not an **identifier mapping** claim. The earlier
+migration study mapped about 85.3% of predecessor source-rule identifiers as
+discovery evidence; it did not prove equivalent behavior. v0.1 instead ships a
+smaller reviewed baseline and documents every deferred concern.
+
+No ESLint runtime, migration helper, JavaScript React plugin, or `react-hooks`
+JavaScript plugin is loaded by the package. Formatting, Markdown/MDX, spelling,
+and package metadata remain companion-tool concerns.
+
+## Supported matrix
+
+| Component | Supported value |
+| --- | --- |
+| Consumer Node.js | `^22.18.0 \|\| >=24.0.0` |
+| Oxlint | `1.77.0` |
+| `oxlint-tsgolint` | `7.0.2001` |
+| TypeScript behavior target | `7.0.2` |
+| npm clean consumer | major 10 or 11 |
+| pnpm clean consumer | `11.20.0` |
+| Repository build Node.js | `^22.18.0 \|\| >=24.11.0` |
+
+Support for another Oxlint/backend/TypeScript version begins with an explicit
+matrix run because the type-aware backend is outside Oxlint's normal semantic
+versioning policy.
+
+## Project documents
+
+- [Adoption guide](docs/adoption.md)
+- [Migration and companion-tool matrix](docs/migration.md)
+- [Compatibility evidence and timings](docs/compatibility.md)
+- [Generated rule catalog](docs/rule-catalog.md)
+- [v0.1 beta review](docs/release-review.md)
+- [Beta release notes](docs/releases/v0.1.0-beta.1.md)
+- [Architecture decisions](docs/adr/README.md)
 
 ## Contributing
 
-Design changes start as RFCs. Durable technical choices are recorded as ADRs.
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the review model.
+Run the complete local gate:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm release:check
+```
+
+Ledger changes require `pnpm generate`; `pnpm generate:check` fails on stale
+catalog or effective-config snapshots. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

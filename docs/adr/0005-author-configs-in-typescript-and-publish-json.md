@@ -1,6 +1,6 @@
 # 0005. Generate config permutations and select prebuilt JSON
 
-- **Status:** Proposed
+- **Status:** Accepted (with v0.1 supplemental named artifacts)
 - **Date:** 2026-08-04
 - **Deciders:** Sebastian Software maintainers
 
@@ -59,6 +59,13 @@ build output. The hash and file layout are internal implementation details. The
 generated JSON is release output, not checked-in source; the TypeScript factory
 and generator remain the source of truth.
 
+Four concerns required by the v0.1 fixture and adoption contract do not become
+new bitmask dimensions. Syntax-only TypeScript, Vitest, Jest, and the experimental
+React Compiler are emitted as named complete configs. They use the same ledger
+and deterministic generator, but cannot be combined at runtime. This keeps the
+eight standard permutations stable while giving each distinct execution contract
+an explicit package and JSON export.
+
 The public `getOxlintConfig(options)` API validates and normalizes options, maps
 them to the stable artifact name, and reads that prebuilt JSON. It does not
 compose rule sets or migrate config at runtime. Consumers use the result from
@@ -72,10 +79,12 @@ export default getOxlintConfig({ react: true, ai: true });
 
 Every standard permutation sets `options.typeAware` to `true`. Type-aware is not
 a public switch, and the package does not generate a syntax-only standard
-variant. The tested Oxlint, `oxlint-tsgolint`, and TypeScript versions stay pinned
-together.
+variant. The separately named syntax-only artifact exists for consumers that
+deliberately do not have a TypeScript project graph. The tested Oxlint,
+`oxlint-tsgolint`, and TypeScript versions stay pinned together.
 
-Generated JSON and public documentation derive from the TypeScript rule ledger.
+Generated JSON, effective-config snapshots, and public documentation derive from
+the TypeScript rule ledger.
 They are not edited as competing sources of truth. A clean package build and its
 prepack step produce all eight files under `dist/configs`, which is included in
 the package tarball. CI verifies the golden option mapping, byte-identical output
@@ -216,15 +225,19 @@ declarations, generates the same reviewed eight-artifact map, verifies exact
 tarball contents across byte-identical clean builds, and installs the packed
 artifact with both npm and pnpm in isolated consumers. Its manifest preserves
 the wider consumer Node range while the repository gate enforces tsdown's
-narrower build range. This closes the implementation uncertainty, but it does
-not by itself record maintainer acceptance; the status remains proposed pending
-that review.
+narrower build range. This closes the implementation uncertainty. The v0.1
+keep/adjust/defer review accepted the evidence, retained the standard bitmask
+contract, added four named supplemental artifacts, and kept publication as a
+separate manual action.
 
 Review this decision if Oxlint stabilizes or removes TypeScript configs, supports
 package imports in JSON, exposes a stable native plugin SDK, or measurements show
 configuration loading to be a material part of lint time. A need for a new native
 rule triggers an upstream feasibility discussion. It does not by itself move the
 configuration package to Rust.
+
+The accepted keep/adjust/defer decision is recorded in the
+[v0.1 beta review](../release-review.md).
 
 ## References
 

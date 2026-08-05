@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 
 import type { OxlintConfig } from "oxlint";
 
+import type { NamedArtifact } from "./artifacts.js";
 import {
   configFileName,
   normalizeConfigOptions,
@@ -10,9 +11,10 @@ import {
 
 export type { ConfigOptions } from "./options.js";
 
-export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
-  const normalized = normalizeConfigOptions(options);
-  const fileName = configFileName(normalized);
+function loadConfigArtifact(
+  fileName: string,
+  expectedTypeAware: boolean,
+): OxlintConfig {
   const artifactUrl = new URL(`./configs/${fileName}`, import.meta.url);
 
   let source: string;
@@ -39,12 +41,37 @@ export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
     config === null ||
     typeof config !== "object" ||
     (config as { options?: { typeAware?: unknown } }).options?.typeAware !==
-      true
+      expectedTypeAware
   ) {
     throw new Error(
-      `Prebuilt Oxlint config artifact ${fileName} violates the mandatory type-aware contract`,
+      `Prebuilt Oxlint config artifact ${fileName} violates its type-aware contract`,
     );
   }
 
   return config as OxlintConfig;
+}
+
+export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
+  const normalized = normalizeConfigOptions(options);
+  return loadConfigArtifact(configFileName(normalized), true);
+}
+
+function getNamedConfig(name: NamedArtifact, typeAware = true): OxlintConfig {
+  return loadConfigArtifact(`${name}.json`, typeAware);
+}
+
+export function getSyntaxOnlyOxlintConfig(): OxlintConfig {
+  return getNamedConfig("typescript-syntax", false);
+}
+
+export function getVitestOxlintConfig(): OxlintConfig {
+  return getNamedConfig("vitest");
+}
+
+export function getJestOxlintConfig(): OxlintConfig {
+  return getNamedConfig("jest");
+}
+
+export function getExperimentalReactCompilerOxlintConfig(): OxlintConfig {
+  return getNamedConfig("react-compiler");
 }

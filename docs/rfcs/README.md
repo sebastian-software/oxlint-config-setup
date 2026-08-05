@@ -19,4 +19,5 @@ contract. Durable architectural choices should also be summarized in an ADR.
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| [0001](0001-product-contract.md) | Oxlint-first product contract | Proposed |
+| [0001](0001-product-contract.md) | Oxlint-first product contract | Accepted |
+| [0002](0002-rule-selection-and-validation.md) | Rule selection and validation policy | Accepted |

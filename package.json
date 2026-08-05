@@ -21,7 +21,19 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./json/default": "./dist/standalone/default.json",
+    "./json/react": "./dist/standalone/react.json",
+    "./json/node": "./dist/standalone/node.json",
+    "./json/react-node": "./dist/standalone/react-node.json",
+    "./json/ai": "./dist/standalone/ai.json",
+    "./json/react-ai": "./dist/standalone/react-ai.json",
+    "./json/node-ai": "./dist/standalone/node-ai.json",
+    "./json/react-node-ai": "./dist/standalone/react-node-ai.json",
+    "./json/typescript-syntax": "./dist/standalone/typescript-syntax.json",
+    "./json/vitest": "./dist/standalone/vitest.json",
+    "./json/jest": "./dist/standalone/jest.json",
+    "./json/react-compiler": "./dist/standalone/react-compiler.json"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -30,11 +42,17 @@
   ],
   "scripts": {
     "build": "pnpm run typecheck && tsdown && tsx scripts/generate-configs.ts",
-    "check": "pnpm run lint && pnpm run test",
-    "generate": "tsx scripts/generate-configs.ts",
+    "benchmark": "pnpm run build && tsx scripts/benchmark.ts",
+    "check": "pnpm run lint && pnpm run generate:check && pnpm run test",
+    "generate": "tsx scripts/generate.ts",
+    "generate:check": "tsx scripts/generate.ts --check",
     "lint": "oxlint --type-aware --deny-warnings src scripts tsdown.config.ts",
     "prepack": "pnpm run build",
-    "test": "tsx scripts/verify-package.ts",
+    "release:check": "pnpm run check && tsx scripts/release-gate.ts",
+    "test": "pnpm run test:ledger && pnpm run test:harness && pnpm run test:package",
+    "test:harness": "tsx scripts/test-harness.ts",
+    "test:ledger": "tsx scripts/test-ledger.ts",
+    "test:package": "tsx scripts/verify-package.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {

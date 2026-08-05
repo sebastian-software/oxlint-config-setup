@@ -1,6 +1,6 @@
 # RFC 0002: Rule selection and validation policy
 
-- **Status:** Proposed
+- **Status:** Accepted and implemented for v0.1 beta
 - **Date:** 2026-08-04
 - **Owners:** Sebastian Software
 

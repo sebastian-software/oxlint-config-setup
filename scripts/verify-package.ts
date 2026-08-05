@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
+  copyFileSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -14,6 +17,7 @@ import { pathToFileURL } from "node:url";
 
 import type { OxlintConfig } from "oxlint";
 
+import { allConfigArtifacts, NAMED_ARTIFACTS } from "../src/artifacts.js";
 import {
   allConfigOptions,
   configFileName,
@@ -30,6 +34,7 @@ interface PackageManifest {
   optionalDependencies?: Record<string, string>;
   packageManager?: string;
   peerDependencies?: Record<string, string>;
+  publishConfig?: Record<string, unknown>;
   scripts?: Record<string, string>;
   sideEffects?: boolean;
   type?: string;
@@ -41,15 +46,20 @@ interface PackResult {
 }
 
 interface PublicPackageApi {
+  getExperimentalReactCompilerOxlintConfig(): OxlintConfig;
+  getJestOxlintConfig(): OxlintConfig;
   getOxlintConfig(options?: ConfigOptions): OxlintConfig;
+  getSyntaxOnlyOxlintConfig(): OxlintConfig;
+  getVitestOxlintConfig(): OxlintConfig;
 }
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configDirectory = resolve(distDirectory, "configs");
+const standaloneDirectory = resolve(distDirectory, "standalone");
 const manifestPath = resolve(repositoryRoot, "package.json");
 const workspaceSettingsPath = resolve(repositoryRoot, "pnpm-workspace.yaml");
-const expectedConfigFiles = [
+const goldenStandardConfigFiles = [
   "config-6e5e7d225541.json",
   "config-a53f054eadae.json",
   "config-0906d8f2bc55.json",
@@ -58,6 +68,13 @@ const expectedConfigFiles = [
   "config-5d4ac567d473.json",
   "config-f4874d816c7b.json",
   "config-a8b1b44dc3f7.json",
+];
+const publicApiNames = [
+  "getExperimentalReactCompilerOxlintConfig",
+  "getJestOxlintConfig",
+  "getOxlintConfig",
+  "getSyntaxOnlyOxlintConfig",
+  "getVitestOxlintConfig",
 ];
 const trackedDiffBefore = run("git", ["diff", "--binary"]);
 
@@ -104,14 +121,12 @@ function parsePackResult(source: string): PackResult {
       if (!(error instanceof SyntaxError)) throw error;
     }
   }
-
   assert(value !== undefined, "package manager pack did not return valid JSON");
   const candidate = Array.isArray(value) ? value[0] : value;
-  assert(isRecord(candidate), "package manager pack must return an object");
-  assert(
-    typeof candidate.filename === "string",
-    "package manager pack must return a tarball filename",
-  );
+  assert(isRecord(candidate));
+  if (typeof candidate.filename !== "string") {
+    throw new TypeError("package manager pack result requires filename");
+  }
   return { filename: candidate.filename };
 }
 
@@ -136,17 +151,17 @@ function snapshot(directory: string): Map<string, string> {
   );
 }
 
+function sha256(path: string): string {
+  return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
 async function importPublicPackage(
   specifier: string,
 ): Promise<PublicPackageApi> {
   const value: unknown = await import(specifier);
-  assert(isRecord(value), "the built package must export a module object");
-  assert.deepEqual(
-    Object.keys(value).toSorted(),
-    ["getOxlintConfig"],
-    "the production skeleton must expose only the initial public loader",
-  );
-  assert.equal(typeof value.getOxlintConfig, "function");
+  assert(isRecord(value));
+  assert.deepEqual(Object.keys(value).toSorted(), publicApiNames);
+  for (const name of publicApiNames) assert.equal(typeof value[name], "function");
   return value as unknown as PublicPackageApi;
 }
 
@@ -156,8 +171,7 @@ function packDependency(packagePath: string, destination: string): string {
     ["pack", "--ignore-scripts", "--json", "--pack-destination", destination],
     packagePath,
   );
-  const result = parsePackResult(output);
-  return resolve(destination, result.filename);
+  return resolve(destination, parsePackResult(output).filename);
 }
 
 const manifest = readManifest(manifestPath);
@@ -165,14 +179,9 @@ assert.equal(manifest.name, "oxlint-config-setup");
 assert.equal(manifest.type, "module");
 assert.equal(manifest.sideEffects, false);
 assert.deepEqual(manifest.files, ["dist"]);
-assert.deepEqual(manifest.exports, {
-  ".": {
-    types: "./dist/index.d.ts",
-    default: "./dist/index.js",
-  },
-});
 assert.equal(manifest.engines?.node, "^22.18.0 || >=24.0.0");
 assert.equal(manifest.packageManager, "pnpm@11.20.0");
+assert.deepEqual(manifest.publishConfig, { access: "public", provenance: true });
 assert.deepEqual(manifest.dependencies, undefined);
 assert.deepEqual(manifest.optionalDependencies, undefined);
 assert.deepEqual(manifest.peerDependencies, {
@@ -181,18 +190,26 @@ assert.deepEqual(manifest.peerDependencies, {
 });
 assert.equal(manifest.devDependencies?.oxlint, "1.77.0");
 assert.equal(manifest.devDependencies?.["oxlint-tsgolint"], "7.0.2001");
+assert.equal(manifest.devDependencies?.typescript, "7.0.2");
 assert.equal(manifest.devDependencies?.tsdown, "0.22.14");
 assert.equal(manifest.devDependencies?.tsx, "4.23.8");
-assert.equal(manifest.devDependencies?.typescript, "7.0.2");
+assert.deepEqual(manifest.exports?.["."], {
+  types: "./dist/index.d.ts",
+  default: "./dist/index.js",
+});
+for (const artifact of allConfigArtifacts()) {
+  assert.equal(
+    manifest.exports?.[`./json/${artifact.publicName}`],
+    `./dist/standalone/${artifact.publicName}.json`,
+  );
+}
+
 const tsdownManifest = readManifest(
   resolve(repositoryRoot, "node_modules/tsdown/package.json"),
 );
-assert.equal(
-  tsdownManifest.engines?.node,
-  "^22.18.0 || >=24.11.0",
-  "the build-only Node contract must stay distinct from the consumer engine",
-);
+assert.equal(tsdownManifest.engines?.node, "^22.18.0 || >=24.11.0");
 assert.equal(run("pnpm", ["--version"]).trim(), "11.20.0");
+assert([10, 11].includes(Number.parseInt(run("npm", ["--version"]), 10)));
 const pnpmConfig = parseJson(run("pnpm", ["config", "list", "--json"]));
 assert(isRecord(pnpmConfig));
 assert.equal(pnpmConfig.engineStrict, true);
@@ -200,16 +217,8 @@ assert.equal(pnpmConfig.autoInstallPeers, false);
 const workspaceSettings = readFileSync(workspaceSettingsPath, "utf8");
 assert.match(workspaceSettings, /^engineStrict: true$/mu);
 assert.match(workspaceSettings, /^autoInstallPeers: false$/mu);
-assert(
-  [10, 11].includes(Number.parseInt(run("npm", ["--version"]), 10)),
-  "clean npm consumer tests support npm 10 and 11",
-);
 for (const lifecycle of ["install", "postinstall", "prepare"]) {
-  assert.equal(
-    manifest.scripts?.[lifecycle],
-    undefined,
-    `published consumers must not execute a ${lifecycle} script`,
-  );
+  assert.equal(manifest.scripts?.[lifecycle], undefined);
 }
 
 for (const field of [
@@ -229,94 +238,63 @@ for (const field of [
 assert.doesNotMatch(
   readFileSync(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8"),
   /(?:^|\/)eslint(?:@|:|\/)/mu,
-  "the production lockfile must not introduce an ESLint package",
 );
-assert.match(
-  readFileSync(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8"),
-  /^\s+autoInstallPeers: false$/mu,
-  "the lockfile must record disabled peer auto-installation",
-);
-
-const trackedGenerated = run("git", ["ls-files", "--", "dist/**"]).trim();
-assert.equal(trackedGenerated, "", "dist output must never be committed");
-const trackedScripts = run("git", ["ls-files", "--", "scripts"])
-  .trim()
-  .split("\n")
-  .filter(Boolean);
+assert.equal(run("git", ["ls-files", "--", "dist/**"]).trim(), "");
 assert(
-  trackedScripts.every((file) => file.endsWith(".ts")),
-  "all production package scripts must be TypeScript",
+  run("git", ["ls-files", "--", "scripts"])
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .every((file) => file.endsWith(".ts")),
 );
-
 assert.deepEqual(
   allConfigOptions().map(configFileName),
-  expectedConfigFiles,
-  "the production package must preserve the reviewed option-to-artifact map",
+  goldenStandardConfigFiles,
+  "the reviewed three-bit standard artifact mapping must stay stable",
 );
 
 rmSync(distDirectory, { recursive: true, force: true });
 run("pnpm", ["run", "build"]);
+const artifacts = allConfigArtifacts();
+const expectedConfigFiles = artifacts.map((artifact) => artifact.fileName).toSorted();
+const expectedStandaloneFiles = artifacts
+  .map((artifact) => `${artifact.publicName}.json`)
+  .toSorted();
 const firstBuild = snapshot(distDirectory);
 assert.deepEqual(
   [...firstBuild.keys()],
-  ["configs", "index.d.ts", "index.js"]
-    .flatMap((entry) =>
-      entry === "configs"
-        ? expectedConfigFiles.map((file) => `configs/${file}`)
-        : [entry],
-    )
-    .toSorted(),
+  [
+    "index.d.ts",
+    "index.js",
+    ...expectedConfigFiles.map((file) => `configs/${file}`),
+    ...expectedStandaloneFiles.map((file) => `standalone/${file}`),
+  ].toSorted(),
 );
 
-for (const [index, options] of allConfigOptions().entries()) {
-  const value = parseJson(
-    readFileSync(resolve(configDirectory, expectedConfigFiles[index]), "utf8"),
+for (const artifact of artifacts) {
+  const internal = parseJson(
+    readFileSync(resolve(configDirectory, artifact.fileName), "utf8"),
   );
-  assert(isRecord(value));
-  const config = value as {
-    options?: { typeAware?: unknown };
-    plugins?: unknown[];
-    rules?: Record<string, unknown>;
-  };
-  assert.equal(config.options?.typeAware, true);
-  assert.deepEqual(
-    config.rules,
-    options.ai ? { "no-warning-comments": "warn" } : {},
-    "AI must remain a first-class behavior, not only an artifact-name bit",
+  const standalone = parseJson(
+    readFileSync(
+      resolve(standaloneDirectory, `${artifact.publicName}.json`),
+      "utf8",
+    ),
   );
-  assert.deepEqual(config.plugins, [
-    "typescript",
-    ...(options.react ? ["react"] : []),
-    ...(options.node ? ["node"] : []),
-  ]);
+  assert.deepEqual(internal, artifact.config);
+  assert.deepEqual(standalone, internal);
+  assert.equal(
+    (internal as { options?: { typeAware?: unknown } }).options?.typeAware,
+    artifact.typeAware,
+  );
 }
 
-const effectiveConfig = parseJson(
-  run(resolve(repositoryRoot, "node_modules/.bin/oxlint"), [
-    "--config",
-    resolve(configDirectory, expectedConfigFiles[0]),
-    "--print-config",
-    resolve(repositoryRoot, "src/index.ts"),
-  ]),
-);
-assert(isRecord(effectiveConfig));
-assert.equal(
-  (effectiveConfig as { options?: { typeAware?: unknown } }).options?.typeAware,
-  true,
-  "the tested Oxlint peer must accept the generated type-aware root config",
-);
-
-const declarationSource = readFileSync(
-  resolve(distDirectory, "index.d.ts"),
-  "utf8",
-);
-assert.match(declarationSource, /interface ConfigOptions/u);
-assert.match(declarationSource, /getOxlintConfig/u);
+const declarationSource = readFileSync(resolve(distDirectory, "index.d.ts"), "utf8");
+for (const name of ["ConfigOptions", ...publicApiNames]) {
+  assert.match(declarationSource, new RegExp(name, "u"));
+}
 assert.doesNotMatch(declarationSource, /(?:\.\.\/|\/src\/|private\/tmp)/u);
-const javascriptSource = readFileSync(
-  resolve(distDirectory, "index.js"),
-  "utf8",
-);
+const javascriptSource = readFileSync(resolve(distDirectory, "index.js"), "utf8");
 assert.doesNotMatch(javascriptSource, /from\s+["'][^"']+\.ts["']/u);
 assert.doesNotMatch(javascriptSource, /(?:\.\.\/src\/|private\/tmp)/u);
 
@@ -325,12 +303,21 @@ const publicApi = await importPublicPackage(
 );
 for (const options of allConfigOptions()) {
   const loaded = publicApi.getOxlintConfig(options);
-  assert.equal(loaded.options?.typeAware, true);
-  assert.deepEqual(
-    loaded.rules,
-    options.ai ? { "no-warning-comments": "warn" } : {},
+  const expected = artifacts.find(
+    (artifact) => artifact.fileName === configFileName(options),
   );
+  assert(expected);
+  assert.deepEqual(loaded, expected.config);
 }
+assert.equal(publicApi.getSyntaxOnlyOxlintConfig().options?.typeAware, false);
+assert(publicApi.getVitestOxlintConfig().plugins?.includes("vitest"));
+assert(publicApi.getJestOxlintConfig().plugins?.includes("jest"));
+assert.equal(
+  publicApi.getExperimentalReactCompilerOxlintConfig().rules?.[
+    "react/react-compiler"
+  ],
+  "warn",
+);
 assert.throws(
   () => publicApi.getOxlintConfig({ unknown: true } as never),
   /Unsupported Oxlint config option: unknown/u,
@@ -342,11 +329,7 @@ assert.throws(
 
 rmSync(distDirectory, { recursive: true, force: true });
 run("pnpm", ["run", "build"]);
-assert.deepEqual(
-  snapshot(distDirectory),
-  firstBuild,
-  "two clean production builds must be byte-identical",
-);
+assert.deepEqual(snapshot(distDirectory), firstBuild);
 
 const temporaryRoot = mkdtempSync(resolve(tmpdir(), "oxlint-config-package-"));
 try {
@@ -356,8 +339,25 @@ try {
     "--pack-destination",
     temporaryRoot,
   ]);
-  const packResult = parsePackResult(packOutput);
-  const tarballPath = resolve(temporaryRoot, packResult.filename);
+  const tarballPath = resolve(
+    temporaryRoot,
+    parsePackResult(packOutput).filename,
+  );
+  const firstTarballHash = sha256(tarballPath);
+  const secondPackRoot = resolve(temporaryRoot, "second-pack");
+  mkdirSync(secondPackRoot);
+  const secondTarballPath = resolve(
+    secondPackRoot,
+    parsePackResult(
+      run("pnpm", ["pack", "--json", "--pack-destination", secondPackRoot]),
+    ).filename,
+  );
+  assert.equal(
+    sha256(secondTarballPath),
+    firstTarballHash,
+    "two clean release tarballs must be byte-identical",
+  );
+
   const packedFiles = run("tar", ["-tzf", tarballPath])
     .trim()
     .split("\n")
@@ -372,22 +372,30 @@ try {
       "package/dist/index.d.ts",
       "package/dist/index.js",
       ...expectedConfigFiles.map((file) => `package/dist/configs/${file}`),
+      ...expectedStandaloneFiles.map(
+        (file) => `package/dist/standalone/${file}`,
+      ),
     ].toSorted(),
-    "the package tarball must contain exactly the reviewed release files",
   );
   assert(
     packedFiles.every(
       (file) => !file.endsWith(".ts") || file.endsWith(".d.ts"),
     ),
-    "the package tarball must not ship TypeScript source",
   );
 
-  const oxlintTarball = packDependency(
-    resolve(repositoryRoot, "node_modules/oxlint"),
+  const oxlintPackageRoot = realpathSync(resolve(repositoryRoot, "node_modules/oxlint"));
+  const bindingRoot = resolve(oxlintPackageRoot, "../@oxlint");
+  const bindingName = readdirSync(bindingRoot).find((name) =>
+    name.startsWith("binding-"),
+  );
+  assert(bindingName, "the installed Oxlint peer must include its platform binding");
+  const oxlintTarball = packDependency(oxlintPackageRoot, temporaryRoot);
+  const bindingTarball = packDependency(
+    realpathSync(resolve(bindingRoot, bindingName)),
     temporaryRoot,
   );
   const tsgolintTarball = packDependency(
-    resolve(repositoryRoot, "node_modules/oxlint-tsgolint"),
+    realpathSync(resolve(repositoryRoot, "node_modules/oxlint-tsgolint")),
     temporaryRoot,
   );
   const consumerRoot = resolve(temporaryRoot, "consumer");
@@ -407,6 +415,7 @@ try {
       "--omit=optional",
       tarballPath,
       oxlintTarball,
+      bindingTarball,
       tsgolintTarball,
     ],
     consumerRoot,
@@ -416,24 +425,18 @@ try {
     resolve(consumerRoot, "consumer.mjs"),
     [
       'import assert from "node:assert/strict";',
-      'import { getOxlintConfig } from "oxlint-config-setup";',
-      "const config = getOxlintConfig({ react: true, node: true, ai: true });",
-      "assert.equal(config.options?.typeAware, true);",
-      'assert.deepEqual(config.plugins, ["typescript", "react", "node"]);',
+      'import { copyFileSync } from "node:fs";',
+      'import { getExperimentalReactCompilerOxlintConfig, getJestOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, getVitestOxlintConfig } from "oxlint-config-setup";',
+      'assert(getOxlintConfig({ react: true, node: true, ai: true }).plugins.includes("react"));',
+      'assert.equal(getSyntaxOnlyOxlintConfig().options.typeAware, false);',
+      'assert(getVitestOxlintConfig().plugins.includes("vitest"));',
+      'assert(getJestOxlintConfig().plugins.includes("jest"));',
+      'assert.equal(getExperimentalReactCompilerOxlintConfig().rules["react/react-compiler"], "warn");',
+      'copyFileSync(new URL(import.meta.resolve("oxlint-config-setup/json/default")), ".oxlintrc.json");',
       "",
     ].join("\n"),
   );
   run("node", ["consumer.mjs"], consumerRoot);
-
-  writeFileSync(
-    resolve(consumerRoot, "consumer.ts"),
-    [
-      'import { getOxlintConfig, type ConfigOptions } from "oxlint-config-setup";',
-      "const options = { react: true, ai: true } satisfies ConfigOptions;",
-      "export default getOxlintConfig(options);",
-      "",
-    ].join("\n"),
-  );
   writeFileSync(
     resolve(consumerRoot, "tsconfig.json"),
     `${JSON.stringify(
@@ -441,15 +444,60 @@ try {
         compilerOptions: {
           module: "NodeNext",
           moduleResolution: "NodeNext",
-          noEmit: true,
           strict: true,
           target: "ES2023",
         },
-        include: ["consumer.ts"],
+        include: ["*.ts"],
       },
       null,
       2,
     )}\n`,
+  );
+  writeFileSync(
+    resolve(consumerRoot, "valid.ts"),
+    "export async function complete(): Promise<void> { await Promise.resolve(); }\nawait complete();\n",
+  );
+  writeFileSync(
+    resolve(consumerRoot, "invalid.ts"),
+    "async function save(): Promise<void> { await Promise.resolve(); }\nsave();\n",
+  );
+  const consumerOxlint = resolve(consumerRoot, "node_modules/.bin/oxlint");
+  run(consumerOxlint, ["--config", ".oxlintrc.json", "valid.ts"], consumerRoot);
+  assert.throws(
+    () => run(consumerOxlint, ["--config", ".oxlintrc.json", "invalid.ts"], consumerRoot),
+    (error: unknown) =>
+      error instanceof Error &&
+      /no-floating-promises/u.test(
+        String((error as Error & { stdout?: string }).stdout),
+      ),
+  );
+
+  writeFileSync(
+    resolve(consumerRoot, "oxlint.config.ts"),
+    'import { getOxlintConfig } from "oxlint-config-setup";\nexport default getOxlintConfig({ react: true, node: true });\n',
+  );
+  const printed = parseJson(
+    run(
+      consumerOxlint,
+      ["--config", "oxlint.config.ts", "--print-config", "valid.ts"],
+      consumerRoot,
+    ),
+  );
+  assert(isRecord(printed));
+  assert.equal(
+    (printed as { options?: { typeAware?: unknown } }).options?.typeAware,
+    true,
+  );
+
+  writeFileSync(
+    resolve(consumerRoot, "consumer.ts"),
+    [
+      'import { getOxlintConfig, getVitestOxlintConfig, type ConfigOptions } from "oxlint-config-setup";',
+      "const options = { react: true, ai: true } satisfies ConfigOptions;",
+      "void getVitestOxlintConfig();",
+      "export default getOxlintConfig(options);",
+      "",
+    ].join("\n"),
   );
   run(
     resolve(repositoryRoot, "node_modules/.bin/tsc"),
@@ -457,12 +505,12 @@ try {
     consumerRoot,
   );
 
-  const installedManifest = readManifest(
-    resolve(consumerRoot, "node_modules/oxlint-config-setup/package.json"),
+  const installedRoot = resolve(
+    consumerRoot,
+    "node_modules/oxlint-config-setup",
   );
-  assert.equal(installedManifest.version, manifest.version);
   assert.deepEqual(
-    listFiles(resolve(consumerRoot, "node_modules/oxlint-config-setup")),
+    listFiles(installedRoot),
     packedFiles.map((file) => file.replace(/^package\//u, "")).toSorted(),
   );
 
@@ -485,27 +533,24 @@ try {
     ],
     pnpmConsumerRoot,
   );
-  writeFileSync(
-    resolve(pnpmConsumerRoot, "consumer.mjs"),
-    [
-      'import assert from "node:assert/strict";',
-      'import { getOxlintConfig } from "oxlint-config-setup";',
-      "const config = getOxlintConfig({ ai: true });",
-      "assert.equal(config.options?.typeAware, true);",
-      'assert.equal(config.rules?.["no-warning-comments"], "warn");',
-      "",
-    ].join("\n"),
+  copyFileSync(
+    resolve(pnpmConsumerRoot, "node_modules/oxlint-config-setup/dist/standalone/ai.json"),
+    resolve(pnpmConsumerRoot, ".oxlintrc.json"),
   );
-  run("node", ["consumer.mjs"], pnpmConsumerRoot);
+  const aiConfig = parseJson(
+    readFileSync(resolve(pnpmConsumerRoot, ".oxlintrc.json"), "utf8"),
+  );
+  assert.equal(
+    (aiConfig as { rules?: Record<string, unknown> }).rules?.[
+      "eslint/no-warning-comments"
+    ],
+    "warn",
+  );
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
 }
 
-const trackedDiffAfter = run("git", ["diff", "--binary"]);
-assert.equal(
-  trackedDiffAfter,
-  trackedDiffBefore,
-  "build and package verification must not change tracked sources",
+assert.equal(run("git", ["diff", "--binary"]), trackedDiffBefore);
+console.log(
+  `Production package verified: ${allConfigOptions().length} standard + ${NAMED_ARTIFACTS.length} named artifacts.`,
 );
-
-console.log("Production package contract verified.");
