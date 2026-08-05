@@ -3,6 +3,18 @@
 The project combines design records with an executable pre-beta package. Small,
 reviewable pull requests are preferred over a single large specification dump.
 
+## Project language
+
+US English (`en-US`) is the canonical language for project-authored text. Use
+American spelling, vocabulary, and punctuation in documentation, code comments,
+package metadata, diagnostics, release notes, issues, and pull requests.
+
+Keep API names, code identifiers, product and organization names, URLs, verbatim
+quotations, and external titles unchanged. Localized user-facing surfaces may
+define an explicit alternative locale; otherwise, US English is their source and
+fallback language. [ADR 0006](docs/adr/0006-use-us-english-as-the-project-language.md)
+records the scope and rationale.
+
 ## Proposal types
 
 - **RFCs** live in `docs/rfcs/` and specify product behavior, user experience,

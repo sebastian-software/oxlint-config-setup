@@ -21,6 +21,15 @@ assert.deepEqual(manifest.publishConfig, {
   provenance: true,
 });
 
+const contributing = read("CONTRIBUTING.md");
+assert.match(contributing, /US English \(`en-US`\)/u);
+
+const projectLanguageDecision = read(
+  "docs/adr/0006-use-us-english-as-the-project-language.md",
+);
+assert.match(projectLanguageDecision, /\*\*Status:\*\* Accepted/u);
+assert.match(projectLanguageDecision, /US English \(`en-US`\)/u);
+
 const readme = read("README.md");
 assert.match(readme, /behavioral coverage/iu);
 assert.match(readme, /identifier mapping/iu);
