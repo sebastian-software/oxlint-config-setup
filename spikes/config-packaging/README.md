@@ -36,6 +36,11 @@ The hashes and generated file names are internal. The verifier freezes the optio
 bit positions and expected hashes so an accidental mapping change fails CI. The
 [findings note][findings] records the evidence and ADR recommendation.
 
+Generated JSON is ignored build output under
+`packages/shared-config/dist/configs`, not checked-in source. The package's
+`prepack` step performs the complete TypeScript build and generation pass, and
+the published tarball includes `dist` with all eight permutations.
+
 ## Requirements
 
 - Node `^22.18.0 || >=24.0.0` for `oxlint.config.ts`;
@@ -67,16 +72,19 @@ directly at the native binary from the pinned `oxlint-tsgolint` platform package
 Set `OXLINT_STANDALONE=/absolute/path/to/oxlint` to use an existing official
 binary on another platform.
 
-After changing the TypeScript ledger or generator, update all checked-in
-permutations and then verify them:
+After changing the TypeScript factory or generator, rebuild and verify the
+release output:
 
 ```sh
 pnpm run generate
 pnpm run check
 ```
 
-The normal check builds TypeScript without regenerating JSON. Stale, missing, or
-extra output therefore fails instead of being silently repaired.
+The normal build compiles TypeScript and regenerates all eight JSON files. The
+check removes `dist`, repeats a clean build, requires byte-identical artifacts,
+and creates a package tarball from another absent `dist`. It verifies the tarball
+contains exactly the eight golden-mapped configs and that Git tracks no generated
+JSON or `dist` output.
 
 ## JavaScript-plugin seam
 
@@ -112,15 +120,15 @@ and no Node wrapper participates in linting.
 
 ## Layout
 
-- `packages/shared-config/`: disposable typed loader, generator, and eight JSON
-  permutations;
+- `packages/shared-config/`: disposable typed loader and generator; its ignored
+  `dist/configs` release output contains the eight JSON permutations after build;
 - `fixtures/typescript/`: equivalent package-loader consumer;
 - `fixtures/typescript-extends/`: explicit merge-semantics probe;
 - `fixtures/direct-json/`: hand-authored type-aware baseline;
 - `fixtures/project/`: base and AI behavioral cases;
 - `fixtures/performance-project/`: 12-file timing input;
-- `scripts/verify.mjs`: API, permutation, behavior, equivalence, drift, failure,
-  and dependency checks;
+- `scripts/verify.mjs`: API, permutation, behavior, equivalence,
+  reproducibility, package-content, failure, and dependency checks;
 - `scripts/benchmark.mjs`: reproducible fresh-process measurements.
 
 [findings]: ../../docs/research/2026-08-05-config-packaging-spike.md

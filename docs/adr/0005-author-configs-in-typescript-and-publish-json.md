@@ -40,8 +40,10 @@ validation tooling, and public loader in TypeScript.
 
 The build enumerates the complete supported option space. For v0.1, React, Node,
 and AI are fixed bit positions and produce eight complete root configs. It writes
-each config as deterministic JSON under a stable, namespaced hash. The hash and
-file layout are internal implementation details.
+each config as deterministic JSON under a stable, namespaced hash in the package
+build output. The hash and file layout are internal implementation details. The
+generated JSON is release output, not checked-in source; the TypeScript factory
+and generator remain the source of truth.
 
 The public `getOxlintConfig(options)` API validates and normalizes options, maps
 them to the stable artifact name, and reads that prebuilt JSON. It does not
@@ -60,9 +62,12 @@ variant. The tested Oxlint, `oxlint-tsgolint`, and TypeScript versions stay pinn
 together.
 
 Generated JSON and public documentation derive from the TypeScript rule ledger.
-They are not edited as competing sources of truth. CI verifies a golden option
-mapping, all permutations, generated-file drift, mandatory type-aware mode, and
-effective equivalence between loader and JSON consumption.
+They are not edited as competing sources of truth. A clean package build and its
+prepack step produce all eight files under `dist/configs`, which is included in
+the package tarball. CI verifies the golden option mapping, byte-identical output
+across clean builds, package contents, mandatory type-aware mode, and effective
+equivalence between loader and JSON consumption. It does not compare build
+output with committed JSON.
 
 Future JavaScript-plugin permutations keep their complete `jsPlugins` data in
 the generated config. Plugin specifiers resolve relative to the consumer config,
@@ -137,8 +142,8 @@ and intentional.
 - AI is represented in the same deterministic contract as React and Node.
 - Rule metadata, generated config, documentation, and fixtures can share one data
   model.
-- Static JSON makes effective changes easy to diff and provides a compatibility
-  target if the TypeScript loader changes.
+- Static JSON makes release output inspectable and provides a compatibility target
+  if the TypeScript loader changes.
 - Contributors do not need Rust unless they work on analyzer capabilities.
 
 ### Negative
@@ -147,7 +152,8 @@ and intentional.
   new Node runtime.
 - The TypeScript config loader is experimental, while JavaScript plugins are alpha
   and outside Oxlint's normal stability guarantees. Upgrades need explicit tests.
-- Generated JSON introduces drift checks and release artifact responsibility.
+- Generated JSON introduces reproducible-build checks and release artifact
+  responsibility.
 - Three Boolean dimensions already produce eight files. Each new dimension must
   justify the doubled artifact count.
 - The Node loader performs synchronous local artifact I/O during config loading.
@@ -167,7 +173,8 @@ Before accepting this ADR, complete a packaging spike that proves:
 4. a standalone-binary fixture consumes a generated JSON artifact through a
    documented, non-fragile workflow;
 5. loader and JSON paths resolve to equivalent effective configs;
-6. generated files are deterministic and drift is rejected in CI;
+6. clean builds are deterministic, generated files remain untracked, and CI
+   verifies that the package tarball contains every permutation;
 7. cold-start overhead is measured against a direct JSON config;
 8. the package contains no ESLint runtime and needs no custom wrapper command.
 

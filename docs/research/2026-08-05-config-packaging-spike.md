@@ -77,10 +77,16 @@ import { getOxlintConfig } from "@oxlint-config-setup/spike-config";
 export default getOxlintConfig({ react: true, node: true, ai: true });
 ```
 
-The loader validates options, computes the stable name, parses that checked-in
-artifact, and verifies the mandatory type-aware invariant. It does not merge rule
-objects. Every artifact contains `options.typeAware: true`. `oxlint-tsgolint`
-7.0.2001 is pinned with Oxlint 1.77.0 and TypeScript 7.0.2.
+The loader validates options, computes the stable name, parses the matching file
+from the package's `dist/configs` build output, and verifies the mandatory
+type-aware invariant. It does not merge rule objects. Every artifact contains
+`options.typeAware: true`. `oxlint-tsgolint` 7.0.2001 is pinned with Oxlint 1.77.0
+and TypeScript 7.0.2.
+
+The repository tracks the TypeScript factory and generator, not generated JSON.
+The package build compiles TypeScript and emits all eight configs. `prepack`
+repeats that complete build, so a fresh checkout produces a complete tarball
+without relying on prior workspace state.
 
 `typescript/no-floating-promises` is the representative type-aware spike rule. A
 fixture proves that the type-aware backend reports a floating promise. The final
@@ -103,7 +109,9 @@ remains outside this issue.
 | Behavioral proof | the valid fixture exits 0; the invalid fixture reports `no-console`, `no-debugger`, and `typescript/no-floating-promises`, then exits 1 |
 | Standalone workflow | the verifier stages generated JSON as consumer-local `.oxlintrc.json`, runs from that directory, and invokes standalone Oxlint with an explicit native `tsgolint` path |
 | Equivalent TypeScript and JSON | parsed `--print-config` objects are deep-equal |
-| Deterministic artifacts | the verifier compares every checked-in JSON file byte-for-byte with its build-time config and rejects missing or extra files |
+| Deterministic artifacts | the verifier starts from an absent `dist`, compares all eight files byte-for-byte with the build-time factory, repeats the build, and requires byte-identical output |
+| Package contents | `prepack` rebuilds from an absent `dist`, and the verifier requires the tarball to contain exactly the eight golden-mapped configs |
+| Repository hygiene | generated JSON and `dist` are ignored; the verifier rejects tracked build artifacts |
 | Loader failures | invalid and unknown options, missing files, and corrupt JSON fail with specific messages |
 | No ESLint runtime | manifests and lockfile are checked; no dependency name contains ESLint |
 | No custom lint wrapper | subprocesses execute either the official npm `oxlint` executable or official standalone binary |
@@ -145,7 +153,7 @@ not equivalent to loading the same object as JSON:
   category setting;
 - the explicit rules did merge and remained active.
 
-The checked-in `typescript-extends` fixture keeps this observation reproducible.
+The `typescript-extends` fixture keeps this observation reproducible.
 The supported equivalence fixture uses the loader result as a complete root
 config. This reinforces the product contract: option selection returns a complete
 prebuilt config, not a concern fragment for runtime composition.
@@ -242,10 +250,11 @@ pnpm run benchmark
 | Generated or direct JSON standalone | not required at lint time after native binaries are installed | not required at lint time | official Oxlint and matching `tsgolint` platform binaries |
 
 The pinned pnpm version makes this spike reproducible; it is not a proposed
-production consumer requirement. The package export map, generated files, and
-peer dependency must still be tested under any package managers the production
-package claims to support. Installers must retain `oxlint`'s matching optional
-native binding; omitting optional dependencies breaks the npm executable.
+production consumer requirement. The package export map, generated release
+output, and peer dependency must still be tested under any package managers the
+production package claims to support. Installers must retain `oxlint`'s matching
+optional native binding; omitting optional dependencies breaks the npm
+executable.
 
 ## ADR 0005 changes to review
 
@@ -262,7 +271,8 @@ these parts before acceptance:
 - keep JavaScript-plugin path localization as a separate, tested seam;
 - state that the measured TypeScript fresh-process overhead is acceptable for the
   typed workflow only while JSON remains a supported low-startup alternative;
-- keep generated-output drift and latest-version behavioral checks in CI.
+- keep reproducible clean-build, package-content, and latest-version behavioral
+  checks in CI; do not compare against committed generated JSON.
 
 Sebastian Software maintainers remain the decision owner.
 

@@ -9,7 +9,7 @@ import {
 } from "../dist/options.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const outputDirectory = resolve(packageRoot, "generated");
+const outputDirectory = resolve(packageRoot, "dist/configs");
 
 rmSync(outputDirectory, { recursive: true, force: true });
 mkdirSync(outputDirectory, { recursive: true });
