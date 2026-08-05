@@ -1,0 +1,24 @@
+{
+  "name": "@oxlint-config-setup/packaging-spike",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": "^22.18.0 || >=24.0.0"
+  },
+  "scripts": {
+    "benchmark": "pnpm run setup:standalone && pnpm run build && node scripts/benchmark.mjs",
+    "build": "pnpm --filter @oxlint-config-setup/spike-config run build",
+    "check": "pnpm run setup:standalone && pnpm run build && node scripts/verify.mjs",
+    "generate": "pnpm --filter @oxlint-config-setup/spike-config run generate",
+    "lint:direct-json": "oxlint --config fixtures/direct-json/.oxlintrc.json fixtures/performance-project/src",
+    "lint:typescript": "oxlint --config fixtures/typescript/oxlint.config.ts fixtures/performance-project/src",
+    "setup:standalone": "node scripts/install-standalone.mjs"
+  },
+  "devDependencies": {
+    "@oxlint-config-setup/spike-config": "workspace:*",
+    "oxlint": "1.77.0",
+    "typescript": "7.0.2"
+  }
+}

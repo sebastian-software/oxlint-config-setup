@@ -1,0 +1,10 @@
+{
+  "categories": {
+    "correctness": "off"
+  },
+  "plugins": [],
+  "rules": {
+    "no-console": "warn",
+    "no-debugger": "error"
+  }
+}

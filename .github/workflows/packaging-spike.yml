@@ -1,0 +1,43 @@
+name: Packaging spike
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/packaging-spike.yml"
+      - "spikes/config-packaging/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/packaging-spike.yml"
+      - "spikes/config-packaging/**"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node:
+          - 22.18.0
+          - 24.x
+
+    defaults:
+      run:
+        working-directory: spikes/config-packaging
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+          cache-dependency-path: spikes/config-packaging/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
