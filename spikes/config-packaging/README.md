@@ -46,8 +46,9 @@ pnpm run check
 pnpm run benchmark
 ```
 
-`pnpm run check` downloads the pinned official Oxlint 1.77.0 standalone release
-once, verifies its published SHA-256 digest, and caches it under `.cache/`. Set
+`pnpm run check` downloads the pinned official Oxlint 1.77.0 standalone archive
+once, verifies the cached archive against its published SHA-256 digest on every
+run, and re-extracts the binary under `.cache/`. Set
 `OXLINT_STANDALONE=/absolute/path/to/oxlint` to use an existing official binary
 on another platform.
 
