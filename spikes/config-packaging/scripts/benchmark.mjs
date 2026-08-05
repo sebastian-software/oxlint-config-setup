@@ -1,11 +1,25 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
 const spikeRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packageBinary = join(spikeRoot, "node_modules/.bin/oxlint");
+const requireFromTsgolint = createRequire(
+  import.meta.resolve("oxlint-tsgolint/package.json"),
+);
+const tsgolintPackage = `@oxlint-tsgolint/${process.platform}-${process.arch}`;
+const tsgolintExecutable = `tsgolint${
+  process.platform === "win32" ? ".exe" : ""
+}`;
+const tsgolintBinaryPath = requireFromTsgolint.resolve(
+  `${tsgolintPackage}/${tsgolintExecutable}`,
+);
+const { configFileName } = await import(
+  join(spikeRoot, "packages/shared-config/dist/options.js")
+);
 const standaloneBinaries = new Map([
   ["darwin-arm64", "oxlint-aarch64-apple-darwin"],
   ["darwin-x64", "oxlint-x86_64-apple-darwin"],
@@ -28,7 +42,8 @@ const standaloneBinary = resolve(
 
 const generatedConfig = join(
   spikeRoot,
-  "packages/shared-config/generated/recommended.json",
+  "packages/shared-config/generated",
+  configFileName(),
 );
 const directConfig = join(spikeRoot, "fixtures/direct-json/.oxlintrc.json");
 const runtimeGroups = [
@@ -94,7 +109,11 @@ function measure(scenario, target) {
     {
       cwd: spikeRoot,
       encoding: "utf8",
-      env: { ...process.env, NO_COLOR: "1" },
+      env: {
+        ...process.env,
+        NO_COLOR: "1",
+        OXLINT_TSGOLINT_PATH: tsgolintBinaryPath,
+      },
       stdio: "pipe",
     },
   );

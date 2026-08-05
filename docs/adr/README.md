@@ -22,4 +22,4 @@ are handled by a new ADR that supersedes the previous decision.
 | [0002](0002-prefer-native-rules-over-javascript-plugins.md) | Prefer native rules over JavaScript plugins | Accepted |
 | [0003](0003-use-native-type-aware-linting.md) | Use native type-aware linting for TypeScript | Accepted |
 | [0004](0004-separate-non-code-quality-tools.md) | Separate non-code quality tools | Accepted |
-| [0005](0005-author-configs-in-typescript-and-publish-json.md) | Author configs in TypeScript and publish JSON artifacts | Proposed |
+| [0005](0005-author-configs-in-typescript-and-publish-json.md) | Generate config permutations and select prebuilt JSON | Proposed |

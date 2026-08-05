@@ -1,11 +1,21 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { recommended } from "../dist/index.js";
+import { createConfig } from "../dist/config.js";
+import {
+  allConfigOptions,
+  configFileName,
+} from "../dist/options.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const outputPath = resolve(packageRoot, "generated/recommended.json");
+const outputDirectory = resolve(packageRoot, "generated");
 
-mkdirSync(dirname(outputPath), { recursive: true });
-writeFileSync(outputPath, `${JSON.stringify(recommended, null, 2)}\n`);
+rmSync(outputDirectory, { recursive: true, force: true });
+mkdirSync(outputDirectory, { recursive: true });
+
+for (const options of allConfigOptions()) {
+  const outputPath = resolve(outputDirectory, configFileName(options));
+  const config = createConfig(options);
+  writeFileSync(outputPath, `${JSON.stringify(config, null, 2)}\n`);
+}

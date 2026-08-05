@@ -5,10 +5,13 @@
   "options": {
     "typeAware": true
   },
-  "plugins": ["typescript"],
+  "plugins": [
+    "typescript"
+  ],
   "rules": {
     "no-console": "warn",
     "no-debugger": "error",
-    "typescript/no-floating-promises": "error"
+    "typescript/no-floating-promises": "error",
+    "no-warning-comments": "warn"
   }
 }
