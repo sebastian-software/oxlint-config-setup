@@ -1,27 +1,40 @@
 # Config packaging spike
 
 This is the disposable prototype for [issue #5][issue]. It proves the package
-and consumer paths needed to review ADR 0005; it is not the production package
-or a rule-selection proposal.
+and consumer paths needed to review ADR 0005. It is not the production package
+or a final rule-selection proposal.
 
 ## What it proves
 
-- `@oxlint-config-setup/spike-config` exports a typed `recommended` object.
-- `fixtures/typescript/oxlint.config.ts` imports that object from the package.
-- the TypeScript source deterministically emits `recommended.json` and exposes
-  it through the package export map;
-- `--print-config` is equal for the imported TypeScript profile, staged generated
-  JSON, and the hand-authored direct-JSON baseline;
-- valid and invalid fixtures prove `no-console` and `no-debugger` are active;
+- `@oxlint-config-setup/spike-config` exposes a typed
+  `getOxlintConfig(options)` loader.
+- React, Node, and AI are fixed Boolean option dimensions. The build emits all
+  eight complete JSON permutations under stable internal hashes.
+- the loader validates options, selects one prebuilt file, and does not compose
+  rules at runtime;
+- every permutation sets `options.typeAware: true`; there is no syntax-only
+  standard option, `oxlint-tsgolint` is pinned, and a floating-promise fixture
+  proves the backend is active;
+- AI is a first-class option. A small `no-warning-comments` rule is only a
+  behavioral marker for this spike, not the proposed production AI rule set;
+- `fixtures/typescript/oxlint.config.ts` selects its config through the public
+  loader;
+- `--print-config` is equal for the loader-selected config, staged generated JSON,
+  and the hand-authored direct-JSON baseline;
 - the JSON check invokes the official standalone Oxlint binary directly;
 - package manifests and the lockfile contain no ESLint runtime.
 
-The verifier also records a composition boundary: in Oxlint 1.77.0,
-`extends: [recommended]` keeps the rules but merges root fields such as
-`plugins` and `categories` differently from using the same object as a direct
-root config. The equivalent TypeScript consumer therefore exports
-`defineConfig(recommended)` in this spike. See the [findings note][findings] for
-the ADR consequence.
+The public usage shape matches the predecessor project:
+
+```ts
+import { getOxlintConfig } from "@oxlint-config-setup/spike-config";
+
+export default getOxlintConfig({ react: true, node: true, ai: true });
+```
+
+The hashes and generated file names are internal. The verifier freezes the option
+bit positions and expected hashes so an accidental mapping change fails CI. The
+[findings note][findings] records the evidence and ADR recommendation.
 
 ## Requirements
 
@@ -32,8 +45,9 @@ the ADR consequence.
 Oxlint's npm package declares a wider Node engine range, but its current config
 documentation requires Node 22.18+ or 24+ for TypeScript config files. This
 prototype enforces the narrower user-facing requirement. The standalone JSON
-consumer needs neither Node nor pnpm after it has downloaded the binary and JSON
-artifact.
+consumer also needs the matching native `tsgolint` binary because type-aware mode
+is mandatory. Lint execution needs neither Node nor pnpm after the two native
+binaries and selected JSON artifact have been installed.
 
 ## Run the spike
 
@@ -48,47 +62,65 @@ pnpm run benchmark
 
 `pnpm run check` downloads the pinned official Oxlint 1.77.0 standalone archive
 once, verifies the cached archive against its published SHA-256 digest on every
-run, and re-extracts the binary under `.cache/`. Set
-`OXLINT_STANDALONE=/absolute/path/to/oxlint` to use an existing official binary
-on another platform.
+run, and re-extracts the binary under `.cache/`. It points standalone Oxlint
+directly at the native binary from the pinned `oxlint-tsgolint` platform package.
+Set `OXLINT_STANDALONE=/absolute/path/to/oxlint` to use an existing official
+binary on another platform.
 
-After changing the TypeScript profile, update the checked-in artifact and then
-verify it:
+After changing the TypeScript ledger or generator, update all checked-in
+permutations and then verify them:
 
 ```sh
 pnpm run generate
 pnpm run check
 ```
 
-The normal check builds TypeScript without regenerating JSON, so stale generated
-output fails instead of being silently repaired.
+The normal check builds TypeScript without regenerating JSON. Stale, missing, or
+extra output therefore fails instead of being silently repaired.
+
+## JavaScript-plugin seam
+
+JavaScript plugins will become another build-time concern. Generated permutations
+can carry complete `jsPlugins` entries, but Oxlint resolves each specifier relative
+to the consumer config file. A production loader or setup command must localize
+package-owned plugin paths after selecting the artifact. That localization may
+change paths only. Rule composition remains a build-time operation.
+
+This spike does not ship a custom plugin because custom rules are outside issue
+#5.
 
 ## Standalone consumer workflow
 
-The supported shape is a versioned JSON release asset copied into the consumer
+The supported shape is a versioned selected JSON asset copied into the consumer
 root. The consumer does not extend a path inside a checkout or `node_modules`:
 
 ```sh
 curl -fsSLo .oxlintrc.json "$VERSIONED_CONFIG_ARTIFACT_URL"
 curl -fsSLo oxlint.tar.gz "$MATCHING_OXLINT_RELEASE_ASSET_URL"
+curl -fsSLo tsgolint "$MATCHING_TSGOLINT_BINARY_URL"
 tar -xzf oxlint.tar.gz
-./oxlint --config ./.oxlintrc.json ./src
+chmod +x ./oxlint ./tsgolint
+OXLINT_TSGOLINT_PATH=./tsgolint ./oxlint --config ./.oxlintrc.json ./src
 ```
 
-Publishing the production URLs is intentionally outside this spike. The verifier
-models the workflow by copying `recommended.json` into a fresh temporary consumer
-as `.oxlintrc.json`, then invoking the downloaded binary directly. No config path
-points back into this repository, and no Node wrapper participates in linting.
+Publishing the production URLs and the selection command is outside this spike.
+The verifier models the workflow by copying the no-option permutation into a
+fresh temporary consumer as `.oxlintrc.json`, then invoking the downloaded binary
+from that consumer directory. It supplies the resolved native `tsgolint` binary
+through `OXLINT_TSGOLINT_PATH`. No config path points back into this repository,
+and no Node wrapper participates in linting.
 
 ## Layout
 
-- `packages/shared-config/`: disposable typed package and generated JSON;
-- `fixtures/typescript/`: equivalent package-import consumer;
+- `packages/shared-config/`: disposable typed loader, generator, and eight JSON
+  permutations;
+- `fixtures/typescript/`: equivalent package-loader consumer;
 - `fixtures/typescript-extends/`: explicit merge-semantics probe;
-- `fixtures/direct-json/`: hand-authored baseline;
-- `fixtures/project/`: behavioral cases;
+- `fixtures/direct-json/`: hand-authored type-aware baseline;
+- `fixtures/project/`: base and AI behavioral cases;
 - `fixtures/performance-project/`: 12-file timing input;
-- `scripts/verify.mjs`: behavioral, equivalence, drift, and dependency checks;
+- `scripts/verify.mjs`: API, permutation, behavior, equivalence, drift, failure,
+  and dependency checks;
 - `scripts/benchmark.mjs`: reproducible fresh-process measurements.
 
 [findings]: ../../docs/research/2026-08-05-config-packaging-spike.md

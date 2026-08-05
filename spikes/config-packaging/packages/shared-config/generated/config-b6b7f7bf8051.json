@@ -5,7 +5,11 @@
   "options": {
     "typeAware": true
   },
-  "plugins": ["typescript"],
+  "plugins": [
+    "typescript",
+    "react",
+    "node"
+  ],
   "rules": {
     "no-console": "warn",
     "no-debugger": "error",

@@ -7,23 +7,27 @@
 
 ## Executive result
 
-The core direction in ADR 0005 works: a typed package export loads through
-`oxlint.config.ts`, deterministic JSON works with the standalone binary, the two
-representations can produce the same effective config, and neither path needs an
+The revised direction in ADR 0005 works: an option-based loader selects prebuilt
+JSON through `oxlint.config.ts`, the same JSON works with the standalone binary,
+all supported option permutations are deterministic, and neither path needs an
 ESLint runtime.
 
-**Recommendation: revise ADR 0005 before accepting it.** Keep TypeScript as the
-authoring source and keep both outputs, but make three boundaries explicit:
+**Recommendation: revise ADR 0005 as proposed, then accept it after maintainer
+review.** Keep TypeScript as the authoring and generation language, while making
+these boundaries explicit:
 
 1. The supported TypeScript-config runtime is Node `^22.18.0 || >=24.0.0`, which
    is narrower than the `oxlint` npm package engine range.
-2. Define whether a public profile is a complete root config or an `extends`
-   fragment. Oxlint 1.77.0 merges root fields differently through `extends`, so
-   direct TypeScript and JSON configs are not automatically equivalent for every
-   object shape.
-3. Publish each generated JSON profile as a versioned, first-class release asset.
+2. `getOxlintConfig(options)` selects a fully built root config. It does not
+   compose rules at runtime. React, Node, and AI are fixed dimensions, with AI
+   treated as a first-class product option.
+3. Every standard artifact is type-aware. There is no public `typeAware` switch
+   or syntax-only standard permutation.
+4. Publish each generated JSON profile as a versioned, first-class release asset.
    Standalone users copy it to a consumer-local `.oxlintrc.json`; they do not
    reference a repository-relative or package-internal path.
+5. Keep JavaScript-plugin path localization separate from rule composition.
+   Oxlint resolves plugin specifiers relative to the consumer config.
 
 The measurements do not justify rejecting the TypeScript path. They do show a
 visible fresh-process cost on tiny projects, so the JSON path should remain a
@@ -53,43 +57,54 @@ guide does not currently list.
 
 ## Prototype shape
 
-The disposable package owns one small typed profile:
+The disposable package owns one small build-time config factory. A fixed bitmask
+maps React to bit 0, Node to bit 1, and AI to bit 2. A namespaced SHA-256 digest
+turns each mask into an internal file name. The generator enumerates all eight
+values and writes a complete JSON root config for each.
+
+This preserves the predecessor's option, bitmask, permutation, and loader
+contracts. Two target-specific details change deliberately: this new package uses
+a package-specific SHA-256 namespace with 12 hex characters instead of the
+predecessor's SHA-1 namespace with 8, and it serializes Oxlint data directly
+instead of generating executable ESLint modules or migrating ESLint config. No
+published `oxlint-config-setup` artifact contract exists to preserve yet.
+
+The public package does not expose the factory or artifact names. Its contract is:
 
 ```ts
-export const recommended = defineConfig({
-  categories: { correctness: "off" },
-  plugins: [],
-  rules: {
-    "no-console": "warn",
-    "no-debugger": "error",
-  },
-});
+import { getOxlintConfig } from "@oxlint-config-setup/spike-config";
+
+export default getOxlintConfig({ react: true, node: true, ai: true });
 ```
 
-The equivalent TypeScript consumer imports the package and uses the object as its
-root config:
+The loader validates options, computes the stable name, parses that checked-in
+artifact, and verifies the mandatory type-aware invariant. It does not merge rule
+objects. Every artifact contains `options.typeAware: true`. `oxlint-tsgolint`
+7.0.2001 is pinned with Oxlint 1.77.0 and TypeScript 7.0.2.
 
-```ts
-import { recommended } from "@oxlint-config-setup/spike-config";
-import { defineConfig } from "oxlint";
+`typescript/no-floating-promises` is the representative type-aware spike rule. A
+fixture proves that the type-aware backend reports a floating promise. The final
+type-aware rule selection remains part of issue #9.
 
-export default defineConfig(recommended);
-```
-
-The generator serializes that same object to `generated/recommended.json`. A
-separate direct JSON fixture is hand-authored as the baseline. The profile is
-deliberately small because rule selection remains outside this issue.
+The AI option activates `no-warning-comments` only as an observable spike marker.
+A fixture proves the option changes behavior. The production AI rule selection
+remains outside this issue.
 
 ## Acceptance evidence
 
 | Criterion | Evidence |
 | --- | --- |
-| Import a package profile | the TypeScript consumer resolves the workspace package's public export |
-| `--print-config` proves activation | all three supported variants report the same effective config and explicit `no-console`/`no-debugger` severities |
-| Behavioral proof | the valid fixture exits 0; the invalid fixture reports both rules and exits 1 |
-| Standalone workflow | the verifier stages generated JSON as consumer-local `.oxlintrc.json` and invokes the downloaded release binary directly |
+| Import a package profile | the TypeScript consumer calls the workspace package's public `getOxlintConfig(options)` export |
+| Complete option space | the generator and verifier enumerate all eight React, Node, and AI permutations |
+| Stable internal mapping | golden hashes freeze bit positions, namespace, uniqueness, and determinism |
+| Mandatory type-aware mode | all eight artifacts contain `options.typeAware: true`, and no public option can disable it |
+| AI option behavior | the AI permutation reports the spike marker while the matching non-AI permutation does not |
+| `--print-config` proves activation | all three supported variants report the same effective config and explicit base and type-aware rule severities |
+| Behavioral proof | the valid fixture exits 0; the invalid fixture reports `no-console`, `no-debugger`, and `typescript/no-floating-promises`, then exits 1 |
+| Standalone workflow | the verifier stages generated JSON as consumer-local `.oxlintrc.json`, runs from that directory, and invokes standalone Oxlint with an explicit native `tsgolint` path |
 | Equivalent TypeScript and JSON | parsed `--print-config` objects are deep-equal |
-| Deterministic artifact | the verifier compares checked-in JSON byte-for-byte with serialization of the built TypeScript export |
+| Deterministic artifacts | the verifier compares every checked-in JSON file byte-for-byte with its build-time config and rejects missing or extra files |
+| Loader failures | invalid and unknown options, missing files, and corrupt JSON fail with specific messages |
 | No ESLint runtime | manifests and lockfile are checked; no dependency name contains ESLint |
 | No custom lint wrapper | subprocesses execute either the official npm `oxlint` executable or official standalone binary |
 
@@ -100,15 +115,18 @@ rather than only documenting it.
 ## Effective configuration
 
 Oxlint 1.77.0 normalizes `error` to `deny`, `off` to `allow`, and includes default
-settings in `--print-config`. After normalization, each supported variant reports:
+settings in `--print-config`. For the no-option permutation, each consumption path
+reports the same core values:
 
 ```json
 {
-  "plugins": [],
+  "plugins": ["typescript"],
   "categories": { "correctness": "allow" },
+  "options": { "typeAware": true },
   "rules": {
     "no-console": "warn",
-    "no-debugger": "deny"
+    "no-debugger": "deny",
+    "typescript/no-floating-promises": "deny"
   }
 }
 ```
@@ -128,10 +146,9 @@ not equivalent to loading the same object as JSON:
 - the explicit rules did merge and remained active.
 
 The checked-in `typescript-extends` fixture keeps this observation reproducible.
-The supported equivalence fixture uses the package object directly. Before a
-production package offers composable concern fragments, ADR 0005 or its packaging
-RFC should specify which fields fragments may own and how generated root configs
-normalize those merge semantics.
+The supported equivalence fixture uses the loader result as a complete root
+config. This reinforces the product contract: option selection returns a complete
+prebuilt config, not a concern fragment for runtime composition.
 
 ## Standalone JSON finding
 
@@ -144,12 +161,25 @@ A consumer-local copy avoids that coupling:
 
 1. download a versioned config asset as `.oxlintrc.json`;
 2. download the matching official standalone Oxlint release;
-3. invoke `./oxlint --config ./.oxlintrc.json ./src`.
+3. install the matching native `tsgolint` binary;
+4. invoke Oxlint with `OXLINT_TSGOLINT_PATH=./tsgolint`.
 
-The spike verifies steps 2 and 3 with the official release asset and models step
-1 from the generated artifact. Production publishing automation remains a
-non-goal, but ADR 0005 needs to commit to a stable asset location if standalone
-consumers are part of the package contract.
+The spike verifies the standalone binary with an explicit native backend path and
+models step 1 from the selected no-option artifact. Production publishing
+automation remains a non-goal, but ADR 0005 needs to commit to a stable selector
+or asset location if standalone consumers are part of the package contract.
+Internal hashes are not a consumer API.
+
+## JavaScript-plugin seam
+
+Generated root configs can include complete `jsPlugins` entries when the planned
+plugins arrive. Oxlint resolves plugin specifiers relative to the config file,
+which differs between a package loader and a copied consumer-local JSON file.
+
+The production loader or setup command must therefore localize package-owned
+plugin paths after selecting an artifact. This is path localization only. Rule
+selection and plugin enablement remain prebuilt. A package-install conformance
+fixture should cover this seam when JavaScript plugins enter scope.
 
 ## Timing method
 
@@ -171,27 +201,29 @@ the larger difference between the Node package executable and standalone binary.
 
 | Runtime | Variant | Median | p95 | Median vs matching direct JSON |
 | --- | --- | ---: | ---: | ---: |
-| Node package | TypeScript package import | 148.41 ms | 246.61 ms | +36.6% |
-| Node package | Generated JSON | 108.03 ms | 178.25 ms | -0.6% |
-| Node package | Direct JSON | 108.63 ms | 259.78 ms | baseline |
-| Standalone | Generated JSON | 6.64 ms | 8.99 ms | -1.9% |
-| Standalone | Direct JSON | 6.77 ms | 10.01 ms | baseline |
+| Node package | TypeScript package import | 290.01 ms | 299.65 ms | +21.8% |
+| Node package | Generated JSON | 237.91 ms | 256.00 ms | -0.1% |
+| Node package | Direct JSON | 238.12 ms | 246.51 ms | baseline |
+| Standalone | Generated JSON | 139.50 ms | 197.34 ms | -0.7% |
+| Standalone | Direct JSON | 140.53 ms | 206.17 ms | baseline |
 
 ### Fresh process, 12-file project
 
 | Runtime | Variant | Median | p95 | Median vs matching direct JSON |
 | --- | --- | ---: | ---: | ---: |
-| Node package | TypeScript package import | 149.12 ms | 167.66 ms | +36.9% |
-| Node package | Generated JSON | 108.14 ms | 111.72 ms | -0.7% |
-| Node package | Direct JSON | 108.94 ms | 112.29 ms | baseline |
-| Standalone | Generated JSON | 6.81 ms | 8.57 ms | -1.8% |
-| Standalone | Direct JSON | 6.94 ms | 7.47 ms | baseline |
+| Node package | TypeScript package import | 295.60 ms | 339.33 ms | +21.7% |
+| Node package | Generated JSON | 243.64 ms | 353.20 ms | +0.3% |
+| Node package | Direct JSON | 242.95 ms | 360.80 ms | baseline |
+| Standalone | Generated JSON | 231.10 ms | 287.55 ms | +2.8% |
+| Standalone | Direct JSON | 224.89 ms | 300.88 ms | baseline |
 
 Generated and direct JSON are within ordinary run-to-run noise. On this host,
-loading the imported TypeScript config adds about 40 ms over direct JSON through
-the same npm executable. The npm executable itself accounts for most of the gap
-to the standalone workflow. The one-file p95 values are noisy; median values are
-the useful comparison for this small sample.
+loading the imported TypeScript config and selecting its prebuilt artifact adds
+about 52 ms over direct JSON through the same npm executable. Mandatory
+type-aware mode raises every variant because each process starts the type-aware
+backend. It also narrows the npm-versus-standalone gap as the project grows. The
+p95 values are noisy; median values are the useful comparison for this small
+sample.
 
 Reproduce with:
 
@@ -207,7 +239,7 @@ pnpm run benchmark
 | --- | --- | --- | --- |
 | TypeScript package import | `^22.18.0 || >=24.0.0` | pnpm 11.20.0 in the spike; consumers may use another manager that installs package exports correctly | npm `oxlint` package |
 | Generated JSON through npm | npm package engine currently allows `^20.19.0 || >=22.12.0` | any compatible installer | npm `oxlint` package |
-| Generated or direct JSON standalone | not required at lint time | not required at lint time | official platform binary |
+| Generated or direct JSON standalone | not required at lint time after native binaries are installed | not required at lint time | official Oxlint and matching `tsgolint` platform binaries |
 
 The pinned pnpm version makes this spike reproducible; it is not a proposed
 production consumer requirement. The package export map, generated files, and
@@ -222,11 +254,12 @@ these parts before acceptance:
 
 - replace “sufficiently new Node runtime” with the tested explicit range and
   separate it from the npm package's broader engine range;
-- define complete root profiles separately from composable fragments, including
-  how `plugins`, `categories`, overrides, and other root fields become equivalent
-  JSON;
+- freeze the public React, Node, and AI option contract and keep hashes internal;
+- generate complete root configs and prohibit runtime rule composition;
+- make type-aware mode an invariant rather than a public switch;
 - replace the unresolved “relative-path or copy workflow” with a versioned
   consumer-local JSON asset contract;
+- keep JavaScript-plugin path localization as a separate, tested seam;
 - state that the measured TypeScript fresh-process overhead is acceptable for the
   typed workflow only while JSON remains a supported low-startup alternative;
 - keep generated-output drift and latest-version behavioral checks in CI.

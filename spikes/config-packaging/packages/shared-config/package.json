@@ -7,8 +7,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./recommended.json": "./generated/recommended.json"
+    }
   },
   "files": [
     "dist",
@@ -18,7 +17,11 @@
     "build": "tsc -p tsconfig.json",
     "generate": "pnpm run build && node scripts/generate.mjs"
   },
+  "devDependencies": {
+    "@types/node": "24.13.3"
+  },
   "peerDependencies": {
-    "oxlint": "1.77.0"
+    "oxlint": "1.77.0",
+    "oxlint-tsgolint": "7.0.2001"
   }
 }

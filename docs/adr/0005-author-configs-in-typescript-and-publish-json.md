@@ -1,4 +1,4 @@
-# 0005. Author configs in TypeScript and publish JSON artifacts
+# 0005. Generate config permutations and select prebuilt JSON
 
 - **Status:** Proposed
 - **Date:** 2026-08-04
@@ -6,20 +6,28 @@
 
 ## Context
 
-The product composes rule selections, profiles, overrides, plugin declarations,
-and package exports. It does not implement the linter engine: Oxlint performs file
-discovery, parsing, native linting, configuration, and reporting in Rust, while
-its type-aware backend uses TypeScript Go.
+The product turns a small public option set into a complete Oxlint root config.
+The first option dimensions are React, Node, and AI-assisted development. AI is
+a product differentiator, not an internal profile detail. Type-aware linting is
+a required property of every supported standard config.
+
+The project does not implement the linter engine. Oxlint performs file discovery,
+parsing, native linting, configuration, and reporting in Rust, while its
+type-aware backend uses TypeScript Go.
 
 Oxlint officially supports JSON and TypeScript configuration. Its documentation
-recommends `oxlint.config.ts` when consumers import shared configuration objects
-from a package. Package imports are not supported by the JSON `extends` format.
+recommends `oxlint.config.ts` when consumers import shared configuration from a
+package. Package imports are not supported by the JSON `extends` format.
 
 TypeScript configuration is currently experimental. It requires the Node-based
 Oxlint package and a Node version that can execute TypeScript. Standalone Oxlint
-binary users must use JSON instead. The project therefore needs a convenient
-package API without making one experimental loader the only representation of its
+binary users must use JSON instead. The package therefore needs an option-based
+API without making one experimental loader the only representation of its
 configuration.
+
+The predecessor project established a useful contract: enumerate every supported
+option combination at build time, give each result a stable internal name, and
+let the public loader select one prebuilt config.
 
 Using Rust for the preset itself would require a separate generator, CLI, native
 binding, or Oxlint contribution even though the output remains configuration
@@ -27,18 +35,45 @@ data. It would not make native rules faster after Oxlint has loaded the config.
 
 ## Decision
 
-Author the rule ledger, profile composition, validation tooling, and public shared
-config exports in TypeScript.
+Author the rule ledger, build-time config assembly, artifact generator,
+validation tooling, and public loader in TypeScript.
 
-The package exposes side-effect-free typed config objects for consumers using
-`oxlint.config.ts`. Its build also emits deterministic JSON snapshots for schema
-validation, review, standalone-binary experiments, and consumers that prefer a
-static artifact.
+The build enumerates the complete supported option space. For v0.1, React, Node,
+and AI are fixed bit positions and produce eight complete root configs. It writes
+each config as deterministic JSON under a stable, namespaced hash. The hash and
+file layout are internal implementation details.
 
-The generated JSON and public documentation derive from the TypeScript rule
-ledger; they are not edited as competing sources of truth. CI verifies that
-generated artifacts are current and that TypeScript and JSON representations
-produce equivalent effective configurations for supported profiles.
+The public `getOxlintConfig(options)` API validates and normalizes options, maps
+them to the stable artifact name, and reads that prebuilt JSON. It does not
+compose rule sets or migrate config at runtime. Consumers use the result from
+`oxlint.config.ts`:
+
+```ts
+import { getOxlintConfig } from "oxlint-config-setup";
+
+export default getOxlintConfig({ react: true, ai: true });
+```
+
+Every standard permutation sets `options.typeAware` to `true`. Type-aware is not
+a public switch, and the package does not generate a syntax-only standard
+variant. The tested Oxlint, `oxlint-tsgolint`, and TypeScript versions stay pinned
+together.
+
+Generated JSON and public documentation derive from the TypeScript rule ledger.
+They are not edited as competing sources of truth. CI verifies a golden option
+mapping, all permutations, generated-file drift, mandatory type-aware mode, and
+effective equivalence between loader and JSON consumption.
+
+Future JavaScript-plugin permutations keep their complete `jsPlugins` data in
+the generated config. Plugin specifiers resolve relative to the consumer config,
+so package-path localization is a separate loader or setup concern. That step may
+localize paths after selection, but it must not compose rules. The spike records
+this seam without shipping a custom plugin.
+
+Standalone-binary users copy the selected, versioned JSON artifact into their
+project and install the matching native `tsgolint` backend. A future setup command
+may perform those steps and any plugin-path localization without changing the
+option-to-artifact contract.
 
 No custom Node wrapper sits in the normal lint command. Consumers still invoke
 Oxlint directly.
@@ -51,12 +86,16 @@ shipped as a private fork or bundled native binary.
 
 ## Decision drivers
 
+- The public option API preserves the proven predecessor contract.
+- Prebuilt permutations remove runtime rule composition and make output
+  deterministic.
+- AI remains a visible, testable product option.
+- Mandatory type-aware mode prevents accidentally selecting a reduced standard
+  config.
 - Shared package imports follow Oxlint's documented TypeScript configuration path.
-- Rule and profile data benefit from types, composition, and inexpensive tests.
-- Contributors can iterate without a native compilation and distribution layer.
-- The lint runtime remains Oxlint's Rust binary regardless of authoring language.
 - Generated JSON preserves inspectability and an escape path from the experimental
   TypeScript loader.
+- The lint runtime remains Oxlint's Rust binary regardless of authoring language.
 - Rust effort stays focused on actual analysis capabilities where it creates user
   value.
 
@@ -65,37 +104,39 @@ shipped as a private fork or bundled native binary.
 ### Hand-author JSON only
 
 JSON is portable and works with the standalone Oxlint binary. It does not support
-package imports through `extends`, offers weaker composition, and makes a
+package imports through `extends`, offers weaker authoring types, and makes a
 machine-readable rule ledger plus generated documentation more cumbersome.
 
-### Publish only TypeScript config objects
+### Compose TypeScript config objects at runtime
 
-This is the smallest shared-package implementation and matches Oxlint's documented
-package-import path. It makes the experimental Node loader a hard requirement and
-provides no static artifact for standalone-binary validation.
+This is a small shared-package implementation and matches Oxlint's documented
+package-import path. It makes runtime merge behavior part of the public contract,
+can diverge from standalone JSON, and does not preserve the predecessor's
+deterministic option selection.
 
 ### Build the preset and generator in Rust
 
 Rust matches Oxlint's implementation language and would be appropriate for native
-analysis. For configuration composition it adds a toolchain, binary packaging,
+analysis. For configuration generation it adds a toolchain, binary packaging,
 cross-platform release work, and a language boundary without removing the need to
 publish Oxlint-shaped data.
 
-### Author in TypeScript and generate JSON
+### Generate every supported JSON permutation
 
-This combines the best-supported shared-package developer experience with a
-portable, reviewable representation. It adds generation discipline but keeps that
-complexity at build time.
+This combines an option-based package API with portable, reviewable root configs.
+It adds generation discipline and grows exponentially with option dimensions, but
+keeps rule composition at build time. The option set must therefore stay small
+and intentional.
 
 ## Consequences
 
 ### Positive
 
-- Profiles can be imported, composed, and type-checked using Oxlint's public
-  `defineConfig` contract.
+- Consumers select complete, type-checked configs through one stable API.
+- Every supported standard config is type-aware.
+- AI is represented in the same deterministic contract as React and Node.
 - Rule metadata, generated config, documentation, and fixtures can share one data
   model.
-- Normal lint execution remains dominated by Oxlint rather than project tooling.
 - Static JSON makes effective changes easy to diff and provides a compatibility
   target if the TypeScript loader changes.
 - Contributors do not need Rust unless they work on analyzer capabilities.
@@ -105,35 +146,41 @@ complexity at build time.
 - TypeScript shared configs require the Node-based Oxlint package and a sufficiently
   new Node runtime.
 - The TypeScript config loader is experimental, while JavaScript plugins are alpha
-  and outside Oxlint's normal stability guarantees; upgrades need explicit tests.
-- Generated JSON introduces a drift check and release artifact responsibility.
-- Supporting standalone-binary consumers may require an explicit relative-path or
-  copy workflow until Oxlint supports package imports from JSON configuration.
-- A later native feature may involve a separate upstream Rust contribution and
-  release timeline.
+  and outside Oxlint's normal stability guarantees. Upgrades need explicit tests.
+- Generated JSON introduces drift checks and release artifact responsibility.
+- Three Boolean dimensions already produce eight files. Each new dimension must
+  justify the doubled artifact count.
+- The Node loader performs synchronous local artifact I/O during config loading.
+- Standalone support needs a setup or release-asset copy workflow because JSON
+  cannot import a package config.
 
 ## Validation and review triggers
 
 Before accepting this ADR, complete a packaging spike that proves:
 
-1. a fixture imports the package from `oxlint.config.ts` and passes
+1. a fixture calls `getOxlintConfig(options)` from `oxlint.config.ts` and passes
    `oxlint --print-config` plus behavioral lint cases;
-2. a standalone-binary fixture consumes a generated JSON artifact through a
+2. the build emits exactly all eight React, Node, and AI permutations through a
+   stable option-to-hash mapping;
+3. every generated config enables type-aware mode and the package includes the
+   matching `oxlint-tsgolint` runtime contract;
+4. a standalone-binary fixture consumes a generated JSON artifact through a
    documented, non-fragile workflow;
-3. TypeScript and JSON exports resolve to equivalent profiles;
-4. generated files are deterministic and drift is rejected in CI;
-5. cold-start overhead is measured against a direct JSON config;
-6. the package contains no ESLint runtime and needs no custom wrapper command.
+5. loader and JSON paths resolve to equivalent effective configs;
+6. generated files are deterministic and drift is rejected in CI;
+7. cold-start overhead is measured against a direct JSON config;
+8. the package contains no ESLint runtime and needs no custom wrapper command.
 
 The completed [packaging spike findings][packaging-findings] support the core
-direction but recommend revising the Node support range, public composition
-contract, and versioned standalone JSON delivery path before acceptance. This
-ADR remains proposed while maintainers review that evidence.
+direction and the option-to-prebuilt-artifact contract. They also recommend
+retaining the explicit Node support range and a versioned standalone JSON
+delivery path before acceptance. This ADR remains proposed while maintainers
+review that evidence.
 
 Review this decision if Oxlint stabilizes or removes TypeScript configs, supports
 package imports in JSON, exposes a stable native plugin SDK, or measurements show
 configuration loading to be a material part of lint time. A need for a new native
-rule triggers an upstream feasibility discussion; it does not by itself move the
+rule triggers an upstream feasibility discussion. It does not by itself move the
 configuration package to Rust.
 
 ## References
@@ -141,6 +188,7 @@ configuration package to Rust.
 - [Oxlint configuration][configuration]
 - [Oxlint shared config guidance][shared-configs]
 - [Oxlint type-aware architecture][type-aware]
+- [Oxlint JavaScript plugins][js-plugins]
 - [Oxc guidance for adding linter rules][adding-rules]
 - [Packaging spike][packaging-spike]
 - [Packaging spike findings][packaging-findings]
@@ -152,6 +200,7 @@ configuration package to Rust.
 [configuration]: https://oxc.rs/docs/guide/usage/linter/config.html
 [shared-configs]: https://oxc.rs/docs/guide/usage/linter/config.html#extend-shared-configs
 [type-aware]: https://oxc.rs/docs/guide/usage/linter/type-aware.html
+[js-plugins]: https://oxc.rs/docs/guide/usage/linter/js-plugins.html
 [adding-rules]: https://oxc.rs/docs/contribute/linter/adding-rules.html
 [packaging-spike]: https://github.com/sebastian-software/oxlint-config-setup/issues/5
 [packaging-findings]: ../research/2026-08-05-config-packaging-spike.md
