@@ -42,7 +42,7 @@ const standaloneBinary = resolve(
 
 const generatedConfig = join(
   spikeRoot,
-  "packages/shared-config/generated",
+  "packages/shared-config/dist/configs",
   configFileName(),
 );
 const directConfig = join(spikeRoot, "fixtures/direct-json/.oxlintrc.json");

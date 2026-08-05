@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
   cpSync,
-  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
@@ -14,8 +14,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const spikeRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const repositoryRoot = resolve(spikeRoot, "../..");
 const packageRoot = join(spikeRoot, "packages/shared-config");
-const generatedDirectory = join(packageRoot, "generated");
+const buildArtifactDirectory = join(packageRoot, "dist/configs");
 const directConfigPath = join(spikeRoot, "fixtures/direct-json/.oxlintrc.json");
 const typescriptConfigPath = join(
   spikeRoot,
@@ -157,6 +158,22 @@ function assertNoEslintRuntime() {
 
 assertNoEslintRuntime();
 
+const trackedGeneratedArtifacts = execFileSync(
+  "git",
+  [
+    "ls-files",
+    "--",
+    "spikes/config-packaging/packages/shared-config/generated/*.json",
+    "spikes/config-packaging/packages/shared-config/dist/**",
+  ],
+  { cwd: repositoryRoot, encoding: "utf8" },
+).trim();
+assert.equal(
+  trackedGeneratedArtifacts,
+  "",
+  "config build output must be ignored, not tracked source",
+);
+
 const packageApi = await import("@oxlint-config-setup/spike-config");
 const { createConfig, AI_SPIKE_RULE } = await import(
   join(packageRoot, "dist/config.js")
@@ -209,7 +226,7 @@ assert.deepEqual(
 );
 assert.equal(new Set(artifactNames).size, 8, "config hashes must be unique");
 assert.deepEqual(
-  readdirSync(generatedDirectory)
+  readdirSync(buildArtifactDirectory)
     .filter((name) => name.endsWith(".json"))
     .toSorted(),
   artifactNames.toSorted(),
@@ -217,13 +234,13 @@ assert.deepEqual(
 );
 
 for (const [index, options] of permutations.entries()) {
-  const artifactPath = join(generatedDirectory, artifactNames[index]);
+  const artifactPath = join(buildArtifactDirectory, artifactNames[index]);
   const artifactText = readFileSync(artifactPath, "utf8");
   const artifact = JSON.parse(artifactText);
   assert.equal(
     artifactText,
     `${JSON.stringify(createConfig(options), null, 2)}\n`,
-    `${artifactNames[index]} has drifted from its build-time config`,
+    `${artifactNames[index]} does not match its build-time config`,
   );
   assert.deepEqual(
     packageApi.getOxlintConfig(options),
@@ -258,6 +275,69 @@ for (const [index, options] of permutations.entries()) {
   );
 }
 
+function cleanBuild() {
+  rmSync(join(packageRoot, "dist"), { recursive: true });
+  execFileSync(
+    "pnpm",
+    ["--filter", "@oxlint-config-setup/spike-config", "run", "build"],
+    {
+      cwd: spikeRoot,
+      env: { ...process.env, CI: "true" },
+      stdio: "pipe",
+    },
+  );
+  assert.deepEqual(
+    readdirSync(buildArtifactDirectory).toSorted(),
+    artifactNames.toSorted(),
+    "a clean build must emit exactly the eight config artifacts",
+  );
+  return Object.fromEntries(
+    artifactNames.map((name) => [
+      name,
+      readFileSync(join(buildArtifactDirectory, name), "utf8"),
+    ]),
+  );
+}
+
+const firstBuild = cleanBuild();
+const secondBuild = cleanBuild();
+assert.deepEqual(
+  secondBuild,
+  firstBuild,
+  "two clean builds must emit byte-identical config artifacts",
+);
+
+const packDirectory = mkdtempSync(join(tmpdir(), "oxlint-config-pack-"));
+rmSync(join(packageRoot, "dist"), { recursive: true });
+const packOutput = execFileSync(
+  "pnpm",
+  ["pack", "--pack-destination", packDirectory, "--json"],
+  {
+    cwd: packageRoot,
+    encoding: "utf8",
+    env: { ...process.env, CI: "true" },
+  },
+);
+const packResult = JSON.parse(packOutput);
+const tarballPath = resolve(
+  packDirectory,
+  Array.isArray(packResult) ? packResult[0].filename : packResult.filename,
+);
+const packedConfigEntries = execFileSync("tar", ["-tzf", tarballPath], {
+  encoding: "utf8",
+})
+  .trim()
+  .split("\n")
+  .filter((entry) => entry.startsWith("package/dist/configs/"))
+  .toSorted();
+assert.deepEqual(
+  packedConfigEntries,
+  artifactNames
+    .map((name) => `package/dist/configs/${name}`)
+    .toSorted(),
+  "a fresh package tarball must contain all eight config artifacts",
+);
+
 assert.deepEqual(packageApi.getOxlintConfig(), packageApi.getOxlintConfig({}));
 assert.throws(
   () => packageApi.getOxlintConfig({ ai: "yes" }),
@@ -273,10 +353,14 @@ async function assertArtifactFailure(kind, source, expectedMessage) {
   cpSync(join(packageRoot, "dist"), join(copiedPackage, "dist"), {
     recursive: true,
   });
+  const copiedArtifact = join(
+    copiedPackage,
+    "dist/configs",
+    artifactNames[0],
+  );
+  rmSync(copiedArtifact);
   if (source !== undefined) {
-    const copiedGenerated = join(copiedPackage, "generated");
-    mkdirSync(copiedGenerated);
-    writeFileSync(join(copiedGenerated, artifactNames[0]), source);
+    writeFileSync(copiedArtifact, source);
   }
   const copiedApi = await import(
     `${pathToFileURL(join(copiedPackage, "dist/index.js")).href}?case=${kind}`
@@ -300,8 +384,8 @@ await assertArtifactFailure(
   /violates the mandatory type-aware contract/u,
 );
 
-const generatedConfigPath = join(generatedDirectory, artifactNames[0]);
-const aiConfigPath = join(generatedDirectory, artifactNames[4]);
+const generatedConfigPath = join(buildArtifactDirectory, artifactNames[0]);
+const aiConfigPath = join(buildArtifactDirectory, artifactNames[4]);
 
 const nativeBinary = nativeBinaryPath();
 const stagedConsumer = mkdtempSync(join(tmpdir(), "oxlint-json-consumer-"));

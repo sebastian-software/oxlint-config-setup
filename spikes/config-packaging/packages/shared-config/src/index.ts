@@ -13,7 +13,7 @@ export type { ConfigOptions } from "./options.js";
 export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
   const normalized = normalizeConfigOptions(options);
   const fileName = configFileName(normalized);
-  const artifactUrl = new URL(`../generated/${fileName}`, import.meta.url);
+  const artifactUrl = new URL(`./configs/${fileName}`, import.meta.url);
 
   let source: string;
   try {

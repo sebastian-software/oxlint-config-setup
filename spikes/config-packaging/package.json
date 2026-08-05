@@ -11,7 +11,7 @@
     "benchmark": "pnpm run setup:standalone && pnpm run build && node scripts/benchmark.mjs",
     "build": "pnpm --filter @oxlint-config-setup/spike-config run build",
     "check": "pnpm run setup:standalone && pnpm run build && node scripts/verify.mjs",
-    "generate": "pnpm --filter @oxlint-config-setup/spike-config run generate",
+    "generate": "pnpm run build",
     "lint:direct-json": "oxlint --config fixtures/direct-json/.oxlintrc.json fixtures/performance-project/src",
     "lint:typescript": "oxlint --config fixtures/typescript/oxlint.config.ts fixtures/performance-project/src",
     "setup:standalone": "node scripts/install-standalone.mjs"

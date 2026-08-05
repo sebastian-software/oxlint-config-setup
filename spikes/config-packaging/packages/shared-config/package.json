@@ -10,12 +10,12 @@
     }
   },
   "files": [
-    "dist",
-    "generated"
+    "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "generate": "pnpm run build && node scripts/generate.mjs"
+    "build": "tsc -p tsconfig.json && node scripts/generate.mjs",
+    "generate": "node scripts/generate.mjs",
+    "prepack": "pnpm run build"
   },
   "devDependencies": {
     "@types/node": "24.13.3"
