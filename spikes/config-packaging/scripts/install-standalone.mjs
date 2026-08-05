@@ -3,6 +3,7 @@ import {
   accessSync,
   chmodSync,
   mkdirSync,
+  readFileSync,
   writeFileSync,
   constants,
 } from "node:fs";
@@ -76,35 +77,35 @@ if (!asset) {
 
 const cacheRoot = join(spikeRoot, ".cache/standalone");
 const binaryPath = join(cacheRoot, asset.binary);
-
-try {
-  accessSync(binaryPath, constants.X_OK);
-  const versionResult = spawnSync(binaryPath, ["--version"], {
-    encoding: "utf8",
-  });
-  if (versionResult.status === 0 && versionResult.stdout.includes(version)) {
-    console.log(binaryPath);
-    process.exit(0);
-  }
-} catch {
-  // Download the pinned release below.
-}
-
 mkdirSync(cacheRoot, { recursive: true });
-const response = await fetch(`${releaseBase}/${asset.archive}`);
-if (!response.ok) {
-  throw new Error(`Download failed with HTTP ${response.status}`);
+const archivePath = join(cacheRoot, asset.archive);
+
+async function downloadArchive() {
+  const response = await fetch(`${releaseBase}/${asset.archive}`);
+  if (!response.ok) {
+    throw new Error(`Download failed with HTTP ${response.status}`);
+  }
+  return new Uint8Array(await response.arrayBuffer());
 }
 
-const archiveBytes = new Uint8Array(await response.arrayBuffer());
-const actualDigest = createHash("sha256").update(archiveBytes).digest("hex");
+let archiveBytes;
+try {
+  archiveBytes = readFileSync(archivePath);
+} catch {
+  archiveBytes = await downloadArchive();
+}
+
+let actualDigest = createHash("sha256").update(archiveBytes).digest("hex");
+if (actualDigest !== asset.sha256) {
+  archiveBytes = await downloadArchive();
+  actualDigest = createHash("sha256").update(archiveBytes).digest("hex");
+}
 if (actualDigest !== asset.sha256) {
   throw new Error(
     `Checksum mismatch for ${asset.archive}: expected ${asset.sha256}, got ${actualDigest}`,
   );
 }
 
-const archivePath = join(cacheRoot, asset.archive);
 writeFileSync(archivePath, archiveBytes);
 const extracted = spawnSync("tar", ["-xzf", archivePath, "-C", cacheRoot], {
   encoding: "utf8",
@@ -113,4 +114,13 @@ if (extracted.status !== 0) {
   throw new Error(`Could not extract ${asset.archive}: ${extracted.stderr}`);
 }
 chmodSync(binaryPath, 0o755);
+const installedVersion = spawnSync(binaryPath, ["--version"], {
+  encoding: "utf8",
+});
+if (
+  installedVersion.status !== 0 ||
+  installedVersion.stdout.trim() !== `Version: ${version}`
+) {
+  throw new Error(`Extracted binary is not Oxlint ${version}`);
+}
 console.log(binaryPath);
