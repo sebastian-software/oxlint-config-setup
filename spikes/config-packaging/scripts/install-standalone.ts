@@ -1,15 +1,21 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   accessSync,
   chmodSync,
+  constants,
   mkdirSync,
   readFileSync,
   writeFileSync,
-  constants,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+
+interface StandaloneAsset {
+  archive: string;
+  binary: string;
+  sha256: string;
+}
 
 const version = "1.77.0";
 const releaseTag = `apps_v${version}`;
@@ -32,7 +38,7 @@ if (process.env.OXLINT_STANDALONE) {
   process.exit(0);
 }
 
-const assets = new Map([
+const assets = new Map<string, StandaloneAsset>([
   [
     "darwin-arm64",
     {
@@ -74,35 +80,39 @@ if (!asset) {
       "Set OXLINT_STANDALONE to an official Oxlint 1.77.0 binary instead.",
   );
 }
+const selectedAsset: StandaloneAsset = asset;
 
 const cacheRoot = join(spikeRoot, ".cache/standalone");
-const binaryPath = join(cacheRoot, asset.binary);
+const binaryPath = join(cacheRoot, selectedAsset.binary);
 mkdirSync(cacheRoot, { recursive: true });
-const archivePath = join(cacheRoot, asset.archive);
+const archivePath = join(cacheRoot, selectedAsset.archive);
 
-async function downloadArchive() {
-  const response = await fetch(`${releaseBase}/${asset.archive}`);
+async function downloadArchive(): Promise<Uint8Array> {
+  const response = await fetch(`${releaseBase}/${selectedAsset.archive}`);
   if (!response.ok) {
     throw new Error(`Download failed with HTTP ${response.status}`);
   }
   return new Uint8Array(await response.arrayBuffer());
 }
 
-let archiveBytes;
+let archiveBytes: Uint8Array;
 try {
   archiveBytes = readFileSync(archivePath);
-} catch {
+} catch (error: unknown) {
+  if (!(error instanceof Error)) {
+    throw error;
+  }
   archiveBytes = await downloadArchive();
 }
 
 let actualDigest = createHash("sha256").update(archiveBytes).digest("hex");
-if (actualDigest !== asset.sha256) {
+if (actualDigest !== selectedAsset.sha256) {
   archiveBytes = await downloadArchive();
   actualDigest = createHash("sha256").update(archiveBytes).digest("hex");
 }
-if (actualDigest !== asset.sha256) {
+if (actualDigest !== selectedAsset.sha256) {
   throw new Error(
-    `Checksum mismatch for ${asset.archive}: expected ${asset.sha256}, got ${actualDigest}`,
+    `Checksum mismatch for ${selectedAsset.archive}: expected ${selectedAsset.sha256}, got ${actualDigest}`,
   );
 }
 
@@ -111,7 +121,9 @@ const extracted = spawnSync("tar", ["-xzf", archivePath, "-C", cacheRoot], {
   encoding: "utf8",
 });
 if (extracted.status !== 0) {
-  throw new Error(`Could not extract ${asset.archive}: ${extracted.stderr}`);
+  throw new Error(
+    `Could not extract ${selectedAsset.archive}: ${extracted.stderr}`,
+  );
 }
 chmodSync(binaryPath, 0o755);
 const installedVersion = spawnSync(binaryPath, ["--version"], {

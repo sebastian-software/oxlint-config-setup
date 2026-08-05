@@ -22,7 +22,11 @@ or a final rule-selection proposal.
 - `--print-config` is equal for the loader-selected config, staged generated JSON,
   and the hand-authored direct-JSON baseline;
 - the JSON check invokes the official standalone Oxlint binary directly;
-- package manifests and the lockfile contain no ESLint runtime.
+- package manifests and the lockfile contain no ESLint runtime;
+- all repository-owned scripts are TypeScript, execute through pinned `tsx`, and
+  pass a separate `tsc --noEmit` check;
+- pinned `tsdown` builds the publishable ESM library and declarations before the
+  source-based generator writes JSON.
 
 The public usage shape matches the predecessor project:
 
@@ -39,11 +43,23 @@ bit positions and expected hashes so an accidental mapping change fails CI. The
 Generated JSON is ignored build output under
 `packages/shared-config/dist/configs`, not checked-in source. The package's
 `prepack` step performs the complete TypeScript build and generation pass, and
-the published tarball includes `dist` with all eight permutations.
+the published tarball includes `dist` with all eight permutations. It contains
+`index.js`, `index.d.ts`, and the JSON configs, but no source TypeScript or
+internal scripts.
+
+Internal scripts use `tsx` instead of Node's native TypeScript execution. Node
+22's native support is experimental and ignores the project `tsconfig`; `tsx`
+applies consistent execution across the supported Node matrix. Because `tsx`
+does not type-check, `tsc --noEmit` remains an explicit build and check step.
+tsdown owns publish output and keeps dependencies and peers external. Future
+library or CLI entry points can use the same tsdown configuration, but this
+spike does not introduce a CLI or use experimental executable bundling.
 
 ## Requirements
 
-- Node `^22.18.0 || >=24.0.0` for `oxlint.config.ts`;
+- Node `^22.18.0 || >=24.11.0` to build the spike with tsdown;
+- Node `^22.18.0 || >=24.0.0` to consume the built shared config from
+  `oxlint.config.ts`;
 - pnpm 11.20.0 through Corepack;
 - `tar` for the automated macOS/Linux standalone-binary setup.
 
@@ -80,11 +96,13 @@ pnpm run generate
 pnpm run check
 ```
 
-The normal build compiles TypeScript and regenerates all eight JSON files. The
-check removes `dist`, repeats a clean build, requires byte-identical artifacts,
-and creates a package tarball from another absent `dist`. It verifies the tarball
-contains exactly the eight golden-mapped configs and that Git tracks no generated
-JSON or `dist` output.
+The normal build type-checks package source and tooling, lets tsdown clean and
+bundle the public library, and regenerates all eight JSON files through tsx. The
+check also type-checks root scripts, removes `dist`, repeats two clean builds,
+requires byte-identical artifacts, and creates a package tarball from another
+absent `dist`. It verifies an exact tarball allowlist of the package manifest,
+`index.js`, `index.d.ts`, and eight golden-mapped configs. Git must track no
+generated JSON or `dist` output.
 
 ## JavaScript-plugin seam
 
@@ -127,9 +145,12 @@ and no Node wrapper participates in linting.
 - `fixtures/direct-json/`: hand-authored type-aware baseline;
 - `fixtures/project/`: base and AI behavioral cases;
 - `fixtures/performance-project/`: 12-file timing input;
-- `scripts/verify.mjs`: API, permutation, behavior, equivalence,
+- `scripts/verify.ts`: API, permutation, behavior, equivalence,
   reproducibility, package-content, failure, and dependency checks;
-- `scripts/benchmark.mjs`: reproducible fresh-process measurements.
+- `scripts/benchmark.ts`: reproducible fresh-process measurements;
+- `scripts/install-standalone.ts`: pinned, checksum-verified binary setup;
+- `packages/shared-config/tsdown.config.ts`: publishable ESM and declaration
+  build configuration.
 
 [findings]: ../../docs/research/2026-08-05-config-packaging-spike.md
 [issue]: https://github.com/sebastian-software/oxlint-config-setup/issues/5

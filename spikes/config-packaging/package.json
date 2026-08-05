@@ -5,21 +5,25 @@
   "type": "module",
   "packageManager": "pnpm@11.20.0",
   "engines": {
-    "node": "^22.18.0 || >=24.0.0"
+    "node": "^22.18.0 || >=24.11.0"
   },
   "scripts": {
-    "benchmark": "pnpm run setup:standalone && pnpm run build && node scripts/benchmark.mjs",
+    "benchmark": "pnpm run typecheck:scripts && pnpm run setup:standalone && pnpm run build && tsx scripts/benchmark.ts",
     "build": "pnpm --filter @oxlint-config-setup/spike-config run build",
-    "check": "pnpm run setup:standalone && pnpm run build && node scripts/verify.mjs",
+    "check": "pnpm run typecheck:scripts && pnpm run setup:standalone && pnpm run build && tsx scripts/verify.ts",
     "generate": "pnpm run build",
     "lint:direct-json": "oxlint --config fixtures/direct-json/.oxlintrc.json fixtures/performance-project/src",
     "lint:typescript": "oxlint --config fixtures/typescript/oxlint.config.ts fixtures/performance-project/src",
-    "setup:standalone": "node scripts/install-standalone.mjs"
+    "setup:standalone": "tsx scripts/install-standalone.ts",
+    "typecheck": "pnpm run typecheck:scripts && pnpm --filter @oxlint-config-setup/spike-config run typecheck",
+    "typecheck:scripts": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@oxlint-config-setup/spike-config": "workspace:*",
+    "@types/node": "24.13.3",
     "oxlint": "1.77.0",
     "oxlint-tsgolint": "7.0.2001",
+    "tsx": "4.23.8",
     "typescript": "7.0.2"
   }
 }

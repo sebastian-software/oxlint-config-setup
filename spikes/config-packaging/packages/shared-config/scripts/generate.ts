@@ -2,11 +2,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createConfig } from "../dist/config.js";
-import {
-  allConfigOptions,
-  configFileName,
-} from "../dist/options.js";
+import { createConfig } from "../src/config.js";
+import { allConfigOptions, configFileName } from "../src/options.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputDirectory = resolve(packageRoot, "dist/configs");

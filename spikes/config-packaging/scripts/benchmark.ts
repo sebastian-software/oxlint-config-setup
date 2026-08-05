@@ -5,6 +5,24 @@ import { dirname, join, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
+import { configFileName } from "../packages/shared-config/src/options.js";
+
+interface BenchmarkScenario {
+  binary: string;
+  config: string;
+  name: string;
+}
+
+interface RuntimeGroup {
+  name: string;
+  scenarios: BenchmarkScenario[];
+}
+
+interface Workload {
+  name: string;
+  target: string;
+}
+
 const spikeRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packageBinary = join(spikeRoot, "node_modules/.bin/oxlint");
 const requireFromTsgolint = createRequire(
@@ -17,36 +35,36 @@ const tsgolintExecutable = `tsgolint${
 const tsgolintBinaryPath = requireFromTsgolint.resolve(
   `${tsgolintPackage}/${tsgolintExecutable}`,
 );
-const { configFileName } = await import(
-  join(spikeRoot, "packages/shared-config/dist/options.js")
-);
-const standaloneBinaries = new Map([
+const standaloneBinaries = new Map<string, string>([
   ["darwin-arm64", "oxlint-aarch64-apple-darwin"],
   ["darwin-x64", "oxlint-x86_64-apple-darwin"],
   ["linux-arm64", "oxlint-aarch64-unknown-linux-gnu"],
   ["linux-x64", "oxlint-x86_64-unknown-linux-gnu"],
 ]);
-const standaloneName = standaloneBinaries.get(
-  `${process.platform}-${process.arch}`,
-);
-if (!process.env.OXLINT_STANDALONE) {
+
+function standaloneBinaryPath(): string {
+  if (process.env.OXLINT_STANDALONE) {
+    return resolve(process.env.OXLINT_STANDALONE);
+  }
+
+  const standaloneName = standaloneBinaries.get(
+    `${process.platform}-${process.arch}`,
+  );
   assert(
     standaloneName,
     `unsupported benchmark platform: ${process.platform}-${process.arch}`,
   );
+  return resolve(join(spikeRoot, ".cache/standalone", standaloneName));
 }
-const standaloneBinary = resolve(
-  process.env.OXLINT_STANDALONE ??
-    join(spikeRoot, ".cache/standalone", standaloneName),
-);
 
+const standaloneBinary = standaloneBinaryPath();
 const generatedConfig = join(
   spikeRoot,
   "packages/shared-config/dist/configs",
   configFileName(),
 );
 const directConfig = join(spikeRoot, "fixtures/direct-json/.oxlintrc.json");
-const runtimeGroups = [
+const runtimeGroups: RuntimeGroup[] = [
   {
     name: "Node package executable",
     scenarios: [
@@ -83,7 +101,7 @@ const runtimeGroups = [
     ],
   },
 ];
-const workloads = [
+const workloads: Workload[] = [
   {
     name: "Fresh process, one file",
     target: join(spikeRoot, "fixtures/project/src/valid.ts"),
@@ -101,7 +119,7 @@ const measuredRuns = Number.parseInt(
 const warmupRuns = 3;
 assert(Number.isSafeInteger(measuredRuns) && measuredRuns > 0);
 
-function measure(scenario, target) {
+function measure(scenario: BenchmarkScenario, target: string): number {
   const started = performance.now();
   const result = spawnSync(
     scenario.binary,
@@ -126,9 +144,20 @@ function measure(scenario, target) {
   return elapsed;
 }
 
-function percentile(samples, fraction) {
+function percentile(samples: readonly number[], fraction: number): number {
   const sorted = samples.toSorted((left, right) => left - right);
-  return sorted[Math.ceil(fraction * sorted.length) - 1];
+  const result = sorted[Math.ceil(fraction * sorted.length) - 1];
+  assert(result !== undefined, "cannot calculate a percentile without samples");
+  return result;
+}
+
+function samplesFor(
+  samples: ReadonlyMap<string, number[]>,
+  scenarioName: string,
+): number[] {
+  const values = samples.get(scenarioName);
+  assert(values, `missing benchmark samples for ${scenarioName}`);
+  return values;
 }
 
 console.log(
@@ -141,7 +170,9 @@ console.log(
 for (const workload of workloads) {
   for (const runtimeGroup of runtimeGroups) {
     const { scenarios } = runtimeGroup;
-    const samples = new Map(scenarios.map((scenario) => [scenario.name, []]));
+    const samples = new Map<string, number[]>(
+      scenarios.map((scenario) => [scenario.name, []]),
+    );
 
     for (let iteration = 0; iteration < warmupRuns; iteration += 1) {
       for (const scenario of scenarios) {
@@ -153,19 +184,21 @@ for (const workload of workloads) {
       const offset = iteration % scenarios.length;
       const ordered = scenarios.slice(offset).concat(scenarios.slice(0, offset));
       for (const scenario of ordered) {
-        samples.get(scenario.name).push(measure(scenario, workload.target));
+        samplesFor(samples, scenario.name).push(
+          measure(scenario, workload.target),
+        );
       }
     }
 
     const baselineMedian = percentile(
-      samples.get("Direct JSON baseline"),
+      samplesFor(samples, "Direct JSON baseline"),
       0.5,
     );
     console.log(`\n${workload.name}; ${runtimeGroup.name}`);
     console.log("| Variant | median | p95 | median vs direct JSON |");
     console.log("| --- | ---: | ---: | ---: |");
     for (const scenario of scenarios) {
-      const values = samples.get(scenario.name);
+      const values = samplesFor(samples, scenario.name);
       const median = percentile(values, 0.5);
       const p95 = percentile(values, 0.95);
       const delta = ((median - baselineMedian) / baselineMedian) * 100;

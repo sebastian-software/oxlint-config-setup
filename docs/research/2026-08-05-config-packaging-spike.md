@@ -40,6 +40,8 @@ supported workflow rather than only a review artifact.
 | Oxlint npm package | 1.77.0 |
 | Oxlint standalone release | `apps_v1.77.0` |
 | TypeScript | 7.0.2 |
+| tsx | 4.23.8 |
+| tsdown | 0.22.14 |
 | Node | 24.18.0 |
 | pnpm | 11.20.0 |
 | Host | macOS 26.5, Apple M1 Ultra, 64 GB RAM |
@@ -84,9 +86,21 @@ type-aware invariant. It does not merge rule objects. Every artifact contains
 and TypeScript 7.0.2.
 
 The repository tracks the TypeScript factory and generator, not generated JSON.
-The package build compiles TypeScript and emits all eight configs. `prepack`
-repeats that complete build, so a fresh checkout produces a complete tarball
-without relying on prior workspace state.
+All repository-owned scripts are TypeScript. `tsx` executes them consistently on
+Node 22 and 24, while explicit `tsc --noEmit` commands type-check both root
+scripts and the package source, scripts, and bundler config. This split is
+intentional: `tsx` does not type-check, and Node 22's native TypeScript support is
+experimental and does not apply the project `tsconfig`.
+
+The package build type-checks, uses tsdown to clean and bundle the ESM public
+entry as `dist/index.js` plus `dist/index.d.ts`, and then runs the source-based
+generator to emit all eight configs. `prepack` repeats that complete build, so a
+fresh checkout produces a complete tarball without relying on prior workspace
+state. The tarball contains only its package manifest, the built library,
+declarations, and eight JSON configs; it contains no source TypeScript or
+internal scripts. Future library or CLI entry points can share the tsdown
+configuration, but the spike does not add a CLI or use experimental executable
+bundling.
 
 `typescript/no-floating-promises` is the representative type-aware spike rule. A
 fixture proves that the type-aware backend reports a floating promise. The final
@@ -110,7 +124,9 @@ remains outside this issue.
 | Standalone workflow | the verifier stages generated JSON as consumer-local `.oxlintrc.json`, runs from that directory, and invokes standalone Oxlint with an explicit native `tsgolint` path |
 | Equivalent TypeScript and JSON | parsed `--print-config` objects are deep-equal |
 | Deterministic artifacts | the verifier starts from an absent `dist`, compares all eight files byte-for-byte with the build-time factory, repeats the build, and requires byte-identical output |
-| Package contents | `prepack` rebuilds from an absent `dist`, and the verifier requires the tarball to contain exactly the eight golden-mapped configs |
+| Package contents | `prepack` rebuilds from an absent `dist`, and the verifier requires an exact allowlist of `package.json`, library JavaScript, declarations, and the eight golden-mapped configs |
+| Typed toolchain | root and package `tsc --noEmit` checks cover scripts, source, and tsdown configuration before tsx execution |
+| Public library output | tsdown emits ESM `index.js` plus `index.d.ts`; the verifier imports the built package and the unpacked tarball |
 | Repository hygiene | generated JSON and `dist` are ignored; the verifier rejects tracked build artifacts |
 | Loader failures | invalid and unknown options, missing files, and corrupt JSON fail with specific messages |
 | No ESLint runtime | manifests and lockfile are checked; no dependency name contains ESLint |
@@ -209,25 +225,25 @@ the larger difference between the Node package executable and standalone binary.
 
 | Runtime | Variant | Median | p95 | Median vs matching direct JSON |
 | --- | --- | ---: | ---: | ---: |
-| Node package | TypeScript package import | 290.01 ms | 299.65 ms | +21.8% |
-| Node package | Generated JSON | 237.91 ms | 256.00 ms | -0.1% |
-| Node package | Direct JSON | 238.12 ms | 246.51 ms | baseline |
-| Standalone | Generated JSON | 139.50 ms | 197.34 ms | -0.7% |
-| Standalone | Direct JSON | 140.53 ms | 206.17 ms | baseline |
+| Node package | TypeScript package import | 187.53 ms | 194.22 ms | +37.0% |
+| Node package | Generated JSON | 137.50 ms | 142.27 ms | +0.4% |
+| Node package | Direct JSON | 136.92 ms | 142.97 ms | baseline |
+| Standalone | Generated JSON | 41.02 ms | 42.98 ms | +1.0% |
+| Standalone | Direct JSON | 40.61 ms | 42.13 ms | baseline |
 
 ### Fresh process, 12-file project
 
 | Runtime | Variant | Median | p95 | Median vs matching direct JSON |
 | --- | --- | ---: | ---: | ---: |
-| Node package | TypeScript package import | 295.60 ms | 339.33 ms | +21.7% |
-| Node package | Generated JSON | 243.64 ms | 353.20 ms | +0.3% |
-| Node package | Direct JSON | 242.95 ms | 360.80 ms | baseline |
-| Standalone | Generated JSON | 231.10 ms | 287.55 ms | +2.8% |
-| Standalone | Direct JSON | 224.89 ms | 300.88 ms | baseline |
+| Node package | TypeScript package import | 189.60 ms | 212.36 ms | +35.6% |
+| Node package | Generated JSON | 137.88 ms | 152.81 ms | -1.4% |
+| Node package | Direct JSON | 139.80 ms | 146.27 ms | baseline |
+| Standalone | Generated JSON | 42.01 ms | 43.66 ms | +0.1% |
+| Standalone | Direct JSON | 41.97 ms | 43.97 ms | baseline |
 
 Generated and direct JSON are within ordinary run-to-run noise. On this host,
 loading the imported TypeScript config and selecting its prebuilt artifact adds
-about 52 ms over direct JSON through the same npm executable. Mandatory
+about 50 ms over direct JSON through the same npm executable. Mandatory
 type-aware mode raises every variant because each process starts the type-aware
 backend. It also narrows the npm-versus-standalone gap as the project grows. The
 p95 values are noisy; median values are the useful comparison for this small
@@ -248,6 +264,12 @@ pnpm run benchmark
 | TypeScript package import | `^22.18.0 || >=24.0.0` | pnpm 11.20.0 in the spike; consumers may use another manager that installs package exports correctly | npm `oxlint` package |
 | Generated JSON through npm | npm package engine currently allows `^20.19.0 || >=22.12.0` | any compatible installer | npm `oxlint` package |
 | Generated or direct JSON standalone | not required at lint time after native binaries are installed | not required at lint time | official Oxlint and matching `tsgolint` platform binaries |
+
+Building the package has a narrower Node 24 floor than consuming it. tsdown
+0.22.14 supports Node `^22.18.0 || >=24.11.0`, so that is the workspace build
+contract. The built shared-config package keeps the consumer contract at
+`^22.18.0 || >=24.0.0` and targets Node 22 JavaScript. The standalone JSON path
+still needs no Node runtime after installation.
 
 The pinned pnpm version makes this spike reproducible; it is not a proposed
 production consumer requirement. The package export map, generated release
