@@ -1,0 +1,95 @@
+name: Package
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify on Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node:
+          - 22.18.0
+          - 24.x
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install the pinned build toolchain
+        run: pnpm install --frozen-lockfile
+      - name: Lint, test, build, and verify package contents
+        run: pnpm run check
+      - name: Reject tracked output changes
+        run: git diff --exit-code
+
+  pack:
+    name: Build consumer artifact
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install the pinned build toolchain
+        run: pnpm install --frozen-lockfile
+      - name: Create the artifact directory
+        run: mkdir -p release
+      - name: Build the consumer tarball
+        run: pnpm pack --pack-destination release
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: package-tarball
+          path: release/*.tgz
+          if-no-files-found: error
+
+  consumer:
+    name: Consume on Node ${{ matrix.node }}
+    needs: pack
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node:
+          - 22.18.0
+          - 24.0.0
+
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: package-tarball
+          path: release
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Create an isolated consumer
+        run: mkdir consumer
+      - name: Initialize the consumer manifest
+        run: npm init -y
+        working-directory: consumer
+      - name: Install the built API without peer auto-installation
+        run: npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps ../release/*.tgz
+        working-directory: consumer
+      - name: Run the built loader at the consumer Node floor
+        run: >-
+          node --input-type=module -e
+          'import("oxlint-config-setup").then(({ getOxlintConfig }) => { const config = getOxlintConfig({ ai: true }); if (config.options?.typeAware !== true || config.rules?.["no-warning-comments"] !== "warn") process.exit(1); })'
+        working-directory: consumer

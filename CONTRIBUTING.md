@@ -1,7 +1,7 @@
 # Contributing
 
-The project is currently design-first. Small, reviewable pull requests are
-preferred over a single large specification dump.
+The project combines design records with an executable pre-beta package. Small,
+reviewable pull requests are preferred over a single large specification dump.
 
 ## Proposal types
 
@@ -29,3 +29,22 @@ acceptable noise, and a sustainable execution path in Oxlint.
 - Use present tense in commits and explain user-visible consequences.
 - Prefer native Oxlint behavior over ESLint compatibility shims.
 - Mark unresolved product choices explicitly instead of hiding them in code.
+
+## Package checks
+
+The repository uses the pnpm version pinned in `package.json`. Run the complete
+production package gate from the repository root:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm run check
+```
+
+All repository scripts are TypeScript. `tsx` executes them, `tsc --noEmit`
+checks them, and tsdown builds the publishable ESM and declarations. The package
+verifier performs two clean byte-identical builds, verifies the exact tarball,
+and installs it into clean npm and pnpm consumers.
+
+Do not commit `dist` or generated JSON configs. They are deterministic release
+output created by `build` and `prepack`; CI rejects tracked generated output and
+tracked changes caused by the package gate.
