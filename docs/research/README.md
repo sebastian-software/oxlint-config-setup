@@ -8,4 +8,5 @@ and the event that should cause it to be rerun.
 
 | Date | Note |
 | --- | --- |
+| 2026-08-05 | [Config packaging spike](2026-08-05-config-packaging-spike.md) |
 | 2026-08-04 | [Legacy coverage baseline](2026-08-04-legacy-coverage-baseline.md) |

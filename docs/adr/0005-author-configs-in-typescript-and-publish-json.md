@@ -125,6 +125,11 @@ Before accepting this ADR, complete a packaging spike that proves:
 5. cold-start overhead is measured against a direct JSON config;
 6. the package contains no ESLint runtime and needs no custom wrapper command.
 
+The completed [packaging spike findings][packaging-findings] support the core
+direction but recommend revising the Node support range, public composition
+contract, and versioned standalone JSON delivery path before acceptance. This
+ADR remains proposed while maintainers review that evidence.
+
 Review this decision if Oxlint stabilizes or removes TypeScript configs, supports
 package imports in JSON, exposes a stable native plugin SDK, or measurements show
 configuration loading to be a material part of lint time. A need for a new native
@@ -138,6 +143,7 @@ configuration package to Rust.
 - [Oxlint type-aware architecture][type-aware]
 - [Oxc guidance for adding linter rules][adding-rules]
 - [Packaging spike][packaging-spike]
+- [Packaging spike findings][packaging-findings]
 - [v0.1 executable foundation milestone][milestone]
 - [ADR 0001: Oxlint as the only linter runtime](0001-use-oxlint-as-the-only-linter-runtime.md)
 - [ADR 0002: Prefer native rules](0002-prefer-native-rules-over-javascript-plugins.md)
@@ -148,4 +154,5 @@ configuration package to Rust.
 [type-aware]: https://oxc.rs/docs/guide/usage/linter/type-aware.html
 [adding-rules]: https://oxc.rs/docs/contribute/linter/adding-rules.html
 [packaging-spike]: https://github.com/sebastian-software/oxlint-config-setup/issues/5
+[packaging-findings]: ../research/2026-08-05-config-packaging-spike.md
 [milestone]: https://github.com/sebastian-software/oxlint-config-setup/milestone/1
