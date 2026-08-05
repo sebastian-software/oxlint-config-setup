@@ -1,4 +1,6 @@
 packages: []
+engineStrict: true
+autoInstallPeers: false
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
