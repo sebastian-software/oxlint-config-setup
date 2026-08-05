@@ -48,6 +48,7 @@ const repositoryRoot = resolve(import.meta.dirname, "..");
 const distDirectory = resolve(repositoryRoot, "dist");
 const configDirectory = resolve(distDirectory, "configs");
 const manifestPath = resolve(repositoryRoot, "package.json");
+const workspaceSettingsPath = resolve(repositoryRoot, "pnpm-workspace.yaml");
 const expectedConfigFiles = [
   "config-6e5e7d225541.json",
   "config-a53f054eadae.json",
@@ -192,6 +193,13 @@ assert.equal(
   "the build-only Node contract must stay distinct from the consumer engine",
 );
 assert.equal(run("pnpm", ["--version"]).trim(), "11.20.0");
+const pnpmConfig = parseJson(run("pnpm", ["config", "list", "--json"]));
+assert(isRecord(pnpmConfig));
+assert.equal(pnpmConfig.engineStrict, true);
+assert.equal(pnpmConfig.autoInstallPeers, false);
+const workspaceSettings = readFileSync(workspaceSettingsPath, "utf8");
+assert.match(workspaceSettings, /^engineStrict: true$/mu);
+assert.match(workspaceSettings, /^autoInstallPeers: false$/mu);
 assert(
   [10, 11].includes(Number.parseInt(run("npm", ["--version"]), 10)),
   "clean npm consumer tests support npm 10 and 11",
@@ -222,6 +230,11 @@ assert.doesNotMatch(
   readFileSync(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8"),
   /(?:^|\/)eslint(?:@|:|\/)/mu,
   "the production lockfile must not introduce an ESLint package",
+);
+assert.match(
+  readFileSync(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8"),
+  /^\s+autoInstallPeers: false$/mu,
+  "the lockfile must record disabled peer auto-installation",
 );
 
 const trackedGenerated = run("git", ["ls-files", "--", "dist/**"]).trim();
