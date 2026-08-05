@@ -210,6 +210,16 @@ retaining the explicit Node support range and a versioned standalone JSON
 delivery path before acceptance. This ADR remains proposed while maintainers
 review that evidence.
 
+The production package foundation from [issue 0008][production-package] now
+applies that contract at the repository root. It builds side-effect-free ESM and
+declarations, generates the same reviewed eight-artifact map, verifies exact
+tarball contents across byte-identical clean builds, and installs the packed
+artifact with both npm and pnpm in isolated consumers. Its manifest preserves
+the wider consumer Node range while the repository gate enforces tsdown's
+narrower build range. This closes the implementation uncertainty, but it does
+not by itself record maintainer acceptance; the status remains proposed pending
+that review.
+
 Review this decision if Oxlint stabilizes or removes TypeScript configs, supports
 package imports in JSON, exposes a stable native plugin SDK, or measurements show
 configuration loading to be a material part of lint time. A need for a new native
@@ -238,3 +248,4 @@ configuration package to Rust.
 [packaging-spike]: https://github.com/sebastian-software/oxlint-config-setup/issues/5
 [packaging-findings]: ../research/2026-08-05-config-packaging-spike.md
 [milestone]: https://github.com/sebastian-software/oxlint-config-setup/milestone/1
+[production-package]: https://github.com/sebastian-software/oxlint-config-setup/issues/8

@@ -1,0 +1,56 @@
+{
+  "name": "oxlint-config-setup",
+  "version": "0.0.0-development",
+  "description": "An opinionated, Oxlint-first linting preset for modern TypeScript projects.",
+  "type": "module",
+  "sideEffects": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastian-software/oxlint-config-setup.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sebastian-software/oxlint-config-setup/issues"
+  },
+  "homepage": "https://github.com/sebastian-software/oxlint-config-setup#readme",
+  "engines": {
+    "node": "^22.18.0 || >=24.0.0"
+  },
+  "packageManager": "pnpm@11.20.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm run typecheck && tsdown && tsx scripts/generate-configs.ts",
+    "check": "pnpm run lint && pnpm run test",
+    "generate": "tsx scripts/generate-configs.ts",
+    "lint": "oxlint --type-aware --deny-warnings src scripts tsdown.config.ts",
+    "prepack": "pnpm run build",
+    "test": "tsx scripts/verify-package.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "oxlint": "1.77.0",
+    "oxlint-tsgolint": "7.0.2001"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "oxlint": "1.77.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "tsdown": "0.22.14",
+    "tsx": "4.23.8",
+    "typescript": "7.0.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
