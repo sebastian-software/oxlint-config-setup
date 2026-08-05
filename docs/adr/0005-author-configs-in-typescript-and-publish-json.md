@@ -38,6 +38,20 @@ data. It would not make native rules faster after Oxlint has loaded the config.
 Author the rule ledger, build-time config assembly, artifact generator,
 validation tooling, and public loader in TypeScript.
 
+Keep repository-owned scripts in TypeScript as well. Development and validation
+scripts run through `tsx`, while a separate `tsc --noEmit` step provides static
+type checking. This avoids relying on Node's experimental native TypeScript
+execution, which does not apply the project `tsconfig`, and avoids treating
+`tsx` as a type checker.
+
+Build publishable library entry points with `tsdown` as ESM plus declarations.
+The build cleans `dist`, bundles the public library to `dist/index.js`, emits
+`dist/index.d.ts`, and then runs the typed generator to populate `dist/configs`.
+Package dependencies and peers remain external. Published packages contain the
+built library and JSON configs, not source TypeScript or internal scripts. A
+future CLI entry point may use the same bundler configuration, but this decision
+does not introduce a CLI or depend on tsdown's experimental executable mode.
+
 The build enumerates the complete supported option space. For v0.1, React, Node,
 and AI are fixed bit positions and produce eight complete root configs. It writes
 each config as deterministic JSON under a stable, namespaced hash in the package
@@ -68,6 +82,11 @@ the package tarball. CI verifies the golden option mapping, byte-identical outpu
 across clean builds, package contents, mandatory type-aware mode, and effective
 equivalence between loader and JSON consumption. It does not compare build
 output with committed JSON.
+
+The build-tool runtime and consumer runtime are separate contracts. The pinned
+tsdown version requires Node `^22.18.0 || >=24.11.0` to build this package. The
+built shared-config consumer remains compatible with Node
+`^22.18.0 || >=24.0.0`, and tsdown targets Node 22 output.
 
 Future JavaScript-plugin permutations keep their complete `jsPlugins` data in
 the generated config. Plugin specifiers resolve relative to the consumer config,
@@ -145,6 +164,8 @@ and intentional.
 - Static JSON makes release output inspectable and provides a compatibility target
   if the TypeScript loader changes.
 - Contributors do not need Rust unless they work on analyzer capabilities.
+- Published consumers receive JavaScript, declarations, and JSON instead of
+  repository TypeScript sources.
 
 ### Negative
 
@@ -157,6 +178,8 @@ and intentional.
 - Three Boolean dimensions already produce eight files. Each new dimension must
   justify the doubled artifact count.
 - The Node loader performs synchronous local artifact I/O during config loading.
+- Contributors need separate script execution, type-checking, and publish-build
+  tools, with a narrower Node 24 minimum for builds than for consumers.
 - Standalone support needs a setup or release-asset copy workflow because JSON
   cannot import a package config.
 
@@ -176,7 +199,10 @@ Before accepting this ADR, complete a packaging spike that proves:
 6. clean builds are deterministic, generated files remain untracked, and CI
    verifies that the package tarball contains every permutation;
 7. cold-start overhead is measured against a direct JSON config;
-8. the package contains no ESLint runtime and needs no custom wrapper command.
+8. the package contains no ESLint runtime and needs no custom wrapper command;
+9. all internal scripts pass explicit type checking, execute through `tsx`, and
+   the packed library contains JavaScript plus declarations without source
+   TypeScript or internal scripts.
 
 The completed [packaging spike findings][packaging-findings] support the core
 direction and the option-to-prebuilt-artifact contract. They also recommend

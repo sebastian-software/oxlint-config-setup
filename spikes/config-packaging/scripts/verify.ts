@@ -13,6 +13,40 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import type { OxlintConfig } from "oxlint";
+
+import {
+  AI_SPIKE_RULE,
+  createConfig,
+} from "../packages/shared-config/src/config.js";
+import {
+  allConfigOptions,
+  configFileName,
+  type ConfigOptions,
+} from "../packages/shared-config/src/options.js";
+
+interface RunOptions {
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+}
+
+interface PackageManifest {
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  files?: string[];
+  optionalDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+  scripts?: Record<string, string>;
+}
+
+interface PackResult {
+  filename: string;
+}
+
+interface PublicPackageApi {
+  getOxlintConfig(options?: ConfigOptions): OxlintConfig;
+}
+
 const spikeRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = resolve(spikeRoot, "../..");
 const packageRoot = join(spikeRoot, "packages/shared-config");
@@ -44,14 +78,14 @@ const tsgolintBinaryPath = requireFromTsgolint.resolve(
   `${tsgolintPackage}/${tsgolintExecutable}`,
 );
 
-const standaloneBinaries = new Map([
+const standaloneBinaries = new Map<string, string>([
   ["darwin-arm64", "oxlint-aarch64-apple-darwin"],
   ["darwin-x64", "oxlint-x86_64-apple-darwin"],
   ["linux-arm64", "oxlint-aarch64-unknown-linux-gnu"],
   ["linux-x64", "oxlint-x86_64-unknown-linux-gnu"],
 ]);
 
-function nativeBinaryPath() {
+function nativeBinaryPath(): string {
   if (process.env.OXLINT_STANDALONE) {
     return resolve(process.env.OXLINT_STANDALONE);
   }
@@ -66,17 +100,80 @@ function nativeBinaryPath() {
   return join(spikeRoot, ".cache/standalone", executable);
 }
 
-function run(binary, args, options = {}) {
-  const { env, ...spawnOptions } = options;
+function run(binary: string, args: string[], options: RunOptions = {}) {
   return spawnSync(binary, args, {
-    cwd: spikeRoot,
+    cwd: options.cwd ?? spikeRoot,
     encoding: "utf8",
-    env: { ...process.env, NO_COLOR: "1", ...env },
-    ...spawnOptions,
+    env: { ...process.env, NO_COLOR: "1", ...options.env },
   });
 }
 
-function printConfig(binary, configPath, options = {}) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseJson(source: string): unknown {
+  return JSON.parse(source) as unknown;
+}
+
+function readManifest(path: string): PackageManifest {
+  const value = parseJson(readFileSync(path, "utf8"));
+  assert(isRecord(value), `${path} must contain a JSON object`);
+  return value as PackageManifest;
+}
+
+function parseOxlintConfig(source: string): OxlintConfig {
+  const value = parseJson(source);
+  assert(isRecord(value), "Oxlint config JSON must contain an object");
+  return value as OxlintConfig;
+}
+
+function parsePackResult(source: string): PackResult {
+  const trimmed = source.trim();
+  const starts = [
+    0,
+    trimmed.lastIndexOf("\n{") + 1,
+    trimmed.lastIndexOf("\n[") + 1,
+  ]
+    .filter((start, index, values) => start >= 0 && values.indexOf(start) === index)
+    .toSorted((left, right) => right - left);
+  let value: unknown;
+  for (const start of starts) {
+    try {
+      value = parseJson(trimmed.slice(start));
+      break;
+    } catch (error: unknown) {
+      if (!(error instanceof SyntaxError)) {
+        throw error;
+      }
+    }
+  }
+  assert(value !== undefined, "pnpm pack did not return valid JSON");
+  const candidate = Array.isArray(value) ? value[0] : value;
+  assert(isRecord(candidate), "pnpm pack must return a JSON object");
+  assert(
+    typeof candidate.filename === "string",
+    "pnpm pack must return a tarball filename",
+  );
+  return { filename: candidate.filename };
+}
+
+async function importPublicPackage(specifier: string): Promise<PublicPackageApi> {
+  const value: unknown = await import(specifier);
+  assert(isRecord(value), "the built package must export a module object");
+  assert.equal(
+    typeof value.getOxlintConfig,
+    "function",
+    "the public package must expose getOxlintConfig(options)",
+  );
+  return value as unknown as PublicPackageApi;
+}
+
+function printConfig(
+  binary: string,
+  configPath: string,
+  options: RunOptions = {},
+): OxlintConfig {
   const result = run(
     binary,
     ["--config", configPath, "--print-config", validFixturePath],
@@ -87,10 +184,14 @@ function printConfig(binary, configPath, options = {}) {
     0,
     `print-config failed for ${configPath}:\n${result.stderr}`,
   );
-  return JSON.parse(result.stdout);
+  return parseOxlintConfig(result.stdout);
 }
 
-function assertBehavior(binary, configPath, options = {}) {
+function assertBehavior(
+  binary: string,
+  configPath: string,
+  options: RunOptions = {},
+): void {
   const valid = run(binary, ["--config", configPath, validFixturePath], options);
   assert.equal(valid.status, 0, valid.stderr);
 
@@ -106,7 +207,11 @@ function assertBehavior(binary, configPath, options = {}) {
   assert.match(diagnostics, /typescript\(no-floating-promises\)/u);
 }
 
-function assertAiBehavior(binary, withoutAiConfigPath, withAiConfigPath) {
+function assertAiBehavior(
+  binary: string,
+  withoutAiConfigPath: string,
+  withAiConfigPath: string,
+): void {
   const withoutAi = run(binary, [
     "--config",
     withoutAiConfigPath,
@@ -130,18 +235,18 @@ function assertAiBehavior(binary, withoutAiConfigPath, withAiConfigPath) {
   );
 }
 
-function assertNoEslintRuntime() {
+function assertNoEslintRuntime(): void {
   for (const manifestPath of [
     join(spikeRoot, "package.json"),
     join(packageRoot, "package.json"),
   ]) {
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    const manifest = readManifest(manifestPath);
     for (const field of [
       "dependencies",
       "devDependencies",
       "optionalDependencies",
       "peerDependencies",
-    ]) {
+    ] as const) {
       for (const dependency of Object.keys(manifest[field] ?? {})) {
         assert.equal(
           dependency.includes("eslint"),
@@ -157,6 +262,23 @@ function assertNoEslintRuntime() {
 }
 
 assertNoEslintRuntime();
+
+const trackedSpikeFiles = execFileSync(
+  "git",
+  ["ls-files", "--", "spikes/config-packaging"],
+  { cwd: repositoryRoot, encoding: "utf8" },
+)
+  .trim()
+  .split("\n")
+  .filter(Boolean);
+const legacyJavaScriptScripts = trackedSpikeFiles.filter(
+  (file) => file.includes("/scripts/") && file.endsWith(".mjs"),
+);
+assert.deepEqual(
+  legacyJavaScriptScripts,
+  [],
+  "all internal spike scripts must be typed TypeScript sources",
+);
 
 const trackedGeneratedArtifacts = execFileSync(
   "git",
@@ -174,17 +296,8 @@ assert.equal(
   "config build output must be ignored, not tracked source",
 );
 
-const packageApi = await import("@oxlint-config-setup/spike-config");
-const { createConfig, AI_SPIKE_RULE } = await import(
-  join(packageRoot, "dist/config.js")
-);
-const { allConfigOptions, configFileName } = await import(
-  join(packageRoot, "dist/options.js")
-);
-assert.equal(
-  typeof packageApi.getOxlintConfig,
-  "function",
-  "the public package must expose getOxlintConfig(options)",
+const packageApi = await importPublicPackage(
+  "@oxlint-config-setup/spike-config",
 );
 assert.equal(
   "recommended" in packageApi,
@@ -192,14 +305,26 @@ assert.equal(
   "the public API must select prebuilt permutations instead of exporting a profile",
 );
 
-const spikeManifest = JSON.parse(
-  readFileSync(join(spikeRoot, "package.json"), "utf8"),
+const spikeManifest = readManifest(join(spikeRoot, "package.json"));
+const packageManifest = readManifest(join(packageRoot, "package.json"));
+assert.equal(spikeManifest.devDependencies?.["oxlint-tsgolint"], "7.0.2001");
+assert.equal(
+  packageManifest.peerDependencies?.["oxlint-tsgolint"],
+  "7.0.2001",
 );
-const packageManifest = JSON.parse(
-  readFileSync(join(packageRoot, "package.json"), "utf8"),
+assert.equal(spikeManifest.devDependencies?.tsx, "4.23.8");
+assert.equal(packageManifest.devDependencies?.tsx, "4.23.8");
+assert.equal(packageManifest.devDependencies?.tsdown, "0.22.14");
+assert.match(
+  spikeManifest.scripts?.["typecheck:scripts"] ?? "",
+  /tsc.+--noEmit/u,
 );
-assert.equal(spikeManifest.devDependencies["oxlint-tsgolint"], "7.0.2001");
-assert.equal(packageManifest.peerDependencies["oxlint-tsgolint"], "7.0.2001");
+assert.match(
+  spikeManifest.scripts?.typecheck ?? "",
+  /typecheck:scripts.+spike-config.+typecheck/u,
+);
+assert.match(packageManifest.scripts?.build ?? "", /typecheck.+tsdown.+tsx/u);
+assert.deepEqual(packageManifest.files, ["dist"]);
 
 const permutations = allConfigOptions();
 assert.equal(permutations.length, 8);
@@ -236,7 +361,7 @@ assert.deepEqual(
 for (const [index, options] of permutations.entries()) {
   const artifactPath = join(buildArtifactDirectory, artifactNames[index]);
   const artifactText = readFileSync(artifactPath, "utf8");
-  const artifact = JSON.parse(artifactText);
+  const artifact = parseOxlintConfig(artifactText);
   assert.equal(
     artifactText,
     `${JSON.stringify(createConfig(options), null, 2)}\n`,
@@ -262,7 +387,7 @@ for (const [index, options] of permutations.entries()) {
     `${artifactNames[index]} does not reflect its React and Node options`,
   );
   assert.equal(
-    Object.hasOwn(artifact.rules, AI_SPIKE_RULE),
+    Object.hasOwn(artifact.rules ?? {}, AI_SPIKE_RULE),
     options.ai,
     `${artifactNames[index]} does not reflect the AI permutation`,
   );
@@ -275,8 +400,8 @@ for (const [index, options] of permutations.entries()) {
   );
 }
 
-function cleanBuild() {
-  rmSync(join(packageRoot, "dist"), { recursive: true });
+function cleanBuild(): Record<string, string> {
+  rmSync(join(packageRoot, "dist"), { recursive: true, force: true });
   execFileSync(
     "pnpm",
     ["--filter", "@oxlint-config-setup/spike-config", "run", "build"],
@@ -308,7 +433,7 @@ assert.deepEqual(
 );
 
 const packDirectory = mkdtempSync(join(tmpdir(), "oxlint-config-pack-"));
-rmSync(join(packageRoot, "dist"), { recursive: true });
+rmSync(join(packageRoot, "dist"), { recursive: true, force: true });
 const packOutput = execFileSync(
   "pnpm",
   ["pack", "--pack-destination", packDirectory, "--json"],
@@ -318,17 +443,18 @@ const packOutput = execFileSync(
     env: { ...process.env, CI: "true" },
   },
 );
-const packResult = JSON.parse(packOutput);
-const tarballPath = resolve(
-  packDirectory,
-  Array.isArray(packResult) ? packResult[0].filename : packResult.filename,
-);
-const packedConfigEntries = execFileSync("tar", ["-tzf", tarballPath], {
+const packResult = parsePackResult(packOutput);
+const tarballPath = resolve(packDirectory, packResult.filename);
+const packedEntries = execFileSync("tar", ["-tzf", tarballPath], {
   encoding: "utf8",
 })
   .trim()
-  .split("\n")
-  .filter((entry) => entry.startsWith("package/dist/configs/"))
+  .split("\n");
+const packedConfigEntries = packedEntries
+  .filter(
+    (entry: string) =>
+      entry.startsWith("package/dist/configs/") && entry.endsWith(".json"),
+  )
   .toSorted();
 assert.deepEqual(
   packedConfigEntries,
@@ -337,18 +463,55 @@ assert.deepEqual(
     .toSorted(),
   "a fresh package tarball must contain all eight config artifacts",
 );
+assert.deepEqual(
+  packedEntries.toSorted(),
+  [
+    "package/package.json",
+    "package/dist/index.js",
+    "package/dist/index.d.ts",
+    ...artifactNames.map((name) => `package/dist/configs/${name}`),
+  ].toSorted(),
+  "the tarball must contain only the public library and generated configs",
+);
+assert(packedEntries.includes("package/dist/index.js"));
+assert(packedEntries.includes("package/dist/index.d.ts"));
+assert.equal(
+  packedEntries.some(
+    (entry: string) =>
+      entry.includes("/src/") ||
+      entry.includes("/scripts/") ||
+      (entry.endsWith(".ts") && !entry.endsWith(".d.ts")) ||
+      entry.endsWith("tsdown.config.ts") ||
+      entry.endsWith(".mjs"),
+  ),
+  false,
+  "the package must not publish TypeScript sources or internal scripts",
+);
+
+const unpackDirectory = mkdtempSync(join(tmpdir(), "oxlint-config-unpack-"));
+execFileSync("tar", ["-xzf", tarballPath, "-C", unpackDirectory]);
+const packedApi = await importPublicPackage(
+  `${pathToFileURL(join(unpackDirectory, "package/dist/index.js")).href}?packed`,
+);
+assert.deepEqual(packedApi.getOxlintConfig(), packageApi.getOxlintConfig());
 
 assert.deepEqual(packageApi.getOxlintConfig(), packageApi.getOxlintConfig({}));
 assert.throws(
-  () => packageApi.getOxlintConfig({ ai: "yes" }),
+  () =>
+    packageApi.getOxlintConfig({ ai: "yes" } as unknown as ConfigOptions),
   /option ai must be a boolean/u,
 );
 assert.throws(
-  () => packageApi.getOxlintConfig({ future: true }),
+  () =>
+    packageApi.getOxlintConfig({ future: true } as unknown as ConfigOptions),
   /Unsupported Oxlint config option: future/u,
 );
 
-async function assertArtifactFailure(kind, source, expectedMessage) {
+async function assertArtifactFailure(
+  kind: string,
+  source: string | undefined,
+  expectedMessage: RegExp,
+): Promise<void> {
   const copiedPackage = mkdtempSync(join(tmpdir(), `oxlint-config-${kind}-`));
   cpSync(join(packageRoot, "dist"), join(copiedPackage, "dist"), {
     recursive: true,
@@ -362,7 +525,7 @@ async function assertArtifactFailure(kind, source, expectedMessage) {
   if (source !== undefined) {
     writeFileSync(copiedArtifact, source);
   }
-  const copiedApi = await import(
+  const copiedApi = await importPublicPackage(
     `${pathToFileURL(join(copiedPackage, "dist/index.js")).href}?case=${kind}`
   );
   assert.throws(() => copiedApi.getOxlintConfig(), expectedMessage);
