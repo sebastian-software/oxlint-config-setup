@@ -1,6 +1,7 @@
 import type { OxlintConfig } from "oxlint";
 
 import { ruleLedger } from "./ledger.js";
+import type { ConfigLevel } from "./levels.js";
 import {
   PROFILE_ORDER,
   type RuleLedgerEntry,
@@ -8,6 +9,7 @@ import {
 } from "./schema.js";
 
 export interface ComposeOptions {
+  level?: ConfigLevel;
   surface?: "stable" | "experimental";
   typeAware?: boolean;
 }
@@ -22,24 +24,25 @@ function severityToOxlint(
   return severity === "warning" ? "warn" : severity;
 }
 
-function pluginsForProfiles(
-  profiles: readonly RuleProfile[],
+function pluginsForRules(
+  entries: readonly RuleLedgerEntry[],
 ): NonNullable<OxlintConfig["plugins"]> {
+  const profiles = new Set(entries.map((entry) => entry.profile));
   const plugins = new Set<NonNullable<OxlintConfig["plugins"]>[number]>();
   if (
-    profiles.includes("typescript-syntax") ||
-    profiles.includes("typescript-type-aware")
+    profiles.has("typescript-syntax") ||
+    profiles.has("typescript-type-aware")
   ) {
     plugins.add("typescript");
   }
-  if (profiles.includes("imports")) plugins.add("import");
-  if (profiles.includes("react") || profiles.includes("react-compiler")) {
+  if (profiles.has("imports")) plugins.add("import");
+  if (profiles.has("react") || profiles.has("react-compiler")) {
     plugins.add("react");
   }
-  if (profiles.includes("jsx-a11y")) plugins.add("jsx-a11y");
-  if (profiles.includes("node")) plugins.add("node");
-  if (profiles.includes("vitest")) plugins.add("vitest");
-  if (profiles.includes("jest")) plugins.add("jest");
+  if (profiles.has("jsx-a11y")) plugins.add("jsx-a11y");
+  if (profiles.has("node")) plugins.add("node");
+  if (profiles.has("vitest")) plugins.add("vitest");
+  if (profiles.has("jest")) plugins.add("jest");
   return [...plugins];
 }
 
@@ -59,9 +62,13 @@ export function selectRules(
   options: ComposeOptions = {},
 ): readonly RuleLedgerEntry[] {
   const selectedProfiles = new Set(orderedProfiles(profiles));
+  const level = options.level ?? "standard";
   const selected = ruleLedger
     .filter(
-      (entry) => selectedProfiles.has(entry.profile) && entry.severity !== "off",
+      (entry) =>
+        selectedProfiles.has(entry.profile) &&
+        entry.severity !== "off" &&
+        (level === "standard" || entry.minimumLevel === "essential"),
     )
     .toSorted((left, right) => left.id.localeCompare(right.id));
   const ids = new Set(selected.map((entry) => entry.id));
@@ -102,8 +109,9 @@ export function composeProfiles(
     );
   }
 
+  const selectedRules = selectRules(normalizedProfiles, options);
   const rules = Object.fromEntries(
-    selectRules(normalizedProfiles, options).map((entry) => [
+    selectedRules.map((entry) => [
       entry.id,
       severityToOxlint(entry.severity),
     ]),
@@ -120,7 +128,7 @@ export function composeProfiles(
       nursery: "off",
     },
     options: { typeAware },
-    plugins: pluginsForProfiles(normalizedProfiles),
+    plugins: pluginsForRules(selectedRules),
     rules,
   };
 }

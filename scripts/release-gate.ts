@@ -30,9 +30,16 @@ const projectLanguageDecision = read(
 assert.match(projectLanguageDecision, /\*\*Status:\*\* Accepted/u);
 assert.match(projectLanguageDecision, /US English \(`en-US`\)/u);
 
+const configLevelDecision = read(
+  "docs/adr/0007-add-essential-and-standard-config-levels.md",
+);
+assert.match(configLevelDecision, /\*\*Status:\*\* Accepted/u);
+assert.match(configLevelDecision, /level\?: "essential" \| "standard"/u);
+
 const readme = read("README.md");
 assert.match(readme, /behavioral coverage/iu);
 assert.match(readme, /identifier mapping/iu);
+assert.match(readme, /level: "essential"/u);
 for (const surface of [
   "getOxlintConfig",
   "getSyntaxOnlyOxlintConfig",

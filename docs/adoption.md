@@ -2,18 +2,29 @@
 
 ## Choose one root configuration
 
-Standard projects use `getOxlintConfig()`. Its three Boolean options are fixed
-build-time dimensions and may be combined freely:
+Projects use `getOxlintConfig()`. Its level and three Boolean context options are
+fixed build-time dimensions and may be combined freely:
 
 ```ts
 import { getOxlintConfig } from "oxlint-config-setup";
 
-export default getOxlintConfig({ react: true, node: true, ai: false });
+export default getOxlintConfig({
+  level: "standard",
+  react: true,
+  node: true,
+  ai: false,
+});
 ```
 
-The standard surface always owns core JavaScript correctness, imports,
-TypeScript syntax, and the reviewed type-aware rules. It therefore requires a
-discoverable `tsconfig.json` and `oxlint-tsgolint@7.0.2001`.
+`standard` is the default and the recommended complete policy for established
+projects. Use `level: "essential"` for a smaller adoption baseline containing
+only high-signal correctness, safety, accessibility, and framework invariants.
+It is a strict subset of standard, not a relaxed interpretation of the same
+rules.
+
+Both levels remain type-aware and therefore require a discoverable
+`tsconfig.json` and `oxlint-tsgolint@7.0.2001`. React, Node.js, and AI are
+independent context flags; an essential React project is supported directly.
 
 Use a named full configuration when the project has a different execution
 contract:
@@ -55,8 +66,10 @@ pnpm oxlint --config .oxlintrc.json .
 
 Replace `default` with `react`, `node`, `react-node`, `ai`, `react-ai`,
 `node-ai`, `react-node-ai`, `typescript-syntax`, `vitest`, `jest`, or
-`react-compiler`. The `react-compiler` name remains experimental even though its
-file path is stable.
+`react-compiler`. Essential artifacts use `essential`, `essential-react`,
+`essential-node`, `essential-react-node`, `essential-ai`,
+`essential-react-ai`, `essential-node-ai`, or `essential-react-node-ai`. The
+`react-compiler` name remains experimental even though its file path is stable.
 
 ## CI
 

@@ -31,7 +31,7 @@ const STANDARD_PROFILES = [
   "typescript-type-aware",
 ] as const;
 
-export function publicStandardName(
+export function publicConfigName(
   options: NormalizedConfigOptions,
 ): string {
   const enabled = [
@@ -39,7 +39,9 @@ export function publicStandardName(
     options.node ? "node" : "",
     options.ai ? "ai" : "",
   ].filter(Boolean);
-  return enabled.length === 0 ? "default" : enabled.join("-");
+  const featureName = enabled.length === 0 ? "default" : enabled.join("-");
+  if (options.level === "standard") return featureName;
+  return featureName === "default" ? "essential" : `essential-${featureName}`;
 }
 
 export function createNamedConfig(name: NamedArtifact): OxlintConfig {
@@ -63,9 +65,9 @@ export function createNamedConfig(name: NamedArtifact): OxlintConfig {
 }
 
 export function allConfigArtifacts(): ConfigArtifact[] {
-  const standard = allConfigOptions().map((options) => ({
+  const configurable = allConfigOptions().map((options) => ({
     fileName: configFileName(options),
-    publicName: publicStandardName(options),
+    publicName: publicConfigName(options),
     typeAware: true,
     config: createConfig(options),
   }));
@@ -78,5 +80,5 @@ export function allConfigArtifacts(): ConfigArtifact[] {
       config,
     };
   });
-  return [...standard, ...named];
+  return [...configurable, ...named];
 }

@@ -1,8 +1,9 @@
 # 0005. Generate config permutations and select prebuilt JSON
 
-- **Status:** Accepted (with v0.1 supplemental named artifacts)
+- **Status:** Superseded
 - **Date:** 2026-08-04
 - **Deciders:** Sebastian Software maintainers
+- **Superseded by:** [ADR 0007](0007-add-essential-and-standard-config-levels.md)
 
 ## Context
 

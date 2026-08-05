@@ -21,6 +21,7 @@ Create `oxlint.config.ts` and invoke Oxlint directly:
 import { getOxlintConfig } from "oxlint-config-setup";
 
 export default getOxlintConfig({
+  level: "standard",
   react: true,
   node: true,
   ai: true,
@@ -31,16 +32,32 @@ export default getOxlintConfig({
 pnpm oxlint .
 ```
 
-`react`, `node`, and `ai` default to `false`. The loader selects one of eight
+`level` accepts `"essential"` or `"standard"` and defaults to `"standard"`.
+`react`, `node`, and `ai` default to `false`. The loader selects one of sixteen
 complete, prebuilt JSON configurations. It never composes rules at runtime.
-Every standard configuration includes core, import, TypeScript syntax, and
-type-aware TypeScript behavior.
+Every configurable surface includes core, TypeScript syntax, and type-aware
+TypeScript behavior.
+
+Use `essential` for the smaller adoption baseline:
+
+```ts
+export default getOxlintConfig({
+  level: "essential",
+  react: true,
+});
+```
+
+Essential contains only the reviewed correctness, safety, accessibility, and
+framework invariants. Standard is a strict superset and remains the recommended
+default for established projects. The level is independent of the React,
+Node.js, and AI project-context flags.
 
 ## Shipped surfaces
 
 | Need | TypeScript package export | Public JSON subpath | Stability |
 | --- | --- | --- | --- |
 | Core + complete TypeScript | `getOxlintConfig()` | `oxlint-config-setup/json/default` | Stable, version-pinned type-aware backend |
+| Essential adoption baseline | `getOxlintConfig({ level: "essential" })` | `oxlint-config-setup/json/essential` | Stable, version-pinned type-aware backend |
 | React + JSX accessibility | `getOxlintConfig({ react: true })` | `oxlint-config-setup/json/react` | Stable |
 | Node.js | `getOxlintConfig({ node: true })` | `oxlint-config-setup/json/node` | Stable |
 | AI-assisted-development marker | `getOxlintConfig({ ai: true })` | `oxlint-config-setup/json/ai` | Stable warning |
@@ -50,7 +67,8 @@ type-aware TypeScript behavior.
 | React Compiler diagnostics | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler` | Experimental warning |
 
 The standard Boolean permutations also expose public JSON subpaths for
-`react-node`, `react-ai`, `node-ai`, and `react-node-ai`.
+`react-node`, `react-ai`, `node-ai`, and `react-node-ai`. Essential equivalents
+use the `essential-` prefix, such as `essential-react-node-ai`.
 
 For a syntax-only project:
 
@@ -92,11 +110,12 @@ hashed file from `node_modules`; hashes are deliberately not public API.
 
 ## What the beta proves
 
-The beta enables 27 ledger-owned rules across core, imports, TypeScript, React,
+The package owns 27 ledger rules across core, imports, TypeScript, React,
 accessibility, Node.js, Vitest, Jest, AI, and experimental compiler concerns.
 Each rule has valid and invalid fixtures asserting diagnostic file, location,
-and identity. Type-aware fixtures execute `oxlint-tsgolint`, including a
-TypeScript project-reference case.
+identity, and minimum level. A fully enabled configurable surface selects 14
+essential or 20 standard rules. Type-aware fixtures execute `oxlint-tsgolint`,
+including a TypeScript project-reference case.
 
 This is **behavioral coverage**, not an **identifier mapping** claim. The earlier
 migration study mapped about 85.3% of predecessor source-rule identifiers as

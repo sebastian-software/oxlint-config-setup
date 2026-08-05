@@ -1,3 +1,5 @@
+import { CONFIG_LEVELS, type ConfigLevel } from "./levels.js";
+
 export const PROFILE_ORDER = [
   "core",
   "imports",
@@ -42,6 +44,7 @@ export interface RuleLedgerEntry {
   executionPath: RuleExecutionPath;
   severity: RuleSeverity;
   stability: RuleStability;
+  minimumLevel: ConfigLevel;
   rationale: string;
   source: RuleSource;
   fixtures: readonly RuleFixture[];
@@ -63,6 +66,7 @@ const STABILITIES = new Set<string>([
   "version-pinned",
   "experimental",
 ]);
+const LEVELS = new Set<string>(CONFIG_LEVELS);
 
 function assertNonEmpty(value: unknown, field: string, index: number): void {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -123,6 +127,11 @@ export function validateRuleLedger(value: unknown): readonly RuleLedgerEntry[] {
     if (!STABILITIES.has(String(entry.stability))) {
       throw new TypeError(
         `Rule ledger entry ${index} has invalid stability: ${String(entry.stability)}`,
+      );
+    }
+    if (!LEVELS.has(String(entry.minimumLevel))) {
+      throw new TypeError(
+        `Rule ledger entry ${index} has invalid minimum level: ${String(entry.minimumLevel)}`,
       );
     }
 

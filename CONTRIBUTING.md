@@ -58,10 +58,16 @@ verifier performs two clean byte-identical builds, verifies the exact tarball,
 and installs it into clean npm and pnpm consumers.
 
 Every enabled rule starts in `src/ledger.ts` with complete rationale, ownership,
-source, fixture, conflict, replacement, and review-trigger metadata. Add its
-valid and invalid case under `fixtures/rules/`, then run `pnpm generate`.
+minimum level, source, fixture, conflict, replacement, and review-trigger
+metadata. Add its valid and invalid case under `fixtures/rules/`, then run
+`pnpm generate`.
 The generated rule catalog and effective-config snapshots are committed source
 artifacts; `pnpm generate:check` rejects drift.
+
+`essential` is reserved for stable, low-noise correctness, safety,
+accessibility, and framework invariants. Upstream recommended-preset membership
+is evidence, not automatic inclusion. Redundancy, maintainability, and
+opinionated policy rules begin at `standard`.
 
 Do not commit `dist` or its generated release JSON. Those files are deterministic
 package output created by `build` and `prepack`; CI rejects tracked release output

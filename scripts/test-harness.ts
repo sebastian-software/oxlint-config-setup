@@ -121,6 +121,44 @@ try {
     );
   }
 
+  const standardProfiles = [
+    "core",
+    "imports",
+    "typescript-syntax",
+    "typescript-type-aware",
+    "react",
+    "jsx-a11y",
+    "node",
+    "ai",
+  ] as const;
+  const standardEntries = selectRules(standardProfiles);
+  const essentialEntries = selectRules(standardProfiles, {
+    level: "essential",
+  });
+  const essentialConfig = writeConfig(
+    "essential-boundary",
+    composeProfiles(standardProfiles, { level: "essential" }),
+  );
+  const allStandardInvalidFiles = [
+    ...new Set(
+      standardEntries.flatMap((entry) =>
+        entry.fixtures.map((fixture) => fixture.invalid),
+      ),
+    ),
+  ];
+  const essentialOnStandardInvalid = parseOxlintJson(
+    runOxlint(essentialConfig, allStandardInvalidFiles),
+  );
+  assert.deepEqual(
+    new Set(
+      essentialOnStandardInvalid.diagnostics.map((diagnostic) =>
+        normalizeDiagnosticCode(diagnostic.code),
+      ),
+    ),
+    new Set(essentialEntries.map((entry) => entry.id)),
+    "essential must report its complete reviewed subset and exclude standard-only rules",
+  );
+
   const syntaxConfig = writeConfig(
     "syntax-only-proof",
     composeProfiles(["typescript-syntax"]),

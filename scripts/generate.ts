@@ -20,17 +20,17 @@ function renderCatalog(): string {
     "",
     "> This file is generated from `src/ledger.ts`. Run `pnpm generate` after ledger changes.",
     "",
-    `The v0.1 ledger contains **${ruleLedger.length} reviewed rules**. Stable profiles use only native Oxlint execution paths; the single experimental rule is isolated from every standard artifact.`,
+    `The v0.1 ledger contains **${ruleLedger.length} reviewed rules**. Stable profiles use only native Oxlint execution paths; the single experimental rule is isolated from every configurable artifact.`,
     "",
-    "| Rule | Defect class | Profile | Path | Severity | Stability | Rationale | Fixtures | Replaces | Conflicts | Review trigger |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| Rule | Defect class | Profile | Minimum level | Path | Severity | Stability | Rationale | Fixtures | Replaces | Conflicts | Review trigger |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
   ];
   for (const entry of ruleLedger) {
     const fixtures = entry.fixtures
       .map((fixture) => `${fixture.valid}; ${fixture.invalid}`)
       .join("<br>");
     lines.push(
-      `| [\`${entry.id}\`](${entry.source.documentation}) | ${escapeCell(entry.defectClass)} | \`${entry.profile}\` | \`${entry.executionPath}\` | ${entry.severity} | ${entry.stability} | ${escapeCell(entry.rationale)} | ${fixtures} | ${entry.replaces.join(", ") || "—"} | ${entry.conflicts.join(", ") || "—"} | ${escapeCell(entry.reviewTrigger)} |`,
+      `| [\`${entry.id}\`](${entry.source.documentation}) | ${escapeCell(entry.defectClass)} | \`${entry.profile}\` | \`${entry.minimumLevel}\` | \`${entry.executionPath}\` | ${entry.severity} | ${entry.stability} | ${escapeCell(entry.rationale)} | ${fixtures} | ${entry.replaces.join(", ") || "—"} | ${entry.conflicts.join(", ") || "—"} | ${escapeCell(entry.reviewTrigger)} |`,
     );
   }
   lines.push(

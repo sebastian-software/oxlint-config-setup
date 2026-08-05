@@ -27,6 +27,10 @@ assert.throws(
   /invalid severity/u,
 );
 assert.throws(
+  () => validateRuleLedger([mutatedEntry({ minimumLevel: "relaxed" })]),
+  /invalid minimum level/u,
+);
+assert.throws(
   () => validateRuleLedger([mutatedEntry({ rationale: "" })]),
   /requires rationale/u,
 );
@@ -91,6 +95,52 @@ assert.throws(
 assert.throws(
   () => composeProfiles(["vitest", "jest"]),
   /Conflicting rule ownership/u,
+);
+
+const completeStandardProfiles = [
+  "core",
+  "imports",
+  "typescript-syntax",
+  "typescript-type-aware",
+  "react",
+  "jsx-a11y",
+  "node",
+  "ai",
+] as const;
+const essentialRuleIds = [
+  "eslint/no-debugger",
+  "eslint/no-dupe-keys",
+  "eslint/no-unsafe-finally",
+  "eslint/no-warning-comments",
+  "eslint/valid-typeof",
+  "jsx-a11y/alt-text",
+  "node/no-exports-assign",
+  "react/jsx-key",
+  "react/jsx-no-undef",
+  "react/rules-of-hooks",
+  "typescript/await-thenable",
+  "typescript/ban-ts-comment",
+  "typescript/no-duplicate-enum-values",
+  "typescript/no-floating-promises",
+];
+const essentialRules = selectRules(completeStandardProfiles, {
+  level: "essential",
+});
+assert.deepEqual(
+  essentialRules.map((entry) => entry.id),
+  essentialRuleIds,
+  "essential must remain the reviewed high-signal subset",
+);
+assert(
+  selectRules(completeStandardProfiles).length > essentialRules.length,
+  "standard must remain a strict superset of essential",
+);
+assert.equal(
+  composeProfiles(completeStandardProfiles, {
+    level: "essential",
+  }).plugins?.includes("import"),
+  false,
+  "essential must not load plugins that own no selected rule",
 );
 
 for (const profiles of [
