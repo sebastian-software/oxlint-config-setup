@@ -1,7 +1,18 @@
 {
   "name": "oxlint-config-setup",
   "version": "0.0.0-development",
-  "description": "An opinionated, Oxlint-first linting preset for modern TypeScript projects.",
+  "description": "Opinionated, prebuilt Oxlint configurations for modern TypeScript projects.",
+  "keywords": [
+    "oxlint",
+    "typescript",
+    "javascript",
+    "linting",
+    "static-analysis",
+    "code-quality",
+    "react",
+    "nodejs",
+    "ai"
+  ],
   "type": "module",
   "sideEffects": false,
   "license": "MIT",
@@ -12,7 +23,7 @@
   "bugs": {
     "url": "https://github.com/sebastian-software/oxlint-config-setup/issues"
   },
-  "homepage": "https://github.com/sebastian-software/oxlint-config-setup#readme",
+  "homepage": "https://sebastian-software.github.io/oxlint-config-setup/",
   "engines": {
     "node": ">=24.11.0"
   },
