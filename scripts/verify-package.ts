@@ -23,6 +23,7 @@ import {
   configFileName,
   type ConfigOptions,
 } from "../src/options.js";
+import type { RuleSeverity } from "../src/rule-helpers.js";
 
 interface PackageManifest {
   dependencies?: Record<string, string>;
@@ -46,11 +47,29 @@ interface PackResult {
 }
 
 interface PublicPackageApi {
+  addRule(
+    config: OxlintConfig,
+    ruleName: string,
+    severity: RuleSeverity,
+    options?: readonly unknown[],
+  ): void;
+  configureRule(
+    config: OxlintConfig,
+    ruleName: string,
+    options: readonly unknown[],
+  ): void;
+  disableAllRulesBut(config: OxlintConfig, keepRuleName: string): void;
+  disableRule(config: OxlintConfig, ruleName: string): void;
   getExperimentalReactCompilerOxlintConfig(): OxlintConfig;
   getJestOxlintConfig(): OxlintConfig;
   getOxlintConfig(options?: ConfigOptions): OxlintConfig;
   getSyntaxOnlyOxlintConfig(): OxlintConfig;
   getVitestOxlintConfig(): OxlintConfig;
+  setRuleSeverity(
+    config: OxlintConfig,
+    ruleName: string,
+    severity: RuleSeverity,
+  ): void;
 }
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
@@ -90,11 +109,16 @@ const goldenRecommendedConfigFiles = [
   "config-fb9bc4bcf5ce.json",
 ];
 const publicApiNames = [
+  "addRule",
+  "configureRule",
+  "disableAllRulesBut",
+  "disableRule",
   "getExperimentalReactCompilerOxlintConfig",
   "getJestOxlintConfig",
   "getOxlintConfig",
   "getSyntaxOnlyOxlintConfig",
   "getVitestOxlintConfig",
+  "setRuleSeverity",
 ];
 const trackedDiffBefore = run("git", ["diff", "--binary"]);
 
@@ -327,7 +351,12 @@ for (const artifact of artifacts) {
 }
 
 const declarationSource = readFileSync(resolve(distDirectory, "index.d.ts"), "utf8");
-for (const name of ["ConfigLevel", "ConfigOptions", ...publicApiNames]) {
+for (const name of [
+  "ConfigLevel",
+  "ConfigOptions",
+  "RuleSeverity",
+  ...publicApiNames,
+]) {
   assert.match(declarationSource, new RegExp(name, "u"));
 }
 assert.doesNotMatch(declarationSource, /(?:\.\.\/|\/src\/|private\/tmp)/u);
@@ -387,6 +416,37 @@ assert.equal(recommended.rules?.["import/no-self-import"], undefined);
 const strict = publicApi.getOxlintConfig({ level: "strict" });
 assert.equal(strict.rules?.["import/no-self-import"], "error");
 assert.equal(strict.rules?.["eslint/no-warning-comments"], undefined);
+const customized = publicApi.getOxlintConfig({ ai: true });
+publicApi.setRuleSeverity(
+  customized,
+  "eslint/no-warning-comments",
+  "error",
+);
+publicApi.configureRule(customized, "eslint/valid-typeof", [
+  { requireStringLiterals: false },
+]);
+publicApi.disableRule(customized, "import/no-duplicates");
+publicApi.addRule(customized, "eslint/no-alert", "warn");
+assert.equal(customized.rules?.["eslint/no-warning-comments"], "error");
+assert.deepEqual(customized.rules?.["eslint/valid-typeof"], [
+  "error",
+  { requireStringLiterals: false },
+]);
+assert.equal(customized.rules?.["import/no-duplicates"], "off");
+assert.equal(customized.rules?.["eslint/no-alert"], "warn");
+assert.equal(
+  publicApi.getOxlintConfig({ ai: true }).rules?.[
+    "eslint/no-warning-comments"
+  ],
+  "warn",
+  "customizing one loader result must not mutate later results",
+);
+publicApi.disableAllRulesBut(customized, "eslint/valid-typeof");
+assert.deepEqual(customized.rules?.["eslint/valid-typeof"], [
+  "error",
+  { requireStringLiterals: false },
+]);
+assert.equal(customized.rules?.["eslint/no-alert"], "off");
 
 rmSync(distDirectory, { recursive: true, force: true });
 run("pnpm", ["run", "build"]);
@@ -487,7 +547,7 @@ try {
     [
       'import assert from "node:assert/strict";',
       'import { copyFileSync } from "node:fs";',
-      'import { getExperimentalReactCompilerOxlintConfig, getJestOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, getVitestOxlintConfig } from "oxlint-config-setup";',
+      'import { addRule, configureRule, disableAllRulesBut, disableRule, getExperimentalReactCompilerOxlintConfig, getJestOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, getVitestOxlintConfig, setRuleSeverity } from "oxlint-config-setup";',
       'assert(getOxlintConfig({ react: true, node: true, ai: true }).plugins.includes("react"));',
       'assert.equal(getOxlintConfig({ level: "essential" }).rules["typescript/switch-exhaustiveness-check"], undefined);',
       'assert.equal(getOxlintConfig().rules["import/no-self-import"], undefined);',
@@ -496,6 +556,16 @@ try {
       'assert(getVitestOxlintConfig().plugins.includes("vitest"));',
       'assert(getJestOxlintConfig().plugins.includes("jest"));',
       'assert.equal(getExperimentalReactCompilerOxlintConfig().rules["react/react-compiler"], "warn");',
+      'const customized = getOxlintConfig({ ai: true });',
+      'setRuleSeverity(customized, "eslint/no-warning-comments", "error");',
+      'configureRule(customized, "eslint/valid-typeof", [{ requireStringLiterals: false }]);',
+      'disableRule(customized, "import/no-duplicates");',
+      'addRule(customized, "eslint/no-alert", "warn");',
+      'assert.equal(customized.rules["eslint/no-warning-comments"], "error");',
+      'assert.deepEqual(customized.rules["eslint/valid-typeof"], ["error", { requireStringLiterals: false }]);',
+      'assert.equal(customized.rules["import/no-duplicates"], "off");',
+      'disableAllRulesBut(customized, "eslint/valid-typeof");',
+      'assert.equal(customized.rules["eslint/no-alert"], "off");',
       'copyFileSync(new URL(import.meta.resolve("oxlint-config-setup/json/default")), ".oxlintrc.json");',
       "",
     ].join("\n"),
@@ -556,11 +626,14 @@ try {
   writeFileSync(
     resolve(consumerRoot, "consumer.ts"),
     [
-      'import { getOxlintConfig, getVitestOxlintConfig, type ConfigLevel, type ConfigOptions } from "oxlint-config-setup";',
+      'import { getOxlintConfig, getVitestOxlintConfig, setRuleSeverity, type ConfigLevel, type ConfigOptions, type RuleSeverity } from "oxlint-config-setup";',
       'const level: ConfigLevel = "essential";',
+      'const severity: RuleSeverity = "warn";',
       "const options = { level, react: true, ai: true } satisfies ConfigOptions;",
       "void getVitestOxlintConfig();",
-      "export default getOxlintConfig(options);",
+      "const config = getOxlintConfig(options);",
+      'setRuleSeverity(config, "eslint/no-warning-comments", severity);',
+      "export default config;",
       "",
     ].join("\n"),
   );

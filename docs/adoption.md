@@ -62,6 +62,20 @@ pnpm oxlint .
 The package has no install or postinstall script. Consumers execute only bundled
 ESM, declarations, JSON data, Oxlint, and its native type-aware backend.
 
+## Customize individual rules
+
+Use `setRuleSeverity`, `configureRule`, `disableRule`, `addRule`, and
+`disableAllRulesBut` after loading a TypeScript configuration. The helpers
+mutate that config object in place. Severity changes preserve options; option
+changes replace the complete positional options list and preserve severity.
+They update explicit root and existing file-override entries, while `addRule`
+writes to the root configuration.
+
+The former ESLint `{ scope }` argument is intentionally absent because the
+Oxlint artifacts do not contain named override blocks. Projects may add normal
+Oxlint file overrides and the helpers will update a rule wherever it already
+appears.
+
 ## Use a public JSON artifact
 
 Every TypeScript loader has a public JSON equivalent. For the default:

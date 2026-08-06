@@ -2,6 +2,7 @@ import type { DummyRule, OxlintConfig } from "oxlint";
 
 import { ruleLedger } from "./ledger.js";
 import type { ConfigLevel } from "./levels.js";
+import { configureRule, setRuleSeverity } from "./rule-helpers.js";
 import {
   PROFILE_ORDER,
   type RuleLedgerEntry,
@@ -50,14 +51,35 @@ function isRuleSelected(
   }
 }
 
-function ruleConfig(entry: RuleLedgerEntry, ai: boolean): DummyRule {
-  const override =
-    ai && entry.activation.kind === "level"
-      ? entry.activation.aiOverride
-      : undefined;
-  const severity = severityToOxlint(override?.severity ?? entry.severity);
-  const options = override?.options ?? entry.options;
+function ruleConfig(entry: RuleLedgerEntry): DummyRule {
+  const severity = severityToOxlint(entry.severity);
+  const options = entry.options;
   return options === undefined ? severity : [severity, ...options];
+}
+
+function applyAiOverrides(
+  config: OxlintConfig,
+  entries: readonly RuleLedgerEntry[],
+): void {
+  for (const entry of entries) {
+    if (
+      entry.activation.kind !== "level" ||
+      entry.activation.aiOverride === undefined
+    ) {
+      continue;
+    }
+    const override = entry.activation.aiOverride;
+    if (override.severity !== undefined) {
+      setRuleSeverity(
+        config,
+        entry.id,
+        severityToOxlint(override.severity),
+      );
+    }
+    if (override.options !== undefined) {
+      configureRule(config, entry.id, override.options);
+    }
+  }
 }
 
 function pluginsForRules(
@@ -148,13 +170,10 @@ export function composeProfiles(
 
   const selectedRules = selectRules(normalizedProfiles, options);
   const rules = Object.fromEntries(
-    selectedRules.map((entry) => [
-      entry.id,
-      ruleConfig(entry, options.ai ?? false),
-    ]),
+    selectedRules.map((entry) => [entry.id, ruleConfig(entry)]),
   );
 
-  return {
+  const config: OxlintConfig = {
     categories: {
       correctness: "off",
       suspicious: "off",
@@ -168,4 +187,6 @@ export function composeProfiles(
     plugins: pluginsForRules(selectedRules),
     rules,
   };
+  if (options.ai === true) applyAiOverrides(config, selectedRules);
+  return config;
 }

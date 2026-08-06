@@ -81,6 +81,11 @@ level hierarchy. AI entries must not be used to bypass a level classification,
 and AI must never disable or weaken an active rule. Named activation is reserved
 for the Vitest, Jest, and React Compiler execution contracts.
 
+AI severity and option overrides use the public rule-helper transformations.
+`configureRule` replaces the complete positional options list; ledger entries
+must therefore declare the full desired AI configuration rather than a partial
+object to merge.
+
 Do not commit `dist` or its generated release JSON. Those files are deterministic
 package output created by `build` and `prepack`; CI rejects tracked release output
 and tracked changes caused by the package gate.

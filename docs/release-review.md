@@ -14,6 +14,7 @@
 | KEEP | Deterministic package | Clean builds and two independently packed tarballs are byte-identical. |
 | ADJUST | Supplemental profiles | Syntax-only, Vitest, Jest, and React Compiler are named complete artifacts so the selector matrix does not expand. |
 | ADJUST | JSON delivery | Twenty-eight public `./json/*` exports provide stable copy targets while hashed internal files remain private. |
+| ADJUST | Consumer customization | Five in-place rule helpers port the predecessor's severity, options, disable, add, and diagnostic-isolation API to Oxlint objects. |
 | ADJUST | Rule catalog | The former capability sketch is replaced by a generated 27-entry ledger catalog. |
 | DEFER | JavaScript-plugin domains | Testing Library, Playwright, Storybook, SonarJS, and regex gaps remain research. |
 | DEFER | Stable React Compiler | Compiler diagnostics remain an isolated warning until upstream stability changes. |
