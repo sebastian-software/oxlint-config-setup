@@ -49,6 +49,7 @@ export default function Root() {
       <ArdoHeader
         logo={<ProductMark />}
         searchPlaceholder="Search the documentation..."
+        themeToggle
       >
         <ArdoNav>
           <ArdoNavLink to="/guide/getting-started">Guide</ArdoNavLink>
