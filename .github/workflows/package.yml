@@ -16,12 +16,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - node: 22.18.0
+          - node: 24.11.0
             oxlint: 1.77.0
             tsgolint: 7.0.2001
             typescript: 7.0.2
             pnpm: 11.20.0
-          - node: 24.x
+          - node: 26.x
             oxlint: 1.77.0
             tsgolint: 7.0.2001
             typescript: 7.0.2
@@ -70,7 +70,7 @@ jobs:
           version: 11.20.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22.18.0
+          node-version: 24.11.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Install the pinned build toolchain
@@ -96,7 +96,7 @@ jobs:
           version: 11.20.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22.18.0
+          node-version: 24.11.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Install the pinned documentation toolchain
@@ -113,8 +113,8 @@ jobs:
     strategy:
       matrix:
         node:
-          - 22.18.0
-          - 24.0.0
+          - 24.11.0
+          - 26.0.0
 
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -132,7 +132,7 @@ jobs:
       - name: Install the built API without peer auto-installation
         run: npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps ../release/*.tgz
         working-directory: consumer
-      - name: Run the built loader at the consumer Node floor
+      - name: Run the built loader on the consumer matrix
         run: >-
           node --input-type=module -e
           'import("oxlint-config-setup").then(({ getOxlintConfig, getSyntaxOnlyOxlintConfig }) => { const config = getOxlintConfig({ ai: true }); if (config.options?.typeAware !== true || config.rules?.["eslint/no-warning-comments"] !== "warn" || getSyntaxOnlyOxlintConfig().options?.typeAware !== false) process.exit(1); })'

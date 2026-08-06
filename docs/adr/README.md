@@ -27,3 +27,4 @@ are handled by a new ADR that supersedes the previous decision.
 | [0007](0007-add-essential-and-standard-config-levels.md) | Add essential and standard config levels | Superseded by 0008 |
 | [0008](0008-separate-policy-levels-from-ai-guardrails.md) | Separate policy levels from AI guardrails | Accepted |
 | [0009](0009-use-ardo-for-the-product-and-documentation-site.md) | Use Ardo for the product and documentation site | Accepted |
+| [0010](0010-require-node-24-lts.md) | Require Node.js 24 LTS or newer | Accepted |

@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/sebastian-software/oxlint-config-setup#readme",
   "engines": {
-    "node": "^22.18.0 || >=24.0.0"
+    "node": ">=24.11.0"
   },
   "packageManager": "pnpm@11.20.0",
   "exports": {

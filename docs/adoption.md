@@ -54,6 +54,8 @@ import {
 
 ## Install and run
 
+Use Node.js `24.11.0` or later, then install the tested linting trio:
+
 ```sh
 pnpm add -D oxlint-config-setup oxlint@1.77.0 oxlint-tsgolint@7.0.2001
 pnpm oxlint .
