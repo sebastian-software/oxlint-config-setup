@@ -1,6 +1,7 @@
-import type { OxlintConfig } from "oxlint";
+import type { DummyRule, OxlintConfig } from "oxlint";
 
 import { ruleLedger } from "./ledger.js";
+import type { ConfigLevel } from "./levels.js";
 import {
   PROFILE_ORDER,
   type RuleLedgerEntry,
@@ -8,6 +9,8 @@ import {
 } from "./schema.js";
 
 export interface ComposeOptions {
+  ai?: boolean;
+  level?: ConfigLevel;
   surface?: "stable" | "experimental";
   typeAware?: boolean;
 }
@@ -15,31 +18,67 @@ export interface ComposeOptions {
 const PROFILE_INDEX = new Map(
   PROFILE_ORDER.map((profile, index) => [profile, index]),
 );
+const LEVEL_INDEX = new Map(
+  (["essential", "recommended", "strict"] as const).map((level, index) => [
+    level,
+    index,
+  ]),
+);
 
 function severityToOxlint(
-  severity: RuleLedgerEntry["severity"],
+  severity: RuleLedgerEntry["severity"] | "warning" | "error",
 ): "off" | "warn" | "error" {
   return severity === "warning" ? "warn" : severity;
 }
 
-function pluginsForProfiles(
-  profiles: readonly RuleProfile[],
+function isRuleSelected(
+  entry: RuleLedgerEntry,
+  level: ConfigLevel,
+  ai: boolean,
+): boolean {
+  switch (entry.activation.kind) {
+    case "ai":
+      return ai;
+    case "named":
+      return true;
+    case "level":
+      return (
+        (LEVEL_INDEX.get(entry.activation.minimumLevel) ??
+          Number.MAX_SAFE_INTEGER) <=
+        (LEVEL_INDEX.get(level) ?? -1)
+      );
+  }
+}
+
+function ruleConfig(entry: RuleLedgerEntry, ai: boolean): DummyRule {
+  const override =
+    ai && entry.activation.kind === "level"
+      ? entry.activation.aiOverride
+      : undefined;
+  const severity = severityToOxlint(override?.severity ?? entry.severity);
+  const options = override?.options ?? entry.options;
+  return options === undefined ? severity : [severity, ...options];
+}
+
+function pluginsForRules(
+  entries: readonly RuleLedgerEntry[],
 ): NonNullable<OxlintConfig["plugins"]> {
+  const profiles = new Set(entries.map((entry) => entry.profile));
   const plugins = new Set<NonNullable<OxlintConfig["plugins"]>[number]>();
   if (
-    profiles.includes("typescript-syntax") ||
-    profiles.includes("typescript-type-aware")
+    profiles.has("typescript-syntax") ||
+    profiles.has("typescript-type-aware")
   ) {
     plugins.add("typescript");
   }
-  if (profiles.includes("imports")) plugins.add("import");
-  if (profiles.includes("react") || profiles.includes("react-compiler")) {
+  if (profiles.has("imports")) plugins.add("import");
+  if (profiles.has("react") || profiles.has("react-compiler")) {
     plugins.add("react");
   }
-  if (profiles.includes("jsx-a11y")) plugins.add("jsx-a11y");
-  if (profiles.includes("node")) plugins.add("node");
-  if (profiles.includes("vitest")) plugins.add("vitest");
-  if (profiles.includes("jest")) plugins.add("jest");
+  if (profiles.has("jsx-a11y")) plugins.add("jsx-a11y");
+  if (profiles.has("node")) plugins.add("node");
+  if (profiles.has("vitest")) plugins.add("vitest");
+  if (profiles.has("jest")) plugins.add("jest");
   return [...plugins];
 }
 
@@ -59,9 +98,14 @@ export function selectRules(
   options: ComposeOptions = {},
 ): readonly RuleLedgerEntry[] {
   const selectedProfiles = new Set(orderedProfiles(profiles));
+  const level = options.level ?? "recommended";
+  const ai = options.ai ?? false;
   const selected = ruleLedger
     .filter(
-      (entry) => selectedProfiles.has(entry.profile) && entry.severity !== "off",
+      (entry) =>
+        selectedProfiles.has(entry.profile) &&
+        entry.severity !== "off" &&
+        isRuleSelected(entry, level, ai),
     )
     .toSorted((left, right) => left.id.localeCompare(right.id));
   const ids = new Set(selected.map((entry) => entry.id));
@@ -102,10 +146,11 @@ export function composeProfiles(
     );
   }
 
+  const selectedRules = selectRules(normalizedProfiles, options);
   const rules = Object.fromEntries(
-    selectRules(normalizedProfiles, options).map((entry) => [
+    selectedRules.map((entry) => [
       entry.id,
-      severityToOxlint(entry.severity),
+      ruleConfig(entry, options.ai ?? false),
     ]),
   );
 
@@ -120,7 +165,7 @@ export function composeProfiles(
       nursery: "off",
     },
     options: { typeAware },
-    plugins: pluginsForProfiles(normalizedProfiles),
+    plugins: pluginsForRules(selectedRules),
     rules,
   };
 }

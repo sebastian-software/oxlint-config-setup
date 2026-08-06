@@ -30,9 +30,28 @@ const projectLanguageDecision = read(
 assert.match(projectLanguageDecision, /\*\*Status:\*\* Accepted/u);
 assert.match(projectLanguageDecision, /US English \(`en-US`\)/u);
 
+const configLevelDecision = read(
+  "docs/adr/0007-add-essential-and-standard-config-levels.md",
+);
+assert.match(configLevelDecision, /\*\*Status:\*\* Superseded/u);
+assert.match(configLevelDecision, /ADR 0008/u);
+
+const policyAndAiDecision = read(
+  "docs/adr/0008-separate-policy-levels-from-ai-guardrails.md",
+);
+assert.match(policyAndAiDecision, /\*\*Status:\*\* Accepted/u);
+assert.match(
+  policyAndAiDecision,
+  /"essential" \| "recommended" \| "strict"/u,
+);
+assert.match(policyAndAiDecision, /AI is an overlay/u);
+
 const readme = read("README.md");
 assert.match(readme, /behavioral coverage/iu);
 assert.match(readme, /identifier mapping/iu);
+assert.match(readme, /level: "essential"/u);
+assert.match(readme, /level: "strict"/u);
+assert.match(readme, /never activates a level-controlled rule/iu);
 for (const surface of [
   "getOxlintConfig",
   "getSyntaxOnlyOxlintConfig",

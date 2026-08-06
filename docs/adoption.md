@@ -2,18 +2,37 @@
 
 ## Choose one root configuration
 
-Standard projects use `getOxlintConfig()`. Its three Boolean options are fixed
-build-time dimensions and may be combined freely:
+Projects use `getOxlintConfig()`. Its level, two context options, and AI overlay
+are fixed build-time selectors and may be combined freely:
 
 ```ts
 import { getOxlintConfig } from "oxlint-config-setup";
 
-export default getOxlintConfig({ react: true, node: true, ai: false });
+export default getOxlintConfig({
+  level: "recommended",
+  react: true,
+  node: true,
+  ai: false,
+});
 ```
 
-The standard surface always owns core JavaScript correctness, imports,
-TypeScript syntax, and the reviewed type-aware rules. It therefore requires a
-discoverable `tsconfig.json` and `oxlint-tsgolint@7.0.2001`.
+`recommended` is the default and broadly applicable policy. Use
+`level: "essential"` for a smaller adoption baseline containing only high-signal
+correctness, safety, accessibility, and framework invariants. Use
+`level: "strict"` for the complete, more opinionated policy surface. The levels
+are nested: essential is a strict subset of recommended, which is a strict
+subset of strict.
+
+All three levels remain type-aware and therefore require a discoverable
+`tsconfig.json` and `oxlint-tsgolint@7.0.2001`. React, Node.js, and AI are
+independent selectors; an essential React project with AI guardrails is
+supported directly.
+
+React and Node.js identify project context. AI does not increase the selected
+policy level. It may tighten options or severity only for rules already active
+at that level and may add explicitly AI-only guardrails. For example,
+`essential` plus AI does not activate recommended import policy or strict
+exhaustive-switch policy.
 
 Use a named full configuration when the project has a different execution
 contract:
@@ -55,8 +74,11 @@ pnpm oxlint --config .oxlintrc.json .
 
 Replace `default` with `react`, `node`, `react-node`, `ai`, `react-ai`,
 `node-ai`, `react-node-ai`, `typescript-syntax`, `vitest`, `jest`, or
-`react-compiler`. The `react-compiler` name remains experimental even though its
-file path is stable.
+`react-compiler`. Essential artifacts use `essential`, `essential-react`,
+`essential-node`, `essential-react-node`, `essential-ai`,
+`essential-react-ai`, `essential-node-ai`, or `essential-react-node-ai`. The
+strict set uses the same suffixes with the `strict-` prefix. The
+`react-compiler` name remains experimental even though its file path is stable.
 
 ## CI
 

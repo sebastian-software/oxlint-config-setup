@@ -59,7 +59,7 @@ const configDirectory = resolve(distDirectory, "configs");
 const standaloneDirectory = resolve(distDirectory, "standalone");
 const manifestPath = resolve(repositoryRoot, "package.json");
 const workspaceSettingsPath = resolve(repositoryRoot, "pnpm-workspace.yaml");
-const goldenStandardConfigFiles = [
+const goldenStrictConfigFiles = [
   "config-6e5e7d225541.json",
   "config-a53f054eadae.json",
   "config-0906d8f2bc55.json",
@@ -68,6 +68,26 @@ const goldenStandardConfigFiles = [
   "config-5d4ac567d473.json",
   "config-f4874d816c7b.json",
   "config-a8b1b44dc3f7.json",
+];
+const goldenEssentialConfigFiles = [
+  "config-82509afeef3f.json",
+  "config-acf63cf99b5d.json",
+  "config-8f62aab4e978.json",
+  "config-f24164be786a.json",
+  "config-e92f768e23b7.json",
+  "config-c2c3c0abfc15.json",
+  "config-1046d925e8f9.json",
+  "config-0198ac2734f5.json",
+];
+const goldenRecommendedConfigFiles = [
+  "config-2f3c4ec11c30.json",
+  "config-a9ce253eb945.json",
+  "config-804226b181d5.json",
+  "config-9c8973d3e28e.json",
+  "config-c2ce4a229fa1.json",
+  "config-caa6192628d4.json",
+  "config-9ca4275ddbb3.json",
+  "config-fb9bc4bcf5ce.json",
 ];
 const publicApiNames = [
   "getExperimentalReactCompilerOxlintConfig",
@@ -248,10 +268,27 @@ assert(
     .every((file) => file.endsWith(".ts")),
 );
 assert.deepEqual(
-  allConfigOptions().map(configFileName),
-  goldenStandardConfigFiles,
-  "the reviewed three-bit standard artifact mapping must stay stable",
+  allConfigOptions()
+    .filter((options) => options.level === "strict")
+    .map(configFileName),
+  goldenStrictConfigFiles,
+  "the reviewed three-bit strict artifact mapping must stay stable",
 );
+assert.deepEqual(
+  allConfigOptions()
+    .filter((options) => options.level === "essential")
+    .map(configFileName),
+  goldenEssentialConfigFiles,
+  "the reviewed three-bit essential artifact mapping must stay stable",
+);
+assert.deepEqual(
+  allConfigOptions()
+    .filter((options) => options.level === "recommended")
+    .map(configFileName),
+  goldenRecommendedConfigFiles,
+  "the reviewed three-bit recommended artifact mapping must stay stable",
+);
+assert.equal(allConfigOptions().length, 24);
 
 rmSync(distDirectory, { recursive: true, force: true });
 run("pnpm", ["run", "build"]);
@@ -290,7 +327,7 @@ for (const artifact of artifacts) {
 }
 
 const declarationSource = readFileSync(resolve(distDirectory, "index.d.ts"), "utf8");
-for (const name of ["ConfigOptions", ...publicApiNames]) {
+for (const name of ["ConfigLevel", "ConfigOptions", ...publicApiNames]) {
   assert.match(declarationSource, new RegExp(name, "u"));
 }
 assert.doesNotMatch(declarationSource, /(?:\.\.\/|\/src\/|private\/tmp)/u);
@@ -326,6 +363,30 @@ assert.throws(
   () => publicApi.getOxlintConfig({ ai: "yes" } as never),
   /Oxlint config option ai must be a boolean/u,
 );
+assert.throws(
+  () => publicApi.getOxlintConfig({ level: "relaxed" } as never),
+  /Oxlint config option level must be one of: essential, recommended, strict/u,
+);
+const essential = publicApi.getOxlintConfig({
+  level: "essential",
+  react: true,
+  node: true,
+  ai: true,
+});
+assert.equal(essential.rules?.["typescript/no-floating-promises"], "error");
+assert.equal(essential.rules?.["typescript/switch-exhaustiveness-check"], undefined);
+assert.equal(essential.plugins?.includes("import"), false);
+assert.equal(essential.rules?.["eslint/no-warning-comments"], "warn");
+assert.deepEqual(essential.rules?.["eslint/valid-typeof"], [
+  "error",
+  { requireStringLiterals: true },
+]);
+const recommended = publicApi.getOxlintConfig();
+assert.equal(recommended.rules?.["import/no-duplicates"], "error");
+assert.equal(recommended.rules?.["import/no-self-import"], undefined);
+const strict = publicApi.getOxlintConfig({ level: "strict" });
+assert.equal(strict.rules?.["import/no-self-import"], "error");
+assert.equal(strict.rules?.["eslint/no-warning-comments"], undefined);
 
 rmSync(distDirectory, { recursive: true, force: true });
 run("pnpm", ["run", "build"]);
@@ -428,6 +489,9 @@ try {
       'import { copyFileSync } from "node:fs";',
       'import { getExperimentalReactCompilerOxlintConfig, getJestOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, getVitestOxlintConfig } from "oxlint-config-setup";',
       'assert(getOxlintConfig({ react: true, node: true, ai: true }).plugins.includes("react"));',
+      'assert.equal(getOxlintConfig({ level: "essential" }).rules["typescript/switch-exhaustiveness-check"], undefined);',
+      'assert.equal(getOxlintConfig().rules["import/no-self-import"], undefined);',
+      'assert.equal(getOxlintConfig({ level: "strict" }).rules["import/no-self-import"], "error");',
       'assert.equal(getSyntaxOnlyOxlintConfig().options.typeAware, false);',
       'assert(getVitestOxlintConfig().plugins.includes("vitest"));',
       'assert(getJestOxlintConfig().plugins.includes("jest"));',
@@ -492,8 +556,9 @@ try {
   writeFileSync(
     resolve(consumerRoot, "consumer.ts"),
     [
-      'import { getOxlintConfig, getVitestOxlintConfig, type ConfigOptions } from "oxlint-config-setup";',
-      "const options = { react: true, ai: true } satisfies ConfigOptions;",
+      'import { getOxlintConfig, getVitestOxlintConfig, type ConfigLevel, type ConfigOptions } from "oxlint-config-setup";',
+      'const level: ConfigLevel = "essential";',
+      "const options = { level, react: true, ai: true } satisfies ConfigOptions;",
       "void getVitestOxlintConfig();",
       "export default getOxlintConfig(options);",
       "",
@@ -552,5 +617,5 @@ try {
 
 assert.equal(run("git", ["diff", "--binary"]), trackedDiffBefore);
 console.log(
-  `Production package verified: ${allConfigOptions().length} standard + ${NAMED_ARTIFACTS.length} named artifacts.`,
+  `Production package verified: ${allConfigOptions().length} configurable + ${NAMED_ARTIFACTS.length} named artifacts.`,
 );

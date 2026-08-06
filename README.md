@@ -21,6 +21,7 @@ Create `oxlint.config.ts` and invoke Oxlint directly:
 import { getOxlintConfig } from "oxlint-config-setup";
 
 export default getOxlintConfig({
+  level: "recommended",
   react: true,
   node: true,
   ai: true,
@@ -31,26 +32,51 @@ export default getOxlintConfig({
 pnpm oxlint .
 ```
 
-`react`, `node`, and `ai` default to `false`. The loader selects one of eight
-complete, prebuilt JSON configurations. It never composes rules at runtime.
-Every standard configuration includes core, import, TypeScript syntax, and
-type-aware TypeScript behavior.
+`level` accepts `"essential"`, `"recommended"`, or `"strict"` and defaults to
+`"recommended"`. `react`, `node`, and `ai` default to `false`. The loader
+selects one of 24 complete, prebuilt JSON configurations. It never composes
+rules at runtime. Every configurable surface includes core, TypeScript syntax,
+and type-aware TypeScript behavior.
+
+Use `essential` for the smaller adoption baseline:
+
+```ts
+export default getOxlintConfig({
+  level: "essential",
+  react: true,
+});
+```
+
+Essential contains only the reviewed correctness, safety, accessibility, and
+framework invariants. Recommended adds broadly applicable project policy and is
+the default. Strict adds the complete, more opinionated policy surface. Each
+level is a strict superset of the previous level.
+
+React and Node.js select project context. AI is a separate guardrail overlay: it
+may tighten a rule already active at the selected level and may add rules
+explicitly classified as AI-only. It never activates a level-controlled rule
+from recommended or strict when that level is not selected, and it never weakens
+an active rule.
 
 ## Shipped surfaces
 
 | Need | TypeScript package export | Public JSON subpath | Stability |
 | --- | --- | --- | --- |
-| Core + complete TypeScript | `getOxlintConfig()` | `oxlint-config-setup/json/default` | Stable, version-pinned type-aware backend |
+| Recommended core + complete TypeScript | `getOxlintConfig()` | `oxlint-config-setup/json/default` | Stable, version-pinned type-aware backend |
+| Essential adoption baseline | `getOxlintConfig({ level: "essential" })` | `oxlint-config-setup/json/essential` | Stable, version-pinned type-aware backend |
+| Strict policy | `getOxlintConfig({ level: "strict" })` | `oxlint-config-setup/json/strict` | Stable, version-pinned type-aware backend |
 | React + JSX accessibility | `getOxlintConfig({ react: true })` | `oxlint-config-setup/json/react` | Stable |
 | Node.js | `getOxlintConfig({ node: true })` | `oxlint-config-setup/json/node` | Stable |
-| AI-assisted-development marker | `getOxlintConfig({ ai: true })` | `oxlint-config-setup/json/ai` | Stable warning |
+| AI guardrail overlay | `getOxlintConfig({ ai: true })` | `oxlint-config-setup/json/ai` | Stable warning and active-rule tightening |
 | TypeScript without a project graph | `getSyntaxOnlyOxlintConfig()` | `oxlint-config-setup/json/typescript-syntax` | Stable |
 | Vitest | `getVitestOxlintConfig()` | `oxlint-config-setup/json/vitest` | Stable |
 | Jest | `getJestOxlintConfig()` | `oxlint-config-setup/json/jest` | Stable |
 | React Compiler diagnostics | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler` | Experimental warning |
 
-The standard Boolean permutations also expose public JSON subpaths for
-`react-node`, `react-ai`, `node-ai`, and `react-node-ai`.
+The recommended permutations use unprefixed public JSON subpaths such as
+`react-node`, `react-ai`, `node-ai`, and `react-node-ai`. Essential and strict
+equivalents use their level prefix, such as `essential-react-node-ai` and
+`strict-react-node-ai`.
 
 For a syntax-only project:
 
@@ -92,11 +118,14 @@ hashed file from `node_modules`; hashes are deliberately not public API.
 
 ## What the beta proves
 
-The beta enables 27 ledger-owned rules across core, imports, TypeScript, React,
+The package owns 27 ledger rules across core, imports, TypeScript, React,
 accessibility, Node.js, Vitest, Jest, AI, and experimental compiler concerns.
 Each rule has valid and invalid fixtures asserting diagnostic file, location,
-and identity. Type-aware fixtures execute `oxlint-tsgolint`, including a
-TypeScript project-reference case.
+identity, and activation boundary. A fully enabled configurable surface selects
+14 rules at essential, 16 at recommended, or 20 at strict when AI is enabled.
+Of those totals, 13, 15, and 19 are level-controlled respectively; the current
+AI overlay adds one AI-only guardrail. Type-aware fixtures execute
+`oxlint-tsgolint`, including a TypeScript project-reference case.
 
 This is **behavioral coverage**, not an **identifier mapping** claim. The earlier
 migration study mapped about 85.3% of predecessor source-rule identifiers as

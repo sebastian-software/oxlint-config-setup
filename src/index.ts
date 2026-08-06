@@ -9,7 +9,7 @@ import {
   type ConfigOptions,
 } from "./options.js";
 
-export type { ConfigOptions } from "./options.js";
+export type { ConfigLevel, ConfigOptions } from "./options.js";
 
 function loadConfigArtifact(
   fileName: string,

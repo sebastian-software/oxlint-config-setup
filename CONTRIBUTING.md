@@ -58,10 +58,26 @@ verifier performs two clean byte-identical builds, verifies the exact tarball,
 and installs it into clean npm and pnpm consumers.
 
 Every enabled rule starts in `src/ledger.ts` with complete rationale, ownership,
-source, fixture, conflict, replacement, and review-trigger metadata. Add its
-valid and invalid case under `fixtures/rules/`, then run `pnpm generate`.
+activation, source, fixture, conflict, replacement, and review-trigger
+metadata. Add its valid and invalid case under `fixtures/rules/`, then run
+`pnpm generate`.
 The generated rule catalog and effective-config snapshots are committed source
 artifacts; `pnpm generate:check` rejects drift.
+
+`essential` is reserved for stable, low-noise correctness, safety,
+accessibility, and framework invariants. Upstream recommended-preset membership
+is evidence, not automatic inclusion. `recommended` contains broadly applicable
+project policy and is the default. `strict` contains useful but more opinionated
+policy with a higher adoption cost. Every higher level must remain a strict
+superset of the lower levels.
+
+AI activation is not a policy level. An AI override may only tighten the
+severity or options of an already-active level rule and needs a rationale plus a
+behavioral fixture. An AI-only rule must address an automation-friendly
+guardrail whose manual enforcement cost makes it unsuitable for the general
+level hierarchy. AI entries must not be used to bypass a level classification,
+and AI must never disable or weaken an active rule. Named activation is reserved
+for the Vitest, Jest, and React Compiler execution contracts.
 
 Do not commit `dist` or its generated release JSON. Those files are deterministic
 package output created by `build` and `prepack`; CI rejects tracked release output

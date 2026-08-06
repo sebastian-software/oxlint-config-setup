@@ -8,5 +8,7 @@ and the event that should cause it to be rerun.
 
 | Date | Note |
 | --- | --- |
+| 2026-08-06 | [Policy-level and AI activation](2026-08-06-policy-level-and-ai-activation.md) |
+| 2026-08-06 | [Essential level selection baseline](2026-08-06-essential-level-selection.md) |
 | 2026-08-05 | [Config packaging spike](2026-08-05-config-packaging-spike.md) |
 | 2026-08-04 | [Legacy coverage baseline](2026-08-04-legacy-coverage-baseline.md) |
