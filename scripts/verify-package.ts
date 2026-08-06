@@ -26,11 +26,14 @@ import {
 import type { RuleSeverity } from "../src/rule-helpers.js";
 
 interface PackageManifest {
+  description?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   engines?: Record<string, string>;
   exports?: Record<string, unknown>;
   files?: string[];
+  homepage?: string;
+  keywords?: string[];
   name?: string;
   optionalDependencies?: Record<string, string>;
   packageManager?: string;
@@ -220,6 +223,25 @@ function packDependency(packagePath: string, destination: string): string {
 
 const manifest = readManifest(manifestPath);
 assert.equal(manifest.name, "oxlint-config-setup");
+assert.equal(
+  manifest.description,
+  "Opinionated, prebuilt Oxlint configurations for modern TypeScript projects.",
+);
+assert.equal(
+  manifest.homepage,
+  "https://sebastian-software.github.io/oxlint-config-setup/",
+);
+assert.deepEqual(manifest.keywords, [
+  "oxlint",
+  "typescript",
+  "javascript",
+  "linting",
+  "static-analysis",
+  "code-quality",
+  "react",
+  "nodejs",
+  "ai",
+]);
 assert.equal(manifest.type, "module");
 assert.equal(manifest.sideEffects, false);
 assert.deepEqual(manifest.files, ["dist"]);

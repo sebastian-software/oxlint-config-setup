@@ -1,6 +1,6 @@
 # Oxlint Config Setup
 
-An opinionated, Oxlint-only linting preset for modern JavaScript and TypeScript projects.
+Opinionated, prebuilt Oxlint configurations for modern TypeScript projects.
 
 > [!IMPORTANT]
 > v0.1 is a reviewed beta candidate, not a published stable release. The package,
@@ -191,6 +191,7 @@ versioning policy.
 
 ## Project documents
 
+- [Product and documentation site](https://sebastian-software.github.io/oxlint-config-setup/)
 - [Documentation site source](docs/app)
 - [Adoption guide](docs/adoption.md)
 - [Migration and companion-tool matrix](docs/migration.md)
