@@ -15,7 +15,7 @@ export function createConfig(options: NormalizedConfigOptions): OxlintConfig {
         ...(options.node ? (["node"] as const) : []),
         ...(options.ai ? (["ai"] as const) : []),
       ],
-      { level: options.level },
+      { ai: options.ai, level: options.level },
     ),
   );
 }

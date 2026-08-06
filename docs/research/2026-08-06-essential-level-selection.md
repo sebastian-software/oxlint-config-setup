@@ -1,6 +1,7 @@
 # Essential level selection baseline
 
 - **Date:** 2026-08-06
+- **Status:** Superseded by [Policy-level and AI activation](2026-08-06-policy-level-and-ai-activation.md)
 - **Pinned runtime:** Oxlint 1.77.0 with `oxlint-tsgolint` 7.0.2001 and
   TypeScript 7.0.2
 - **Scope:** Classify the existing 27-rule ledger; do not add new rules

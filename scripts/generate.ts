@@ -14,6 +14,41 @@ function escapeCell(value: string): string {
   return value.replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
+function activationLabel(
+  entry: (typeof ruleLedger)[number],
+): string {
+  switch (entry.activation.kind) {
+    case "ai":
+      return "`ai`";
+    case "named":
+      return "`named`";
+    case "level":
+      return `\`${entry.activation.minimumLevel}\``;
+  }
+}
+
+function aiBehavior(entry: (typeof ruleLedger)[number]): string {
+  if (entry.activation.kind === "ai") {
+    return "Added only when `ai: true`";
+  }
+  if (
+    entry.activation.kind !== "level" ||
+    entry.activation.aiOverride === undefined
+  ) {
+    return "—";
+  }
+  const override = entry.activation.aiOverride;
+  const changes = [
+    override.severity === undefined
+      ? ""
+      : `severity → ${override.severity}`,
+    override.options === undefined
+      ? ""
+      : `options → \`${escapeCell(JSON.stringify(override.options))}\``,
+  ].filter(Boolean);
+  return `${changes.join("; ")}. ${escapeCell(override.rationale)}`;
+}
+
 function renderCatalog(): string {
   const lines = [
     "# Generated rule catalog",
@@ -22,15 +57,15 @@ function renderCatalog(): string {
     "",
     `The v0.1 ledger contains **${ruleLedger.length} reviewed rules**. Stable profiles use only native Oxlint execution paths; the single experimental rule is isolated from every configurable artifact.`,
     "",
-    "| Rule | Defect class | Profile | Minimum level | Path | Severity | Stability | Rationale | Fixtures | Replaces | Conflicts | Review trigger |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| Rule | Defect class | Profile | Activation | AI behavior | Path | Severity | Stability | Rationale | Fixtures | Replaces | Conflicts | Review trigger |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
   ];
   for (const entry of ruleLedger) {
     const fixtures = entry.fixtures
       .map((fixture) => `${fixture.valid}; ${fixture.invalid}`)
       .join("<br>");
     lines.push(
-      `| [\`${entry.id}\`](${entry.source.documentation}) | ${escapeCell(entry.defectClass)} | \`${entry.profile}\` | \`${entry.minimumLevel}\` | \`${entry.executionPath}\` | ${entry.severity} | ${entry.stability} | ${escapeCell(entry.rationale)} | ${fixtures} | ${entry.replaces.join(", ") || "—"} | ${entry.conflicts.join(", ") || "—"} | ${escapeCell(entry.reviewTrigger)} |`,
+      `| [\`${entry.id}\`](${entry.source.documentation}) | ${escapeCell(entry.defectClass)} | \`${entry.profile}\` | ${activationLabel(entry)} | ${aiBehavior(entry)} | \`${entry.executionPath}\` | ${entry.severity} | ${entry.stability} | ${escapeCell(entry.rationale)} | ${fixtures} | ${entry.replaces.join(", ") || "—"} | ${entry.conflicts.join(", ") || "—"} | ${escapeCell(entry.reviewTrigger)} |`,
     );
   }
   lines.push(
@@ -53,12 +88,18 @@ function normalizeSeverity(value: unknown): unknown {
   return value;
 }
 
+function normalizeRuleConfig(value: unknown): unknown {
+  if (!Array.isArray(value)) return normalizeSeverity(value);
+  const [severity, ...options] = value;
+  return [normalizeSeverity(severity), options];
+}
+
 function effectiveProjection(config: OxlintConfig): unknown {
   return {
     categories: Object.fromEntries(
       Object.entries(config.categories ?? {}).map(([key, value]) => [
         key,
-        normalizeSeverity(value),
+        normalizeRuleConfig(value),
       ]),
     ),
     options: {
@@ -70,7 +111,7 @@ function effectiveProjection(config: OxlintConfig): unknown {
         key.startsWith("eslint/")
           ? key.slice("eslint/".length)
           : key.replace("jsx-a11y/", "jsx_a11y/"),
-        normalizeSeverity(value),
+        normalizeRuleConfig(value),
       ]),
     ),
   };

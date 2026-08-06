@@ -32,29 +32,35 @@ function runOxlint(config: string, files: readonly string[]) {
 }
 
 const profileCases: Array<{
+  ai?: true;
+  level?: "strict";
   profile: RuleProfile;
   surface?: "experimental";
 }> = [
-  { profile: "core" },
-  { profile: "imports" },
-  { profile: "typescript-syntax" },
-  { profile: "typescript-type-aware" },
-  { profile: "react" },
-  { profile: "jsx-a11y" },
-  { profile: "node" },
+  { level: "strict", profile: "core" },
+  { level: "strict", profile: "imports" },
+  { level: "strict", profile: "typescript-syntax" },
+  { level: "strict", profile: "typescript-type-aware" },
+  { level: "strict", profile: "react" },
+  { level: "strict", profile: "jsx-a11y" },
+  { level: "strict", profile: "node" },
   { profile: "vitest" },
   { profile: "jest" },
-  { profile: "ai" },
+  { ai: true, profile: "ai" },
   { profile: "react-compiler", surface: "experimental" },
 ];
 
 try {
   for (const testCase of profileCases) {
     const config = composeProfiles([testCase.profile], {
+      ai: testCase.ai,
+      level: testCase.level,
       surface: testCase.surface,
     });
     const configPath = writeConfig(testCase.profile, config);
     const entries = selectRules([testCase.profile], {
+      ai: testCase.ai,
+      level: testCase.level,
       surface: testCase.surface,
     });
     const invalidFiles = [
@@ -121,7 +127,7 @@ try {
     );
   }
 
-  const standardProfiles = [
+  const configurableProfiles = [
     "core",
     "imports",
     "typescript-syntax",
@@ -131,32 +137,59 @@ try {
     "node",
     "ai",
   ] as const;
-  const standardEntries = selectRules(standardProfiles);
-  const essentialEntries = selectRules(standardProfiles, {
-    level: "essential",
+  const completeEntries = selectRules(configurableProfiles, {
+    ai: true,
+    level: "strict",
   });
-  const essentialConfig = writeConfig(
-    "essential-boundary",
-    composeProfiles(standardProfiles, { level: "essential" }),
-  );
-  const allStandardInvalidFiles = [
+  const allConfigurableInvalidFiles = [
     ...new Set(
-      standardEntries.flatMap((entry) =>
+      completeEntries.flatMap((entry) =>
         entry.fixtures.map((fixture) => fixture.invalid),
       ),
     ),
   ];
-  const essentialOnStandardInvalid = parseOxlintJson(
-    runOxlint(essentialConfig, allStandardInvalidFiles),
+  for (const level of ["essential", "recommended", "strict"] as const) {
+    for (const ai of [false, true]) {
+      const entries = selectRules(configurableProfiles, { ai, level });
+      const boundaryConfig = writeConfig(
+        `${level}-${ai ? "ai" : "plain"}-boundary`,
+        composeProfiles(configurableProfiles, { ai, level }),
+      );
+      const diagnostics = parseOxlintJson(
+        runOxlint(boundaryConfig, allConfigurableInvalidFiles),
+      );
+      assert.deepEqual(
+        new Set(
+          diagnostics.diagnostics.map((diagnostic) =>
+            normalizeDiagnosticCode(diagnostic.code),
+          ),
+        ),
+        new Set(entries.map((entry) => entry.id)),
+        `${level}${ai ? " + AI" : ""} must report exactly its reviewed activation surface`,
+      );
+    }
+  }
+
+  const aiOverrideFixture = "fixtures/rules/ai/valid-typeof-override.ts";
+  const plainCoreConfig = writeConfig(
+    "plain-core-ai-override-proof",
+    composeProfiles(["core"], { level: "essential" }),
   );
   assert.deepEqual(
-    new Set(
-      essentialOnStandardInvalid.diagnostics.map((diagnostic) =>
-        normalizeDiagnosticCode(diagnostic.code),
-      ),
+    parseOxlintJson(runOxlint(plainCoreConfig, [aiOverrideFixture])).diagnostics,
+    [],
+    "the AI override fixture must remain valid without AI",
+  );
+  const aiCoreConfig = writeConfig(
+    "ai-core-override-proof",
+    composeProfiles(["core"], { ai: true, level: "essential" }),
+  );
+  assert(
+    parseOxlintJson(runOxlint(aiCoreConfig, [aiOverrideFixture])).diagnostics.some(
+      (diagnostic) =>
+        normalizeDiagnosticCode(diagnostic.code) === "eslint/valid-typeof",
     ),
-    new Set(essentialEntries.map((entry) => entry.id)),
-    "essential must report its complete reviewed subset and exclude standard-only rules",
+    "AI must tighten the already active valid-typeof rule options",
   );
 
   const syntaxConfig = writeConfig(

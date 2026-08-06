@@ -27,8 +27,43 @@ assert.throws(
   /invalid severity/u,
 );
 assert.throws(
-  () => validateRuleLedger([mutatedEntry({ minimumLevel: "relaxed" })]),
+  () =>
+    validateRuleLedger([
+      mutatedEntry({
+        activation: { kind: "level", minimumLevel: "relaxed" },
+      }),
+    ]),
   /invalid minimum level/u,
+);
+assert.throws(
+  () =>
+    validateRuleLedger([
+      mutatedEntry({ activation: { kind: "ai", minimumLevel: "essential" } }),
+    ]),
+  /AI activation cannot define level or override fields/u,
+);
+assert.throws(
+  () =>
+    validateRuleLedger([
+      mutatedEntry({ activation: { kind: "named" } }),
+    ]),
+  /named activation outside a named profile/u,
+);
+assert.throws(
+  () =>
+    validateRuleLedger([
+      mutatedEntry({
+        activation: {
+          kind: "level",
+          minimumLevel: "essential",
+          aiOverride: {
+            severity: "warning",
+            rationale: "This intentionally attempts to weaken an error.",
+          },
+        },
+      }),
+    ]),
+  /AI override cannot weaken severity/u,
 );
 assert.throws(
   () => validateRuleLedger([mutatedEntry({ rationale: "" })]),
@@ -97,7 +132,7 @@ assert.throws(
   /Conflicting rule ownership/u,
 );
 
-const completeStandardProfiles = [
+const completeConfigurableProfiles = [
   "core",
   "imports",
   "typescript-syntax",
@@ -111,7 +146,6 @@ const essentialRuleIds = [
   "eslint/no-debugger",
   "eslint/no-dupe-keys",
   "eslint/no-unsafe-finally",
-  "eslint/no-warning-comments",
   "eslint/valid-typeof",
   "jsx-a11y/alt-text",
   "node/no-exports-assign",
@@ -123,24 +157,107 @@ const essentialRuleIds = [
   "typescript/no-duplicate-enum-values",
   "typescript/no-floating-promises",
 ];
-const essentialRules = selectRules(completeStandardProfiles, {
+const recommendedRuleIds = [
+  ...essentialRuleIds,
+  "import/no-duplicates",
+  "typescript/no-extra-non-null-assertion",
+];
+const strictRuleIds = [
+  ...recommendedRuleIds,
+  "import/no-self-import",
+  "node/no-new-require",
+  "node/no-path-concat",
+  "typescript/switch-exhaustiveness-check",
+];
+const expectedLevelRules = {
+  essential: new Set(essentialRuleIds),
+  recommended: new Set(recommendedRuleIds),
+  strict: new Set(strictRuleIds),
+};
+
+const essentialRules = selectRules(completeConfigurableProfiles, {
   level: "essential",
 });
 assert.deepEqual(
-  essentialRules.map((entry) => entry.id),
-  essentialRuleIds,
+  new Set(essentialRules.map((entry) => entry.id)),
+  expectedLevelRules.essential,
   "essential must remain the reviewed high-signal subset",
 );
-assert(
-  selectRules(completeStandardProfiles).length > essentialRules.length,
-  "standard must remain a strict superset of essential",
+assert.deepEqual(
+  new Set(
+    selectRules(completeConfigurableProfiles).map((entry) => entry.id),
+  ),
+  expectedLevelRules.recommended,
+  "recommended must be the default level",
 );
+assert.deepEqual(
+  new Set(
+    selectRules(completeConfigurableProfiles, { level: "strict" }).map(
+      (entry) => entry.id,
+    ),
+  ),
+  expectedLevelRules.strict,
+  "strict must contain the complete configurable level-controlled surface",
+);
+
+for (const level of ["essential", "recommended", "strict"] as const) {
+  const withoutAi = selectRules(completeConfigurableProfiles, { level });
+  const withAi = selectRules(completeConfigurableProfiles, {
+    ai: true,
+    level,
+  });
+  assert.deepEqual(
+    new Set(withoutAi.map((entry) => entry.id)),
+    expectedLevelRules[level],
+    `${level} must match its reviewed level membership`,
+  );
+  assert.deepEqual(
+    new Set(
+      withAi
+        .filter((entry) => entry.activation.kind === "level")
+        .map((entry) => entry.id),
+    ),
+    expectedLevelRules[level],
+    `AI must not activate level-controlled rules outside ${level}`,
+  );
+  assert.deepEqual(
+    withAi
+      .filter((entry) => entry.activation.kind === "ai")
+      .map((entry) => entry.id),
+    ["eslint/no-warning-comments"],
+    "AI may add only explicitly AI-activated guardrails",
+  );
+}
+
+const essentialConfig = composeProfiles(completeConfigurableProfiles, {
+  level: "essential",
+});
 assert.equal(
-  composeProfiles(completeStandardProfiles, {
-    level: "essential",
-  }).plugins?.includes("import"),
+  essentialConfig.plugins?.includes("import"),
   false,
   "essential must not load plugins that own no selected rule",
+);
+const essentialAiConfig = composeProfiles(completeConfigurableProfiles, {
+  ai: true,
+  level: "essential",
+});
+assert.equal(
+  essentialAiConfig.rules?.["typescript/switch-exhaustiveness-check"],
+  undefined,
+  "AI must not pull a strict rule into essential",
+);
+assert.deepEqual(
+  composeProfiles(["core"], { level: "essential" }).rules?.[
+    "eslint/valid-typeof"
+  ],
+  "error",
+);
+assert.deepEqual(
+  composeProfiles(["core"], { ai: true, level: "essential" }).rules?.[
+    "eslint/valid-typeof"
+  ],
+  ["error", { requireStringLiterals: true }],
+  "AI may tighten options only for an already active level rule",
 );
 
 for (const profiles of [

@@ -13,7 +13,7 @@ does not mean a plugin is approved.
 | React and JSX | Oxlint | Native React rules only | No Meta React or `react-hooks` JavaScript plugin |
 | React ESLint ecosystems | Accepted gap | No compatibility plugin | Native defect coverage supersedes plugin-identity parity |
 | JSX accessibility | Oxlint | Native `alt-text` baseline | Broader accessibility coverage follows the normal fixture gate |
-| React Compiler | Research | One isolated experimental native warning | Never enters standard React defaults silently |
+| React Compiler | Research | One isolated experimental native warning | Never enters configurable React defaults silently |
 | Node.js | Oxlint | Three native CommonJS hazard rules plus ESM-valid fixture | v0.1 does not impose a universal ESM/CommonJS style |
 | Vitest | Oxlint | Native focused-test, duplicate-title, and runner-mismatch checks | Vitest and Jest are separate full configs |
 | Jest | Oxlint | Native focused-test, duplicate-title, and legacy-Jasmine checks | Vitest and Jest are separate full configs |

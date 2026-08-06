@@ -1,304 +1,4 @@
 {
-  "default": {
-    "categories": {
-      "correctness": "allow",
-      "suspicious": "allow",
-      "pedantic": "allow",
-      "perf": "allow",
-      "style": "allow",
-      "restriction": "allow",
-      "nursery": "allow"
-    },
-    "options": {
-      "typeAware": true
-    },
-    "plugins": [
-      "import",
-      "typescript"
-    ],
-    "rules": {
-      "no-debugger": "deny",
-      "no-dupe-keys": "deny",
-      "no-unsafe-finally": "deny",
-      "valid-typeof": "deny",
-      "import/no-duplicates": "deny",
-      "import/no-self-import": "deny",
-      "typescript/await-thenable": "deny",
-      "typescript/ban-ts-comment": "deny",
-      "typescript/no-duplicate-enum-values": "deny",
-      "typescript/no-extra-non-null-assertion": "deny",
-      "typescript/no-floating-promises": "deny",
-      "typescript/switch-exhaustiveness-check": "deny"
-    }
-  },
-  "react": {
-    "categories": {
-      "correctness": "allow",
-      "suspicious": "allow",
-      "pedantic": "allow",
-      "perf": "allow",
-      "style": "allow",
-      "restriction": "allow",
-      "nursery": "allow"
-    },
-    "options": {
-      "typeAware": true
-    },
-    "plugins": [
-      "import",
-      "jsx-a11y",
-      "react",
-      "typescript"
-    ],
-    "rules": {
-      "no-debugger": "deny",
-      "no-dupe-keys": "deny",
-      "no-unsafe-finally": "deny",
-      "valid-typeof": "deny",
-      "import/no-duplicates": "deny",
-      "import/no-self-import": "deny",
-      "jsx_a11y/alt-text": "deny",
-      "react/jsx-key": "deny",
-      "react/jsx-no-undef": "deny",
-      "react/rules-of-hooks": "deny",
-      "typescript/await-thenable": "deny",
-      "typescript/ban-ts-comment": "deny",
-      "typescript/no-duplicate-enum-values": "deny",
-      "typescript/no-extra-non-null-assertion": "deny",
-      "typescript/no-floating-promises": "deny",
-      "typescript/switch-exhaustiveness-check": "deny"
-    }
-  },
-  "node": {
-    "categories": {
-      "correctness": "allow",
-      "suspicious": "allow",
-      "pedantic": "allow",
-      "perf": "allow",
-      "style": "allow",
-      "restriction": "allow",
-      "nursery": "allow"
-    },
-    "options": {
-      "typeAware": true
-    },
-    "plugins": [
-      "import",
-      "node",
-      "typescript"
-    ],
-    "rules": {
-      "no-debugger": "deny",
-      "no-dupe-keys": "deny",
-      "no-unsafe-finally": "deny",
-      "valid-typeof": "deny",
-      "import/no-duplicates": "deny",
-      "import/no-self-import": "deny",
-      "node/no-exports-assign": "deny",
-      "node/no-new-require": "deny",
-      "node/no-path-concat": "deny",
-      "typescript/await-thenable": "deny",
-      "typescript/ban-ts-comment": "deny",
-      "typescript/no-duplicate-enum-values": "deny",
-      "typescript/no-extra-non-null-assertion": "deny",
-      "typescript/no-floating-promises": "deny",
-      "typescript/switch-exhaustiveness-check": "deny"
-    }
-  },
-  "react-node": {
-    "categories": {
-      "correctness": "allow",
-      "suspicious": "allow",
-      "pedantic": "allow",
-      "perf": "allow",
-      "style": "allow",
-      "restriction": "allow",
-      "nursery": "allow"
-    },
-    "options": {
-      "typeAware": true
-    },
-    "plugins": [
-      "import",
-      "jsx-a11y",
-      "node",
-      "react",
-      "typescript"
-    ],
-    "rules": {
-      "no-debugger": "deny",
-      "no-dupe-keys": "deny",
-      "no-unsafe-finally": "deny",
-      "valid-typeof": "deny",
-      "import/no-duplicates": "deny",
-      "import/no-self-import": "deny",
-      "jsx_a11y/alt-text": "deny",
-      "node/no-exports-assign": "deny",
-      "node/no-new-require": "deny",
-      "node/no-path-concat": "deny",
-      "react/jsx-key": "deny",
-      "react/jsx-no-undef": "deny",
-      "react/rules-of-hooks": "deny",
-      "typescript/await-thenable": "deny",
-      "typescript/ban-ts-comment": "deny",
-      "typescript/no-duplicate-enum-values": "deny",
-      "typescript/no-extra-non-null-assertion": "deny",
-      "typescript/no-floating-promises": "deny",
-      "typescript/switch-exhaustiveness-check": "deny"
-    }
-  },
-  "ai": {
-    "categories": {
-      "correctness": "allow",
-      "suspicious": "allow",
-      "pedantic": "allow",
-      "perf": "allow",
-      "style": "allow",
-      "restriction": "allow",
-      "nursery": "allow"
-    },
-    "options": {
-      "typeAware": true
-    },
-    "plugins": [
-      "import",
-      "typescript"
-    ],
-    "rules": {
-      "no-debugger": "deny",
-      "no-dupe-keys": "deny",
-      "no-unsafe-finally": "deny",
-      "no-warning-comments": "warn",
-      "valid-typeof": "deny",
-      "import/no-duplicates": "deny",
-      "import/no-self-import": "deny",
-      "typescript/await-thenable": "deny",
-      "typescript/ban-ts-comment": "deny",
-      "typescript/no-duplicate-enum-values": "deny",
-      "typescript/no-extra-non-null-assertion": "deny",
-      "typescript/no-floating-promises": "deny",
-      "typescript/switch-exhaustiveness-check": "deny"
-    }
-  },
-  "react-ai": {
-    "categories": {
-      "correctness": "allow",
-      "suspicious": "allow",
-      "pedantic": "allow",
-      "perf": "allow",
-      "style": "allow",
-      "restriction": "allow",
-      "nursery": "allow"
-    },
-    "options": {
-      "typeAware": true
-    },
-    "plugins": [
-      "import",
-      "jsx-a11y",
-      "react",
-      "typescript"
-    ],
-    "rules": {
-      "no-debugger": "deny",
-      "no-dupe-keys": "deny",
-      "no-unsafe-finally": "deny",
-      "no-warning-comments": "warn",
-      "valid-typeof": "deny",
-      "import/no-duplicates": "deny",
-      "import/no-self-import": "deny",
-      "jsx_a11y/alt-text": "deny",
-      "react/jsx-key": "deny",
-      "react/jsx-no-undef": "deny",
-      "react/rules-of-hooks": "deny",
-      "typescript/await-thenable": "deny",
-      "typescript/ban-ts-comment": "deny",
-      "typescript/no-duplicate-enum-values": "deny",
-      "typescript/no-extra-non-null-assertion": "deny",
-      "typescript/no-floating-promises": "deny",
-      "typescript/switch-exhaustiveness-check": "deny"
-    }
-  },
-  "node-ai": {
-    "categories": {
-      "correctness": "allow",
-      "suspicious": "allow",
-      "pedantic": "allow",
-      "perf": "allow",
-      "style": "allow",
-      "restriction": "allow",
-      "nursery": "allow"
-    },
-    "options": {
-      "typeAware": true
-    },
-    "plugins": [
-      "import",
-      "node",
-      "typescript"
-    ],
-    "rules": {
-      "no-debugger": "deny",
-      "no-dupe-keys": "deny",
-      "no-unsafe-finally": "deny",
-      "no-warning-comments": "warn",
-      "valid-typeof": "deny",
-      "import/no-duplicates": "deny",
-      "import/no-self-import": "deny",
-      "node/no-exports-assign": "deny",
-      "node/no-new-require": "deny",
-      "node/no-path-concat": "deny",
-      "typescript/await-thenable": "deny",
-      "typescript/ban-ts-comment": "deny",
-      "typescript/no-duplicate-enum-values": "deny",
-      "typescript/no-extra-non-null-assertion": "deny",
-      "typescript/no-floating-promises": "deny",
-      "typescript/switch-exhaustiveness-check": "deny"
-    }
-  },
-  "react-node-ai": {
-    "categories": {
-      "correctness": "allow",
-      "suspicious": "allow",
-      "pedantic": "allow",
-      "perf": "allow",
-      "style": "allow",
-      "restriction": "allow",
-      "nursery": "allow"
-    },
-    "options": {
-      "typeAware": true
-    },
-    "plugins": [
-      "import",
-      "jsx-a11y",
-      "node",
-      "react",
-      "typescript"
-    ],
-    "rules": {
-      "no-debugger": "deny",
-      "no-dupe-keys": "deny",
-      "no-unsafe-finally": "deny",
-      "no-warning-comments": "warn",
-      "valid-typeof": "deny",
-      "import/no-duplicates": "deny",
-      "import/no-self-import": "deny",
-      "jsx_a11y/alt-text": "deny",
-      "node/no-exports-assign": "deny",
-      "node/no-new-require": "deny",
-      "node/no-path-concat": "deny",
-      "react/jsx-key": "deny",
-      "react/jsx-no-undef": "deny",
-      "react/rules-of-hooks": "deny",
-      "typescript/await-thenable": "deny",
-      "typescript/ban-ts-comment": "deny",
-      "typescript/no-duplicate-enum-values": "deny",
-      "typescript/no-extra-non-null-assertion": "deny",
-      "typescript/no-floating-promises": "deny",
-      "typescript/switch-exhaustiveness-check": "deny"
-    }
-  },
   "essential": {
     "categories": {
       "correctness": "allow",
@@ -444,7 +144,14 @@
       "no-dupe-keys": "deny",
       "no-unsafe-finally": "deny",
       "no-warning-comments": "warn",
-      "valid-typeof": "deny",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
       "typescript/await-thenable": "deny",
       "typescript/ban-ts-comment": "deny",
       "typescript/no-duplicate-enum-values": "deny",
@@ -474,7 +181,14 @@
       "no-dupe-keys": "deny",
       "no-unsafe-finally": "deny",
       "no-warning-comments": "warn",
-      "valid-typeof": "deny",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
       "jsx_a11y/alt-text": "deny",
       "react/jsx-key": "deny",
       "react/jsx-no-undef": "deny",
@@ -507,7 +221,14 @@
       "no-dupe-keys": "deny",
       "no-unsafe-finally": "deny",
       "no-warning-comments": "warn",
-      "valid-typeof": "deny",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
       "node/no-exports-assign": "deny",
       "typescript/await-thenable": "deny",
       "typescript/ban-ts-comment": "deny",
@@ -539,7 +260,14 @@
       "no-dupe-keys": "deny",
       "no-unsafe-finally": "deny",
       "no-warning-comments": "warn",
-      "valid-typeof": "deny",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
       "jsx_a11y/alt-text": "deny",
       "node/no-exports-assign": "deny",
       "react/jsx-key": "deny",
@@ -549,6 +277,638 @@
       "typescript/ban-ts-comment": "deny",
       "typescript/no-duplicate-enum-values": "deny",
       "typescript/no-floating-promises": "deny"
+    }
+  },
+  "default": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "valid-typeof": "deny",
+      "import/no-duplicates": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny"
+    }
+  },
+  "react": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "jsx-a11y",
+      "react",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "valid-typeof": "deny",
+      "import/no-duplicates": "deny",
+      "jsx_a11y/alt-text": "deny",
+      "react/jsx-key": "deny",
+      "react/jsx-no-undef": "deny",
+      "react/rules-of-hooks": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny"
+    }
+  },
+  "node": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "node",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "valid-typeof": "deny",
+      "import/no-duplicates": "deny",
+      "node/no-exports-assign": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny"
+    }
+  },
+  "react-node": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "jsx-a11y",
+      "node",
+      "react",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "valid-typeof": "deny",
+      "import/no-duplicates": "deny",
+      "jsx_a11y/alt-text": "deny",
+      "node/no-exports-assign": "deny",
+      "react/jsx-key": "deny",
+      "react/jsx-no-undef": "deny",
+      "react/rules-of-hooks": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny"
+    }
+  },
+  "ai": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "no-warning-comments": "warn",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
+      "import/no-duplicates": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny"
+    }
+  },
+  "react-ai": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "jsx-a11y",
+      "react",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "no-warning-comments": "warn",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
+      "import/no-duplicates": "deny",
+      "jsx_a11y/alt-text": "deny",
+      "react/jsx-key": "deny",
+      "react/jsx-no-undef": "deny",
+      "react/rules-of-hooks": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny"
+    }
+  },
+  "node-ai": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "node",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "no-warning-comments": "warn",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
+      "import/no-duplicates": "deny",
+      "node/no-exports-assign": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny"
+    }
+  },
+  "react-node-ai": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "jsx-a11y",
+      "node",
+      "react",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "no-warning-comments": "warn",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
+      "import/no-duplicates": "deny",
+      "jsx_a11y/alt-text": "deny",
+      "node/no-exports-assign": "deny",
+      "react/jsx-key": "deny",
+      "react/jsx-no-undef": "deny",
+      "react/rules-of-hooks": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny"
+    }
+  },
+  "strict": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "valid-typeof": "deny",
+      "import/no-duplicates": "deny",
+      "import/no-self-import": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny",
+      "typescript/switch-exhaustiveness-check": "deny"
+    }
+  },
+  "strict-react": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "jsx-a11y",
+      "react",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "valid-typeof": "deny",
+      "import/no-duplicates": "deny",
+      "import/no-self-import": "deny",
+      "jsx_a11y/alt-text": "deny",
+      "react/jsx-key": "deny",
+      "react/jsx-no-undef": "deny",
+      "react/rules-of-hooks": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny",
+      "typescript/switch-exhaustiveness-check": "deny"
+    }
+  },
+  "strict-node": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "node",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "valid-typeof": "deny",
+      "import/no-duplicates": "deny",
+      "import/no-self-import": "deny",
+      "node/no-exports-assign": "deny",
+      "node/no-new-require": "deny",
+      "node/no-path-concat": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny",
+      "typescript/switch-exhaustiveness-check": "deny"
+    }
+  },
+  "strict-react-node": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "jsx-a11y",
+      "node",
+      "react",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "valid-typeof": "deny",
+      "import/no-duplicates": "deny",
+      "import/no-self-import": "deny",
+      "jsx_a11y/alt-text": "deny",
+      "node/no-exports-assign": "deny",
+      "node/no-new-require": "deny",
+      "node/no-path-concat": "deny",
+      "react/jsx-key": "deny",
+      "react/jsx-no-undef": "deny",
+      "react/rules-of-hooks": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny",
+      "typescript/switch-exhaustiveness-check": "deny"
+    }
+  },
+  "strict-ai": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "no-warning-comments": "warn",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
+      "import/no-duplicates": "deny",
+      "import/no-self-import": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny",
+      "typescript/switch-exhaustiveness-check": "deny"
+    }
+  },
+  "strict-react-ai": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "jsx-a11y",
+      "react",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "no-warning-comments": "warn",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
+      "import/no-duplicates": "deny",
+      "import/no-self-import": "deny",
+      "jsx_a11y/alt-text": "deny",
+      "react/jsx-key": "deny",
+      "react/jsx-no-undef": "deny",
+      "react/rules-of-hooks": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny",
+      "typescript/switch-exhaustiveness-check": "deny"
+    }
+  },
+  "strict-node-ai": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "node",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "no-warning-comments": "warn",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
+      "import/no-duplicates": "deny",
+      "import/no-self-import": "deny",
+      "node/no-exports-assign": "deny",
+      "node/no-new-require": "deny",
+      "node/no-path-concat": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny",
+      "typescript/switch-exhaustiveness-check": "deny"
+    }
+  },
+  "strict-react-node-ai": {
+    "categories": {
+      "correctness": "allow",
+      "suspicious": "allow",
+      "pedantic": "allow",
+      "perf": "allow",
+      "style": "allow",
+      "restriction": "allow",
+      "nursery": "allow"
+    },
+    "options": {
+      "typeAware": true
+    },
+    "plugins": [
+      "import",
+      "jsx-a11y",
+      "node",
+      "react",
+      "typescript"
+    ],
+    "rules": {
+      "no-debugger": "deny",
+      "no-dupe-keys": "deny",
+      "no-unsafe-finally": "deny",
+      "no-warning-comments": "warn",
+      "valid-typeof": [
+        "deny",
+        [
+          {
+            "requireStringLiterals": true
+          }
+        ]
+      ],
+      "import/no-duplicates": "deny",
+      "import/no-self-import": "deny",
+      "jsx_a11y/alt-text": "deny",
+      "node/no-exports-assign": "deny",
+      "node/no-new-require": "deny",
+      "node/no-path-concat": "deny",
+      "react/jsx-key": "deny",
+      "react/jsx-no-undef": "deny",
+      "react/rules-of-hooks": "deny",
+      "typescript/await-thenable": "deny",
+      "typescript/ban-ts-comment": "deny",
+      "typescript/no-duplicate-enum-values": "deny",
+      "typescript/no-extra-non-null-assertion": "deny",
+      "typescript/no-floating-promises": "deny",
+      "typescript/switch-exhaustiveness-check": "deny"
     }
   },
   "typescript-syntax": {

@@ -24,7 +24,7 @@ export interface ConfigArtifact {
   config: OxlintConfig;
 }
 
-const STANDARD_PROFILES = [
+const COMPLETE_PROFILES = [
   "core",
   "imports",
   "typescript-syntax",
@@ -40,26 +40,31 @@ export function publicConfigName(
     options.ai ? "ai" : "",
   ].filter(Boolean);
   const featureName = enabled.length === 0 ? "default" : enabled.join("-");
-  if (options.level === "standard") return featureName;
-  return featureName === "default" ? "essential" : `essential-${featureName}`;
+  if (options.level === "recommended") return featureName;
+  return featureName === "default"
+    ? options.level
+    : `${options.level}-${featureName}`;
 }
 
 export function createNamedConfig(name: NamedArtifact): OxlintConfig {
   switch (name) {
     case "typescript-syntax":
-      return composeProfiles([
-        "core",
-        "imports",
-        "typescript-syntax",
-      ]);
+      return composeProfiles(
+        ["core", "imports", "typescript-syntax"],
+        { level: "strict" },
+      );
     case "vitest":
-      return composeProfiles([...STANDARD_PROFILES, "vitest"]);
+      return composeProfiles([...COMPLETE_PROFILES, "vitest"], {
+        level: "strict",
+      });
     case "jest":
-      return composeProfiles([...STANDARD_PROFILES, "jest"]);
+      return composeProfiles([...COMPLETE_PROFILES, "jest"], {
+        level: "strict",
+      });
     case "react-compiler":
       return composeProfiles(
-        [...STANDARD_PROFILES, "react", "jsx-a11y", "react-compiler"],
-        { surface: "experimental" },
+        [...COMPLETE_PROFILES, "react", "jsx-a11y", "react-compiler"],
+        { level: "strict", surface: "experimental" },
       );
   }
 }

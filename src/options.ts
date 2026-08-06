@@ -20,8 +20,10 @@ export interface NormalizedConfigOptions {
 
 const BOOLEAN_OPTION_KEYS = ["react", "node", "ai"] as const;
 const OPTION_KEYS = ["level", ...BOOLEAN_OPTION_KEYS] as const;
-const STANDARD_HASH_NAMESPACE = "oxlint-config-setup:config:v1";
+const STRICT_HASH_NAMESPACE = "oxlint-config-setup:config:v1";
 const ESSENTIAL_HASH_NAMESPACE = "oxlint-config-setup:config:v2:essential";
+const RECOMMENDED_HASH_NAMESPACE =
+  "oxlint-config-setup:config:v3:recommended";
 
 export function normalizeConfigOptions(
   options: ConfigOptions = {},
@@ -57,7 +59,7 @@ export function normalizeConfigOptions(
   }
 
   return {
-    level: options.level ?? "standard",
+    level: options.level ?? "recommended",
     react: options.react ?? false,
     node: options.node ?? false,
     ai: options.ai ?? false,
@@ -75,10 +77,11 @@ export function configOptionMask(options: NormalizedConfigOptions): number {
 export function configFileName(options: ConfigOptions = {}): string {
   const normalized = normalizeConfigOptions(options);
   const mask = configOptionMask(normalized);
-  const namespace =
-    normalized.level === "standard"
-      ? STANDARD_HASH_NAMESPACE
-      : ESSENTIAL_HASH_NAMESPACE;
+  const namespace = {
+    essential: ESSENTIAL_HASH_NAMESPACE,
+    recommended: RECOMMENDED_HASH_NAMESPACE,
+    strict: STRICT_HASH_NAMESPACE,
+  }[normalized.level];
   const digest = createHash("sha256")
     .update(`${namespace}:${mask.toString(2).padStart(3, "0")}`)
     .digest("hex")
@@ -87,7 +90,7 @@ export function configFileName(options: ConfigOptions = {}): string {
 }
 
 export function allConfigOptions(): NormalizedConfigOptions[] {
-  return (["standard", "essential"] as const).flatMap((level) =>
+  return CONFIG_LEVELS.flatMap((level) =>
     Array.from({ length: 8 }, (_, mask) => ({
       level,
       react: Boolean(mask & 1),

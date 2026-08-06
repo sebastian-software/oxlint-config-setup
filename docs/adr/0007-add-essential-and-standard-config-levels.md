@@ -1,9 +1,10 @@
 # 0007. Add essential and standard config levels
 
-- **Status:** Accepted
+- **Status:** Superseded
 - **Date:** 2026-08-06
 - **Deciders:** Sebastian Software maintainers
 - **Supersedes:** [ADR 0005](0005-author-configs-in-typescript-and-publish-json.md)
+- **Superseded by:** [ADR 0008](0008-separate-policy-levels-from-ai-guardrails.md)
 
 ## Context
 

@@ -1,4 +1,4 @@
-import type { OxlintConfig } from "oxlint";
+import type { DummyRule, OxlintConfig } from "oxlint";
 
 import { ruleLedger } from "./ledger.js";
 import type { ConfigLevel } from "./levels.js";
@@ -9,6 +9,7 @@ import {
 } from "./schema.js";
 
 export interface ComposeOptions {
+  ai?: boolean;
   level?: ConfigLevel;
   surface?: "stable" | "experimental";
   typeAware?: boolean;
@@ -17,11 +18,46 @@ export interface ComposeOptions {
 const PROFILE_INDEX = new Map(
   PROFILE_ORDER.map((profile, index) => [profile, index]),
 );
+const LEVEL_INDEX = new Map(
+  (["essential", "recommended", "strict"] as const).map((level, index) => [
+    level,
+    index,
+  ]),
+);
 
 function severityToOxlint(
-  severity: RuleLedgerEntry["severity"],
+  severity: RuleLedgerEntry["severity"] | "warning" | "error",
 ): "off" | "warn" | "error" {
   return severity === "warning" ? "warn" : severity;
+}
+
+function isRuleSelected(
+  entry: RuleLedgerEntry,
+  level: ConfigLevel,
+  ai: boolean,
+): boolean {
+  switch (entry.activation.kind) {
+    case "ai":
+      return ai;
+    case "named":
+      return true;
+    case "level":
+      return (
+        (LEVEL_INDEX.get(entry.activation.minimumLevel) ??
+          Number.MAX_SAFE_INTEGER) <=
+        (LEVEL_INDEX.get(level) ?? -1)
+      );
+  }
+}
+
+function ruleConfig(entry: RuleLedgerEntry, ai: boolean): DummyRule {
+  const override =
+    ai && entry.activation.kind === "level"
+      ? entry.activation.aiOverride
+      : undefined;
+  const severity = severityToOxlint(override?.severity ?? entry.severity);
+  const options = override?.options ?? entry.options;
+  return options === undefined ? severity : [severity, ...options];
 }
 
 function pluginsForRules(
@@ -62,13 +98,14 @@ export function selectRules(
   options: ComposeOptions = {},
 ): readonly RuleLedgerEntry[] {
   const selectedProfiles = new Set(orderedProfiles(profiles));
-  const level = options.level ?? "standard";
+  const level = options.level ?? "recommended";
+  const ai = options.ai ?? false;
   const selected = ruleLedger
     .filter(
       (entry) =>
         selectedProfiles.has(entry.profile) &&
         entry.severity !== "off" &&
-        (level === "standard" || entry.minimumLevel === "essential"),
+        isRuleSelected(entry, level, ai),
     )
     .toSorted((left, right) => left.id.localeCompare(right.id));
   const ids = new Set(selected.map((entry) => entry.id));
@@ -113,7 +150,7 @@ export function composeProfiles(
   const rules = Object.fromEntries(
     selectedRules.map((entry) => [
       entry.id,
-      severityToOxlint(entry.severity),
+      ruleConfig(entry, options.ai ?? false),
     ]),
   );
 

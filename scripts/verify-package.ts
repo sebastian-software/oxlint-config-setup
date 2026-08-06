@@ -59,7 +59,7 @@ const configDirectory = resolve(distDirectory, "configs");
 const standaloneDirectory = resolve(distDirectory, "standalone");
 const manifestPath = resolve(repositoryRoot, "package.json");
 const workspaceSettingsPath = resolve(repositoryRoot, "pnpm-workspace.yaml");
-const goldenStandardConfigFiles = [
+const goldenStrictConfigFiles = [
   "config-6e5e7d225541.json",
   "config-a53f054eadae.json",
   "config-0906d8f2bc55.json",
@@ -78,6 +78,16 @@ const goldenEssentialConfigFiles = [
   "config-c2c3c0abfc15.json",
   "config-1046d925e8f9.json",
   "config-0198ac2734f5.json",
+];
+const goldenRecommendedConfigFiles = [
+  "config-2f3c4ec11c30.json",
+  "config-a9ce253eb945.json",
+  "config-804226b181d5.json",
+  "config-9c8973d3e28e.json",
+  "config-c2ce4a229fa1.json",
+  "config-caa6192628d4.json",
+  "config-9ca4275ddbb3.json",
+  "config-fb9bc4bcf5ce.json",
 ];
 const publicApiNames = [
   "getExperimentalReactCompilerOxlintConfig",
@@ -259,10 +269,10 @@ assert(
 );
 assert.deepEqual(
   allConfigOptions()
-    .filter((options) => options.level === "standard")
+    .filter((options) => options.level === "strict")
     .map(configFileName),
-  goldenStandardConfigFiles,
-  "the reviewed three-bit standard artifact mapping must stay stable",
+  goldenStrictConfigFiles,
+  "the reviewed three-bit strict artifact mapping must stay stable",
 );
 assert.deepEqual(
   allConfigOptions()
@@ -271,7 +281,14 @@ assert.deepEqual(
   goldenEssentialConfigFiles,
   "the reviewed three-bit essential artifact mapping must stay stable",
 );
-assert.equal(allConfigOptions().length, 16);
+assert.deepEqual(
+  allConfigOptions()
+    .filter((options) => options.level === "recommended")
+    .map(configFileName),
+  goldenRecommendedConfigFiles,
+  "the reviewed three-bit recommended artifact mapping must stay stable",
+);
+assert.equal(allConfigOptions().length, 24);
 
 rmSync(distDirectory, { recursive: true, force: true });
 run("pnpm", ["run", "build"]);
@@ -348,7 +365,7 @@ assert.throws(
 );
 assert.throws(
   () => publicApi.getOxlintConfig({ level: "relaxed" } as never),
-  /Oxlint config option level must be one of: essential, standard/u,
+  /Oxlint config option level must be one of: essential, recommended, strict/u,
 );
 const essential = publicApi.getOxlintConfig({
   level: "essential",
@@ -359,6 +376,17 @@ const essential = publicApi.getOxlintConfig({
 assert.equal(essential.rules?.["typescript/no-floating-promises"], "error");
 assert.equal(essential.rules?.["typescript/switch-exhaustiveness-check"], undefined);
 assert.equal(essential.plugins?.includes("import"), false);
+assert.equal(essential.rules?.["eslint/no-warning-comments"], "warn");
+assert.deepEqual(essential.rules?.["eslint/valid-typeof"], [
+  "error",
+  { requireStringLiterals: true },
+]);
+const recommended = publicApi.getOxlintConfig();
+assert.equal(recommended.rules?.["import/no-duplicates"], "error");
+assert.equal(recommended.rules?.["import/no-self-import"], undefined);
+const strict = publicApi.getOxlintConfig({ level: "strict" });
+assert.equal(strict.rules?.["import/no-self-import"], "error");
+assert.equal(strict.rules?.["eslint/no-warning-comments"], undefined);
 
 rmSync(distDirectory, { recursive: true, force: true });
 run("pnpm", ["run", "build"]);
@@ -462,6 +490,8 @@ try {
       'import { getExperimentalReactCompilerOxlintConfig, getJestOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, getVitestOxlintConfig } from "oxlint-config-setup";',
       'assert(getOxlintConfig({ react: true, node: true, ai: true }).plugins.includes("react"));',
       'assert.equal(getOxlintConfig({ level: "essential" }).rules["typescript/switch-exhaustiveness-check"], undefined);',
+      'assert.equal(getOxlintConfig().rules["import/no-self-import"], undefined);',
+      'assert.equal(getOxlintConfig({ level: "strict" }).rules["import/no-self-import"], "error");',
       'assert.equal(getSyntaxOnlyOxlintConfig().options.typeAware, false);',
       'assert(getVitestOxlintConfig().plugins.includes("vitest"));',
       'assert(getJestOxlintConfig().plugins.includes("jest"));',
