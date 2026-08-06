@@ -46,6 +46,13 @@ assert.match(
 );
 assert.match(policyAndAiDecision, /AI is an overlay/u);
 
+const closedV01Contract = read(
+  "docs/rfcs/0003-close-the-v01-configuration-contract.md",
+);
+assert.match(closedV01Contract, /\*\*Status:\*\* Accepted and implemented/u);
+assert.match(closedV01Contract, /Levels control membership only/u);
+assert.match(closedV01Contract, /no cross-host millisecond SLA/u);
+
 const readme = read("README.md");
 assert.match(readme, /behavioral coverage/iu);
 assert.match(readme, /identifier mapping/iu);

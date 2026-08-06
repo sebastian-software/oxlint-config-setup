@@ -69,7 +69,9 @@ accessibility, and framework invariants. Upstream recommended-preset membership
 is evidence, not automatic inclusion. `recommended` contains broadly applicable
 project policy and is the default. `strict` contains useful but more opinionated
 policy with a higher adoption cost. Every higher level must remain a strict
-superset of the lower levels.
+superset of the lower levels. Levels control membership only: a rule's base
+severity and options must remain identical in every level where it is active.
+Level-specific overrides require a new accepted contract and schema change.
 
 AI activation is not a policy level. An AI override may only tighten the
 severity or options of an already-active level rule and needs a rationale plus a

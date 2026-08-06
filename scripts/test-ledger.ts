@@ -174,6 +174,30 @@ const expectedLevelRules = {
   recommended: new Set(recommendedRuleIds),
   strict: new Set(strictRuleIds),
 };
+const levelConfigs = {
+  essential: composeProfiles(completeConfigurableProfiles, {
+    level: "essential",
+  }),
+  recommended: composeProfiles(completeConfigurableProfiles, {
+    level: "recommended",
+  }),
+  strict: composeProfiles(completeConfigurableProfiles, { level: "strict" }),
+};
+
+for (const [lower, higher] of [
+  ["essential", "recommended"],
+  ["recommended", "strict"],
+] as const) {
+  for (const [id, configuration] of Object.entries(
+    levelConfigs[lower].rules ?? {},
+  )) {
+    assert.deepEqual(
+      levelConfigs[higher].rules?.[id],
+      configuration,
+      `${higher} must not reconfigure ${id} already active at ${lower}`,
+    );
+  }
+}
 
 const essentialRules = selectRules(completeConfigurableProfiles, {
   level: "essential",
