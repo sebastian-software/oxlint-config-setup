@@ -52,6 +52,7 @@ for (const expected of [
   "pnpm add -D oxlint-config-setup oxlint@1.77.0 oxlint-tsgolint@7.0.2001",
   "AI is an overlay, not a fourth policy level.",
   "Rule Catalog",
+  "Toggle theme",
 ]) {
   if (!renderedHtml.includes(expected)) {
     throw new Error(`Static output is missing required content: ${expected}`);
