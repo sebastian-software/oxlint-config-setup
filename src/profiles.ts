@@ -12,6 +12,7 @@ import {
 export interface ComposeOptions {
   ai?: boolean;
   level?: ConfigLevel;
+  policyCategories?: boolean;
   surface?: "stable" | "experimental";
   typeAware?: boolean;
 }
@@ -25,6 +26,39 @@ const LEVEL_INDEX = new Map(
     index,
   ]),
 );
+const DISABLED_CATEGORIES = {
+  correctness: "off",
+  suspicious: "off",
+  pedantic: "off",
+  perf: "off",
+  style: "off",
+  restriction: "off",
+  nursery: "off",
+} as const satisfies NonNullable<OxlintConfig["categories"]>;
+const CATEGORY_POLICY = {
+  essential: {
+    ...DISABLED_CATEGORIES,
+    correctness: "error",
+  },
+  recommended: {
+    ...DISABLED_CATEGORIES,
+    correctness: "error",
+    suspicious: "error",
+    perf: "error",
+  },
+  strict: {
+    ...DISABLED_CATEGORIES,
+    correctness: "error",
+    suspicious: "error",
+    pedantic: "error",
+    perf: "error",
+    style: "error",
+    restriction: "error",
+  },
+} as const satisfies Record<
+  ConfigLevel,
+  NonNullable<OxlintConfig["categories"]>
+>;
 
 function severityToOxlint(
   severity: RuleLedgerEntry["severity"] | "warning" | "error",
@@ -45,8 +79,7 @@ function isRuleSelected(
     case "level":
       return (
         (LEVEL_INDEX.get(entry.activation.minimumLevel) ??
-          Number.MAX_SAFE_INTEGER) <=
-        (LEVEL_INDEX.get(level) ?? -1)
+          Number.MAX_SAFE_INTEGER) <= (LEVEL_INDEX.get(level) ?? -1)
       );
   }
 }
@@ -70,11 +103,7 @@ function applyAiOverrides(
     }
     const override = entry.activation.aiOverride;
     if (override.severity !== undefined) {
-      setRuleSeverity(
-        config,
-        entry.id,
-        severityToOxlint(override.severity),
-      );
+      setRuleSeverity(config, entry.id, severityToOxlint(override.severity));
     }
     if (override.options !== undefined) {
       configureRule(config, entry.id, override.options);
@@ -84,23 +113,35 @@ function applyAiOverrides(
 
 function pluginsForRules(
   entries: readonly RuleLedgerEntry[],
+  profiles: readonly RuleProfile[],
+  policyCategories: boolean,
 ): NonNullable<OxlintConfig["plugins"]> {
-  const profiles = new Set(entries.map((entry) => entry.profile));
+  const enabledProfiles = policyCategories
+    ? new Set(profiles)
+    : new Set(entries.map((entry) => entry.profile));
   const plugins = new Set<NonNullable<OxlintConfig["plugins"]>[number]>();
+
+  if (policyCategories) {
+    plugins.add("unicorn");
+    plugins.add("typescript");
+    plugins.add("oxc");
+    plugins.add("import");
+  }
+
   if (
-    profiles.has("typescript-syntax") ||
-    profiles.has("typescript-type-aware")
+    enabledProfiles.has("typescript-syntax") ||
+    enabledProfiles.has("typescript-type-aware")
   ) {
     plugins.add("typescript");
   }
-  if (profiles.has("imports")) plugins.add("import");
-  if (profiles.has("react") || profiles.has("react-compiler")) {
+  if (enabledProfiles.has("imports")) plugins.add("import");
+  if (enabledProfiles.has("react") || enabledProfiles.has("react-compiler")) {
     plugins.add("react");
   }
-  if (profiles.has("jsx-a11y")) plugins.add("jsx-a11y");
-  if (profiles.has("node")) plugins.add("node");
-  if (profiles.has("vitest")) plugins.add("vitest");
-  if (profiles.has("jest")) plugins.add("jest");
+  if (enabledProfiles.has("jsx-a11y")) plugins.add("jsx-a11y");
+  if (enabledProfiles.has("node")) plugins.add("node");
+  if (enabledProfiles.has("vitest")) plugins.add("vitest");
+  if (enabledProfiles.has("jest")) plugins.add("jest");
   return [...plugins];
 }
 
@@ -160,6 +201,7 @@ export function composeProfiles(
   options: ComposeOptions = {},
 ): OxlintConfig {
   const normalizedProfiles = orderedProfiles(profiles);
+  const profileSet = new Set(normalizedProfiles);
   const typeAware =
     options.typeAware ?? normalizedProfiles.includes("typescript-type-aware");
   if (!typeAware && normalizedProfiles.includes("typescript-type-aware")) {
@@ -168,23 +210,33 @@ export function composeProfiles(
     );
   }
 
+  const level = options.level ?? "recommended";
+  const policyCategories = options.policyCategories ?? false;
   const selectedRules = selectRules(normalizedProfiles, options);
-  const rules = Object.fromEntries(
-    selectedRules.map((entry) => [entry.id, ruleConfig(entry)]),
-  );
+  const selectedRuleIds = new Set(selectedRules.map((entry) => entry.id));
+  const explicitExclusions = policyCategories
+    ? ruleLedger.filter(
+        (entry) =>
+          (profileSet.has(entry.profile) || entry.activation.kind === "ai") &&
+          entry.severity !== "off" &&
+          !selectedRuleIds.has(entry.id),
+      )
+    : [];
+  const rules = Object.fromEntries([
+    ...explicitExclusions.map((entry) => [entry.id, "off"] as const),
+    ...selectedRules.map((entry) => [entry.id, ruleConfig(entry)] as const),
+  ]);
 
   const config: OxlintConfig = {
-    categories: {
-      correctness: "off",
-      suspicious: "off",
-      pedantic: "off",
-      perf: "off",
-      style: "off",
-      restriction: "off",
-      nursery: "off",
-    },
+    categories: policyCategories
+      ? { ...CATEGORY_POLICY[level] }
+      : { ...DISABLED_CATEGORIES },
     options: { typeAware },
-    plugins: pluginsForRules(selectedRules),
+    plugins: pluginsForRules(
+      selectedRules,
+      normalizedProfiles,
+      policyCategories,
+    ),
     rules,
   };
   if (options.ai === true) applyAiOverrides(config, selectedRules);

@@ -14,7 +14,7 @@ const RECEIPTS = [
     value: "+4",
   },
   {
-    detail: "reviewed ledger entries with rationale and fixtures",
+    detail: "curated overrides and exceptions with fixtures",
     href: `${REPOSITORY_URL}/blob/main/docs/rule-catalog.md`,
     value: "27",
   },
@@ -31,7 +31,7 @@ const RECEIPTS = [
   {
     detail: "accepted architecture decisions, including this site",
     href: `${REPOSITORY_URL}/tree/main/docs/adr`,
-    value: "9",
+    value: "13",
   },
 ] as const;
 
@@ -80,10 +80,10 @@ export function ReceiptsSection() {
         </ul>
         <aside className="hp-principle">
           <p>
-            This is a beta and it is opinionated on purpose. Every enabled rule
-            has an owner, a defect class, a stability boundary, and executable
-            evidence. Missing ecosystems are documented as gaps instead of being
-            hidden behind compatibility claims.
+            This is a beta and it is opinionated on purpose. The broad baseline
+            comes from pinned native Oxlint categories. Every project-specific
+            override and exception has an owner, a stability boundary, and
+            executable evidence; missing ecosystems stay visible.
           </p>
         </aside>
       </div>

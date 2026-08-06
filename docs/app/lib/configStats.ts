@@ -9,11 +9,26 @@ export type ConfigSelection = {
   react: boolean;
 };
 
+export type RuleGroup = {
+  id: string;
+  label: string;
+  rules: string[];
+};
+
+export type ProjectRuleGroup = {
+  added: string[];
+  adjusted: string[];
+  id: "ai" | "node" | "react";
+  label: string;
+};
+
 export type ConfigStats = {
   activeRules: number;
   artifactKb: number;
   fileName: string;
   plugins: number;
+  policyRules: RuleGroup[];
+  projectRules: ProjectRuleGroup[];
   publicName: string;
   selection: ConfigSelection;
 };

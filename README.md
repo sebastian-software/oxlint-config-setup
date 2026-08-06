@@ -47,10 +47,10 @@ export default getOxlintConfig({
 });
 ```
 
-Essential contains only the reviewed correctness, safety, accessibility, and
-framework invariants. Recommended adds broadly applicable project policy and is
-the default. Strict adds the complete, more opinionated policy surface. Each
-level is a strict superset of the previous level.
+Essential materializes Oxlint's stable `correctness` category. Recommended adds
+`suspicious` and `perf` and is the default. Strict adds `pedantic`, `style`, and
+`restriction`; `nursery` remains disabled. Each level is a strict superset of
+the previous level.
 
 Levels control membership only. A rule keeps the same base severity and options
 in every level where it is active; selecting a higher level only adds rules.
@@ -63,18 +63,18 @@ an active rule.
 
 ## Shipped surfaces
 
-| Need | TypeScript package export | Public JSON subpath | Stability |
-| --- | --- | --- | --- |
-| Recommended core + complete TypeScript | `getOxlintConfig()` | `oxlint-config-setup/json/default` | Stable, version-pinned type-aware backend |
-| Essential adoption baseline | `getOxlintConfig({ level: "essential" })` | `oxlint-config-setup/json/essential` | Stable, version-pinned type-aware backend |
-| Strict policy | `getOxlintConfig({ level: "strict" })` | `oxlint-config-setup/json/strict` | Stable, version-pinned type-aware backend |
-| React + JSX accessibility | `getOxlintConfig({ react: true })` | `oxlint-config-setup/json/react` | Stable |
-| Node.js | `getOxlintConfig({ node: true })` | `oxlint-config-setup/json/node` | Stable |
-| AI guardrail overlay | `getOxlintConfig({ ai: true })` | `oxlint-config-setup/json/ai` | Stable warning and active-rule tightening |
-| TypeScript without a project graph | `getSyntaxOnlyOxlintConfig()` | `oxlint-config-setup/json/typescript-syntax` | Stable |
-| Vitest | `getVitestOxlintConfig()` | `oxlint-config-setup/json/vitest` | Stable |
-| Jest | `getJestOxlintConfig()` | `oxlint-config-setup/json/jest` | Stable |
-| React Compiler diagnostics | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler` | Experimental warning |
+| Need                                   | TypeScript package export                    | Public JSON subpath                          | Stability                                 |
+| -------------------------------------- | -------------------------------------------- | -------------------------------------------- | ----------------------------------------- |
+| Recommended core + complete TypeScript | `getOxlintConfig()`                          | `oxlint-config-setup/json/default`           | Stable, version-pinned type-aware backend |
+| Essential adoption baseline            | `getOxlintConfig({ level: "essential" })`    | `oxlint-config-setup/json/essential`         | Stable, version-pinned type-aware backend |
+| Strict policy                          | `getOxlintConfig({ level: "strict" })`       | `oxlint-config-setup/json/strict`            | Stable, version-pinned type-aware backend |
+| React + JSX accessibility              | `getOxlintConfig({ react: true })`           | `oxlint-config-setup/json/react`             | Stable                                    |
+| Node.js                                | `getOxlintConfig({ node: true })`            | `oxlint-config-setup/json/node`              | Stable                                    |
+| AI guardrail overlay                   | `getOxlintConfig({ ai: true })`              | `oxlint-config-setup/json/ai`                | Stable warning and active-rule tightening |
+| TypeScript without a project graph     | `getSyntaxOnlyOxlintConfig()`                | `oxlint-config-setup/json/typescript-syntax` | Stable                                    |
+| Vitest                                 | `getVitestOxlintConfig()`                    | `oxlint-config-setup/json/vitest`            | Stable                                    |
+| Jest                                   | `getJestOxlintConfig()`                      | `oxlint-config-setup/json/jest`              | Stable                                    |
+| React Compiler diagnostics             | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler`    | Experimental warning                      |
 
 The recommended permutations use unprefixed public JSON subpaths such as
 `react-node`, `react-ai`, `node-ai`, and `react-node-ai`. Essential and strict
@@ -121,9 +121,7 @@ import {
 const config = getOxlintConfig({ react: true, ai: true });
 
 setRuleSeverity(config, "eslint/no-warning-comments", "error");
-configureRule(config, "eslint/valid-typeof", [
-  { requireStringLiterals: true },
-]);
+configureRule(config, "eslint/valid-typeof", [{ requireStringLiterals: true }]);
 disableRule(config, "typescript/no-extra-non-null-assertion");
 addRule(config, "eslint/no-alert", "error");
 
@@ -155,19 +153,29 @@ hashed file from `node_modules`; hashes are deliberately not public API.
 
 ## What the beta proves
 
-The package owns 27 ledger rules across core, imports, TypeScript, React,
-accessibility, Node.js, Vitest, Jest, AI, and experimental compiler concerns.
-Each rule has valid and invalid fixtures asserting diagnostic file, location,
-identity, and activation boundary. A fully enabled configurable surface selects
-14 rules at essential, 16 at recommended, or 20 at strict when AI is enabled.
-Of those totals, 13, 15, and 19 are level-controlled respectively; the current
-AI overlay adds one AI-only guardrail. Type-aware fixtures execute
-`oxlint-tsgolint`, including a TypeScript project-reference case.
+The pinned Oxlint category baseline materializes 113 active base rules at
+Essential, 166 at Recommended, and 484 at Strict. Project contexts expand that
+surface: the fully selected React + Node + AI configurations contain 170, 233,
+and 594 active rules respectively. The generated homepage inventory and
+effective-config snapshots are the authority for exact membership.
 
-This is **behavioral coverage**, not an **identifier mapping** claim. The earlier
-migration study mapped about 85.3% of predecessor source-rule identifiers as
-discovery evidence; it did not prove equivalent behavior. v0.1 instead ships a
-smaller reviewed baseline and documents every deferred concern.
+The package also owns 27 curated ledger entries across core, imports,
+TypeScript, React, accessibility, Node.js, Vitest, Jest, AI, and experimental
+compiler concerns. Those entries document project-specific additions,
+exclusions, conflicts, options, and activation boundaries with valid and invalid
+fixtures. Type-aware fixtures execute `oxlint-tsgolint`, including a TypeScript
+project-reference case.
+
+Category-owned rules rely on Oxlint's native classification and documentation;
+they do not pretend to have one repository fixture per identifier. Every
+published configuration is nevertheless expanded into an explicit rule map at
+build time, so dependency upgrades create reviewable diffs and all rule
+customization helpers can target the effective output.
+
+The earlier migration study mapped about 85.3% of predecessor source-rule
+identifiers as discovery evidence. The new Strict surface approaches that
+predecessor's scale using stable native Oxlint rules, while `nursery`,
+JavaScript plugins, and non-source concerns remain excluded.
 
 No ESLint runtime, migration helper, JavaScript React plugin, or `react-hooks`
 JavaScript plugin is loaded by the package. Formatting, Markdown/MDX, spelling,
@@ -175,15 +183,15 @@ and package metadata remain companion-tool concerns.
 
 ## Supported matrix
 
-| Component | Supported value |
-| --- | --- |
-| Consumer Node.js | `>=24.11.0` |
-| Oxlint | `1.77.0` |
-| `oxlint-tsgolint` | `7.0.2001` |
-| TypeScript behavior target | `7.0.2` |
-| npm clean consumer | major 10 or 11 |
-| pnpm clean consumer | `11.20.0` |
-| Repository build Node.js | `>=24.11.0` |
+| Component                  | Supported value |
+| -------------------------- | --------------- |
+| Consumer Node.js           | `>=24.11.0`     |
+| Oxlint                     | `1.77.0`        |
+| `oxlint-tsgolint`          | `7.0.2001`      |
+| TypeScript behavior target | `7.0.2`         |
+| npm clean consumer         | major 10 or 11  |
+| pnpm clean consumer        | `11.20.0`       |
+| Repository build Node.js   | `>=24.11.0`     |
 
 Support for another Oxlint/backend/TypeScript version begins with an explicit
 matrix run because the type-aware backend is outside Oxlint's normal semantic

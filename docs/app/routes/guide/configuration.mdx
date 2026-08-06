@@ -17,33 +17,35 @@ type ConfigOptions = {
 };
 ```
 
-All options are fixed selectors for prebuilt artifacts. They do not dynamically assemble a configuration.
+All options are fixed selectors for prebuilt artifacts. They do not dynamically assemble a configuration at consumer runtime.
 
 ## Policy levels
 
 ### Essential
 
-Use `essential` as the smallest supported adoption baseline. It contains reviewed correctness, safety, accessibility, and framework invariants with a low expected false-positive rate.
+Use `essential` as the lowest-noise adoption baseline. It materializes Oxlint's stable `correctness` category and applies the repository's curated overrides.
 
 ### Recommended
 
-Recommended adds broadly applicable project policy and is the default. Start here for a new TypeScript project unless migration cost requires a smaller first step.
+Recommended adds the stable `suspicious` and `perf` categories and is the default. Start here for a new TypeScript project unless migration cost requires a smaller first step.
 
 ### Strict
 
-Strict adds useful but more opinionated policy with a higher adoption cost. Selecting strict is an explicit team decision, not a side effect of enabling another feature.
+Strict adds `pedantic`, `style`, and `restriction`. It therefore contains every stable Oxlint category except `nursery`. Selecting Strict is an explicit team decision, not a side effect of enabling another feature.
 
 The levels are nested:
 
 ```text
-essential ⊂ recommended ⊂ strict
+essential < recommended < strict
 ```
 
-Levels control rule membership only. When a rule exists in several levels, its base severity and options stay identical. Moving up only adds rules.
+Levels control rule membership only. When a curated rule exists in several levels, its base severity and options stay identical. Moving up only adds policy. `nursery` remains disabled at every level.
+
+During the build, the pinned Oxlint binary expands each category draft into explicit rules. Published JSON contains categories turned off and the complete materialized rule map. This makes dependency changes reviewable and lets the customization helpers target every active rule.
 
 ## Project context
 
-`react: true` adds native React and JSX accessibility ownership. `node: true` adds server-runtime and module-system checks. Both combine with every policy level.
+`react: true` adds native React and JSX accessibility categories. `node: true` adds native server-runtime and module-system rules. Both combine with every policy level.
 
 ```ts
 export default getOxlintConfig({
@@ -55,15 +57,15 @@ export default getOxlintConfig({
 
 ## AI is independent
 
-`ai: true` does not select a stricter level. It tightens already-active rules and adds rules explicitly classified as AI-only. See [AI mode](/guide/ai-mode) for the guardrails.
+`ai: true` does not select a stricter level or enable another category. It tightens already-active rules and adds rules explicitly classified as AI-only. See [AI mode](/guide/ai-mode) for the guardrails.
 
 ## Defaults
 
-| Option | Default |
-| --- | --- |
+| Option  | Default         |
+| ------- | --------------- |
 | `level` | `"recommended"` |
-| `react` | `false` |
-| `node` | `false` |
-| `ai` | `false` |
+| `react` | `false`         |
+| `node`  | `false`         |
+| `ai`    | `false`         |
 
 Unknown keys and invalid values throw before an artifact is loaded.

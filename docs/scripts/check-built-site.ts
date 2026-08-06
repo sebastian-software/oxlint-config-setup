@@ -1,8 +1,4 @@
-import {
-  existsSync,
-  readFileSync,
-  readdirSync,
-} from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 const clientDirectory = resolve(import.meta.dirname, "../build/client");
@@ -51,6 +47,9 @@ for (const expected of [
   "One native linter.",
   "pnpm add -D oxlint-config-setup oxlint@1.77.0 oxlint-tsgolint@7.0.2001",
   "AI is an overlay, not a fourth policy level.",
+  "Config input",
+  "Config output",
+  "typescript/no-floating-promises",
   "Rule Catalog",
   "Toggle theme",
 ]) {

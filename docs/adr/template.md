@@ -2,6 +2,7 @@
 
 - **Status:** Proposed
 - **Date:** YYYY-MM-DD
+- **Last updated:** YYYY-MM-DD
 - **Deciders:**
 
 ## Context

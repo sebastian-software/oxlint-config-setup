@@ -14,9 +14,7 @@ function escapeCell(value: string): string {
   return value.replaceAll("|", "\\|").replaceAll("\n", " ");
 }
 
-function activationLabel(
-  entry: (typeof ruleLedger)[number],
-): string {
+function activationLabel(entry: (typeof ruleLedger)[number]): string {
   switch (entry.activation.kind) {
     case "ai":
       return "`ai`";
@@ -39,9 +37,7 @@ function aiBehavior(entry: (typeof ruleLedger)[number]): string {
   }
   const override = entry.activation.aiOverride;
   const changes = [
-    override.severity === undefined
-      ? ""
-      : `severity → ${override.severity}`,
+    override.severity === undefined ? "" : `severity → ${override.severity}`,
     override.options === undefined
       ? ""
       : `options → \`${escapeCell(JSON.stringify(override.options))}\``,
@@ -55,7 +51,7 @@ function renderCatalog(): string {
     "",
     "> This file is generated from `src/ledger.ts`. Run `pnpm generate` after ledger changes.",
     "",
-    `The v0.1 ledger contains **${ruleLedger.length} reviewed rules**. Stable profiles use only native Oxlint execution paths; the single experimental rule is isolated from every configurable artifact.`,
+    `The curated v0.1 ledger contains **${ruleLedger.length} reviewed additions, overrides, and exceptions** with repository-owned fixtures. The broad baseline is materialized from the pinned Oxlint categories and snapshot-tested; the single experimental rule remains isolated from every configurable artifact.`,
     "",
     "| Rule | Defect class | Profile | Activation | AI behavior | Path | Severity | Stability | Rationale | Fixtures | Replaces | Conflicts | Review trigger |",
     "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",

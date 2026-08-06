@@ -1,41 +1,49 @@
 # Migration and companion-tool matrix
 
 The table assigns every predecessor concern identified by the baseline and rule
-capability catalog. “Oxlint” means behavioral fixtures exist in v0.1; “Research”
-does not mean a plugin is approved.
+capability catalog. "Oxlint" means the concern is covered by materialized native
+categories or a curated ledger entry; "Research" does not mean a plugin is
+approved.
 
-| Predecessor concern | Assignment | v0.1 treatment | Accepted difference or next gate |
-| --- | --- | --- | --- |
-| JavaScript correctness | Oxlint | Four native high-signal core rules | Expand only with ledger rationale and fixtures |
-| TypeScript syntax | Oxlint | Three native syntax rules | Available without a project graph through the syntax-only export |
-| TypeScript semantics | Oxlint | Three native type-aware rules | Pinned Oxlint/tsgolint/TypeScript trio is mandatory |
-| Imports and modules | Oxlint | Native duplicate and self-import ownership | Native rule replaces the JavaScript fallback; overlapping core owner stays off |
-| React and JSX | Oxlint | Native React rules only | No Meta React or `react-hooks` JavaScript plugin |
-| React ESLint ecosystems | Accepted gap | No compatibility plugin | Native defect coverage supersedes plugin-identity parity |
-| JSX accessibility | Oxlint | Native `alt-text` baseline | Broader accessibility coverage follows the normal fixture gate |
-| React Compiler | Research | One isolated experimental native warning | Never enters configurable React defaults silently |
-| Node.js | Oxlint | Three native CommonJS hazard rules plus ESM-valid fixture | v0.1 does not impose a universal ESM/CommonJS style |
-| Vitest | Oxlint | Native focused-test, duplicate-title, and runner-mismatch checks | Vitest and Jest are separate full configs |
-| Jest | Oxlint | Native focused-test, duplicate-title, and legacy-Jasmine checks | Vitest and Jest are separate full configs |
-| Regular expressions | Research | No JavaScript plugin | Measure native gaps and plugin startup before proposal |
-| Testing Library | Research | No JavaScript plugin | Requires conformant API, crash, and performance evidence |
-| Playwright | Research | No JavaScript plugin | Requires conformant API, crash, and performance evidence |
-| Storybook | Research | No JavaScript plugin | Custom source-extension needs remain unproven |
-| SonarJS | Research | No JavaScript plugin | Select defect classes; rule volume is not a gate |
-| Sorting and formatting | Companion tool | Formatter/import organizer | Layout is outside the linter budget |
-| JSON and package metadata | Companion tool | JSON Schema or package-specific validator | Oxlint source coverage does not include these formats |
-| Markdown and MDX | Companion tool | Markdown-aware linter | JavaScript-plugin support does not make custom formats executable |
-| Spelling | Companion tool | Spell checker | Repository prose quality is not program linting |
-| Project-specific policy trivia | Accepted gap | Not generalized | Shared defaults include only portable defect classes |
-| AI-assisted development | Oxlint | TODO marker warning | Broader AI policies remain research until portable defects are demonstrated |
+| Predecessor concern            | Assignment     | Current treatment                                                       | Accepted difference or next gate                                                          |
+| ------------------------------ | -------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| JavaScript correctness         | Oxlint         | Stable native category baseline                                         | Essential starts with `correctness`; Recommended and Strict add broader native categories |
+| TypeScript syntax              | Oxlint         | Native TypeScript category rules plus curated overrides                 | Available without a project graph through the narrower syntax-only export                 |
+| TypeScript semantics           | Oxlint         | Native type-aware category rules plus curated fixtures                  | Pinned Oxlint/tsgolint/TypeScript trio is mandatory                                       |
+| Imports and modules            | Oxlint         | Native import category rules plus explicit conflict ownership           | Native rules replace JavaScript fallbacks; overlapping owners stay reviewable             |
+| React and JSX                  | Oxlint         | Native React categories when `react: true`                              | No Meta React or `react-hooks` JavaScript plugin                                          |
+| React ESLint ecosystems        | Accepted gap   | No compatibility plugin                                                 | Native defect coverage supersedes plugin-identity parity                                  |
+| JSX accessibility              | Oxlint         | Native JSX accessibility categories when `react: true`                  | Project context controls the entire accessibility surface                                 |
+| React Compiler                 | Research       | One isolated experimental native warning                                | Never enters configurable React defaults silently                                         |
+| Node.js                        | Oxlint         | Native Node.js categories when `node: true` plus curated module hazards | The preset does not impose a universal ESM/CommonJS style at lower levels                 |
+| Vitest                         | Oxlint         | Materialized strict native categories plus curated runner checks        | Vitest and Jest are separate full configs                                                 |
+| Jest                           | Oxlint         | Materialized strict native categories plus curated runner checks        | Vitest and Jest are separate full configs                                                 |
+| Regular expressions            | Research       | No JavaScript plugin                                                    | Measure native gaps and plugin startup before proposal                                    |
+| Testing Library                | Research       | No JavaScript plugin                                                    | Requires conformant API, crash, and performance evidence                                  |
+| Playwright                     | Research       | No JavaScript plugin                                                    | Requires conformant API, crash, and performance evidence                                  |
+| Storybook                      | Research       | No JavaScript plugin                                                    | Custom source-extension needs remain unproven                                             |
+| SonarJS                        | Research       | No JavaScript plugin                                                    | Select defect classes; rule volume is not a gate                                          |
+| Sorting and formatting         | Companion tool | Formatter/import organizer                                              | Layout is outside the linter budget                                                       |
+| JSON and package metadata      | Companion tool | JSON Schema or package-specific validator                               | Oxlint source coverage does not include these formats                                     |
+| Markdown and MDX               | Companion tool | Markdown-aware linter                                                   | JavaScript-plugin support does not make custom formats executable                         |
+| Spelling                       | Companion tool | Spell checker                                                           | Repository prose quality is not program linting                                           |
+| Project-specific policy trivia | Accepted gap   | Not generalized                                                         | Shared defaults include only portable defect classes                                      |
+| AI-assisted development        | Oxlint         | Constrained overlay with explicit additions and option changes          | AI cannot widen the selected policy category set                                          |
 
 ## Coverage language
 
 The 2026-08-04 baseline found that migration metadata mapped roughly 85.3% of
-the predecessor's source-code rule identifiers. That is identifier mapping, not
-behavioral equivalence. The v0.1 claim is narrower and stronger: all 27 enabled
-ledger entries have executable valid/invalid evidence on the pinned toolchain.
+the predecessor's source-code rule identifiers. That remains identifier mapping,
+not behavioral equivalence.
 
-No raw parity percentage is a release gate. A future rule enters only when its
-defect class, execution path, stability, conflicts, fixture, and review trigger
-are recorded in the ledger.
+The current preset makes two distinct claims:
+
+- Oxlint's pinned stable categories provide the broad native baseline and are
+  materialized into explicit, snapshot-tested artifacts; and
+- all 27 curated ledger entries have repository-owned rationale, activation
+  boundaries, and executable valid/invalid evidence.
+
+No raw parity percentage is a release gate. A curated rule or exception enters
+only when its defect class, execution path, stability, conflicts, fixture, and
+review trigger are recorded in the ledger. An Oxlint upgrade must separately
+review every generated category diff.

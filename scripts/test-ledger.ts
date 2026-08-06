@@ -3,11 +3,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { ruleLedger } from "../src/ledger.js";
-import { composeProfiles, orderedProfiles, selectRules } from "../src/profiles.js";
 import {
-  type RuleLedgerEntry,
-  validateRuleLedger,
-} from "../src/schema.js";
+  composeProfiles,
+  orderedProfiles,
+  selectRules,
+} from "../src/profiles.js";
+import { type RuleLedgerEntry, validateRuleLedger } from "../src/schema.js";
 import { assertGeneratedContent } from "./generation.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
@@ -43,10 +44,7 @@ assert.throws(
   /AI activation cannot define level or override fields/u,
 );
 assert.throws(
-  () =>
-    validateRuleLedger([
-      mutatedEntry({ activation: { kind: "named" } }),
-    ]),
+  () => validateRuleLedger([mutatedEntry({ activation: { kind: "named" } })]),
   /named activation outside a named profile/u,
 );
 assert.throws(
@@ -114,10 +112,11 @@ assert.throws(
   /cannot enter as an error/u,
 );
 
-assert.deepEqual(
-  orderedProfiles(["react", "core", "imports", "core"]),
-  ["core", "imports", "react"],
-);
+assert.deepEqual(orderedProfiles(["react", "core", "imports", "core"]), [
+  "core",
+  "imports",
+  "react",
+]);
 assert.deepEqual(
   composeProfiles(["react", "core", "imports"]),
   composeProfiles(["imports", "react", "core"]),
@@ -184,6 +183,71 @@ const levelConfigs = {
   strict: composeProfiles(completeConfigurableProfiles, { level: "strict" }),
 };
 
+const categoryDrafts = {
+  essential: composeProfiles(completeConfigurableProfiles, {
+    level: "essential",
+    policyCategories: true,
+  }),
+  recommended: composeProfiles(completeConfigurableProfiles, {
+    level: "recommended",
+    policyCategories: true,
+  }),
+  strict: composeProfiles(completeConfigurableProfiles, {
+    level: "strict",
+    policyCategories: true,
+  }),
+};
+assert.deepEqual(categoryDrafts.essential.categories, {
+  correctness: "error",
+  suspicious: "off",
+  pedantic: "off",
+  perf: "off",
+  style: "off",
+  restriction: "off",
+  nursery: "off",
+});
+assert.deepEqual(categoryDrafts.recommended.categories, {
+  correctness: "error",
+  suspicious: "error",
+  pedantic: "off",
+  perf: "error",
+  style: "off",
+  restriction: "off",
+  nursery: "off",
+});
+assert.deepEqual(categoryDrafts.strict.categories, {
+  correctness: "error",
+  suspicious: "error",
+  pedantic: "error",
+  perf: "error",
+  style: "error",
+  restriction: "error",
+  nursery: "off",
+});
+assert.deepEqual(
+  new Set(categoryDrafts.recommended.plugins),
+  new Set([
+    "unicorn",
+    "typescript",
+    "oxc",
+    "import",
+    "react",
+    "jsx-a11y",
+    "node",
+  ]),
+  "category drafts must load native baseline and selected context plugins",
+);
+assert.equal(
+  categoryDrafts.essential.rules?.["import/no-self-import"],
+  "off",
+  "category drafts must preserve curated higher-level exclusions",
+);
+assert.equal(
+  categoryDrafts.strict.rules?.["eslint/no-warning-comments"],
+  "off",
+  "AI-only rules must remain off when the overlay is disabled",
+);
+
 for (const [lower, higher] of [
   ["essential", "recommended"],
   ["recommended", "strict"],
@@ -208,9 +272,7 @@ assert.deepEqual(
   "essential must remain the reviewed high-signal subset",
 );
 assert.deepEqual(
-  new Set(
-    selectRules(completeConfigurableProfiles).map((entry) => entry.id),
-  ),
+  new Set(selectRules(completeConfigurableProfiles).map((entry) => entry.id)),
   expectedLevelRules.recommended,
   "recommended must be the default level",
 );
@@ -286,7 +348,14 @@ assert.deepEqual(
 
 for (const profiles of [
   ["core", "imports", "typescript-syntax", "typescript-type-aware"],
-  ["core", "imports", "typescript-syntax", "typescript-type-aware", "react", "jsx-a11y"],
+  [
+    "core",
+    "imports",
+    "typescript-syntax",
+    "typescript-type-aware",
+    "react",
+    "jsx-a11y",
+  ],
   ["core", "imports", "typescript-syntax", "typescript-type-aware", "node"],
   ["core", "imports", "typescript-syntax", "typescript-type-aware", "vitest"],
   ["core", "imports", "typescript-syntax", "typescript-type-aware", "jest"],
@@ -330,7 +399,9 @@ const nativeReplacement = ruleLedger.find(
   (entry) => entry.id === "import/no-duplicates",
 );
 assert(nativeReplacement);
-assert(nativeReplacement.replaces.includes("eslint-plugin-import/no-duplicates"));
+assert(
+  nativeReplacement.replaces.includes("eslint-plugin-import/no-duplicates"),
+);
 assert(nativeReplacement.conflicts.includes("eslint/no-duplicate-imports"));
 
 console.log(`Validated ${ruleLedger.length} rule ledger entries.`);

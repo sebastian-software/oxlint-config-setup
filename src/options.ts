@@ -20,10 +20,9 @@ export interface NormalizedConfigOptions {
 
 const BOOLEAN_OPTION_KEYS = ["react", "node", "ai"] as const;
 const OPTION_KEYS = ["level", ...BOOLEAN_OPTION_KEYS] as const;
-const STRICT_HASH_NAMESPACE = "oxlint-config-setup:config:v1";
-const ESSENTIAL_HASH_NAMESPACE = "oxlint-config-setup:config:v2:essential";
-const RECOMMENDED_HASH_NAMESPACE =
-  "oxlint-config-setup:config:v3:recommended";
+const STRICT_HASH_NAMESPACE = "oxlint-config-setup:config:v4:strict";
+const ESSENTIAL_HASH_NAMESPACE = "oxlint-config-setup:config:v4:essential";
+const RECOMMENDED_HASH_NAMESPACE = "oxlint-config-setup:config:v4:recommended";
 
 export function normalizeConfigOptions(
   options: ConfigOptions = {},

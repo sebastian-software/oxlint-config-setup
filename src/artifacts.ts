@@ -1,6 +1,7 @@
 import type { OxlintConfig } from "oxlint";
 
 import { createConfig } from "./config.js";
+import { materializeConfig } from "./materialize.js";
 import {
   allConfigOptions,
   configFileName,
@@ -30,10 +31,14 @@ const COMPLETE_PROFILES = [
   "typescript-syntax",
   "typescript-type-aware",
 ] as const;
+const TYPE_AWARE_SOURCE = "fixtures/rules/typescript-type-aware/valid.ts";
+const REACT_SOURCE = "fixtures/rules/react/valid.tsx";
 
-export function publicConfigName(
-  options: NormalizedConfigOptions,
-): string {
+function configurableSource(options: NormalizedConfigOptions): string {
+  return options.react ? REACT_SOURCE : TYPE_AWARE_SOURCE;
+}
+
+export function publicConfigName(options: NormalizedConfigOptions): string {
   const enabled = [
     options.react ? "react" : "",
     options.node ? "node" : "",
@@ -49,22 +54,36 @@ export function publicConfigName(
 export function createNamedConfig(name: NamedArtifact): OxlintConfig {
   switch (name) {
     case "typescript-syntax":
-      return composeProfiles(
-        ["core", "imports", "typescript-syntax"],
-        { level: "strict" },
-      );
+      return composeProfiles(["core", "imports", "typescript-syntax"], {
+        level: "strict",
+      });
     case "vitest":
-      return composeProfiles([...COMPLETE_PROFILES, "vitest"], {
-        level: "strict",
-      });
+      return materializeConfig(
+        composeProfiles([...COMPLETE_PROFILES, "vitest"], {
+          level: "strict",
+          policyCategories: true,
+        }),
+        "fixtures/rules/vitest/valid.ts",
+      );
     case "jest":
-      return composeProfiles([...COMPLETE_PROFILES, "jest"], {
-        level: "strict",
-      });
+      return materializeConfig(
+        composeProfiles([...COMPLETE_PROFILES, "jest"], {
+          level: "strict",
+          policyCategories: true,
+        }),
+        "fixtures/rules/jest/valid.ts",
+      );
     case "react-compiler":
-      return composeProfiles(
-        [...COMPLETE_PROFILES, "react", "jsx-a11y", "react-compiler"],
-        { level: "strict", surface: "experimental" },
+      return materializeConfig(
+        composeProfiles(
+          [...COMPLETE_PROFILES, "react", "jsx-a11y", "react-compiler"],
+          {
+            level: "strict",
+            policyCategories: true,
+            surface: "experimental",
+          },
+        ),
+        "fixtures/rules/react-compiler/valid.tsx",
       );
   }
 }
@@ -74,7 +93,10 @@ export function allConfigArtifacts(): ConfigArtifact[] {
     fileName: configFileName(options),
     publicName: publicConfigName(options),
     typeAware: true,
-    config: createConfig(options),
+    config: materializeConfig(
+      createConfig(options),
+      configurableSource(options),
+    ),
   }));
   const named = NAMED_ARTIFACTS.map((name) => {
     const config = createNamedConfig(name);

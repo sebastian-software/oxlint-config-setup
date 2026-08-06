@@ -8,18 +8,22 @@ order: 2
 
 The project treats evidence as part of the product contract.
 
-## Rule behavior
+## Native category baseline
 
-The behavioral harness runs valid and invalid fixtures through Oxlint for 27 ledger entries across 11 profiles. It also verifies that the AI option override changes real diagnostics instead of only changing JSON.
+The pinned Oxlint binary materializes every configurable draft into an explicit rule map. Generated effective-config snapshots expose exact membership and make category changes visible during dependency upgrades. Tests verify the Essential, Recommended, and Strict category mapping, keep `nursery` disabled, and assert the generated rule counts.
+
+## Curated rule behavior
+
+The behavioral harness runs valid and invalid fixtures through Oxlint for 27 curated ledger entries across 11 profiles. It also verifies that the AI option override changes real diagnostics instead of only changing JSON.
 
 ## Configuration boundaries
 
 Schema and ledger tests enforce:
 
-- essential ⊂ recommended ⊂ strict;
-- identical base severity and options for rules shared between levels;
+- Essential is a subset of Recommended, which is a subset of Strict;
+- identical base severity and options for curated rules shared between levels;
 - AI overrides only on already-active level rules;
-- no AI weakening or higher-level activation; and
+- no AI weakening, higher-level activation, or category widening; and
 - isolation of named and experimental surfaces.
 
 ## Package behavior
@@ -32,6 +36,7 @@ CI runs the complete release gate on the documented Node.js, Oxlint, `oxlint-tsg
 
 ## Source evidence
 
+- [Category materializer](https://github.com/sebastian-software/oxlint-config-setup/blob/main/src/materialize.ts)
 - [Rule ledger](https://github.com/sebastian-software/oxlint-config-setup/blob/main/src/ledger.ts)
 - [Behavioral harness](https://github.com/sebastian-software/oxlint-config-setup/blob/main/scripts/test-harness.ts)
 - [Package verifier](https://github.com/sebastian-software/oxlint-config-setup/blob/main/scripts/verify-package.ts)
