@@ -52,6 +52,9 @@ framework invariants. Recommended adds broadly applicable project policy and is
 the default. Strict adds the complete, more opinionated policy surface. Each
 level is a strict superset of the previous level.
 
+Levels control membership only. A rule keeps the same base severity and options
+in every level where it is active; selecting a higher level only adds rules.
+
 React and Node.js select project context. AI is a separate guardrail overlay: it
 may tighten a rule already active at the selected level and may add rules
 explicitly classified as AI-only. It never activates a level-controlled rule
