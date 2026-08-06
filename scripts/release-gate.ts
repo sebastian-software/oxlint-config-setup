@@ -53,12 +53,30 @@ assert.match(closedV01Contract, /\*\*Status:\*\* Accepted and implemented/u);
 assert.match(closedV01Contract, /Levels control membership only/u);
 assert.match(closedV01Contract, /no cross-host millisecond SLA/u);
 
+const ruleCustomizationContract = read(
+  "docs/rfcs/0004-add-rule-customization-helpers.md",
+);
+assert.match(
+  ruleCustomizationContract,
+  /\*\*Status:\*\* Accepted and implemented/u,
+);
+assert.match(ruleCustomizationContract, /never deep-merges/u);
+
 const readme = read("README.md");
 assert.match(readme, /behavioral coverage/iu);
 assert.match(readme, /identifier mapping/iu);
 assert.match(readme, /level: "essential"/u);
 assert.match(readme, /level: "strict"/u);
 assert.match(readme, /never activates a level-controlled rule/iu);
+for (const helper of [
+  "setRuleSeverity",
+  "configureRule",
+  "disableRule",
+  "addRule",
+  "disableAllRulesBut",
+]) {
+  assert.match(readme, new RegExp(helper, "u"));
+}
 for (const surface of [
   "getOxlintConfig",
   "getSyntaxOnlyOxlintConfig",

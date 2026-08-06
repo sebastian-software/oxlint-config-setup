@@ -10,6 +10,14 @@ import {
 } from "./options.js";
 
 export type { ConfigLevel, ConfigOptions } from "./options.js";
+export {
+  addRule,
+  configureRule,
+  disableAllRulesBut,
+  disableRule,
+  setRuleSeverity,
+  type RuleSeverity,
+} from "./rule-helpers.js";
 
 function loadConfigArtifact(
   fileName: string,

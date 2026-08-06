@@ -105,6 +105,39 @@ import { getExperimentalReactCompilerOxlintConfig } from "oxlint-config-setup";
 export default getExperimentalReactCompilerOxlintConfig();
 ```
 
+## Customizing rules
+
+The TypeScript API includes the predecessor's in-place rule helpers:
+
+```ts
+import {
+  addRule,
+  configureRule,
+  disableRule,
+  getOxlintConfig,
+  setRuleSeverity,
+} from "oxlint-config-setup";
+
+const config = getOxlintConfig({ react: true, ai: true });
+
+setRuleSeverity(config, "eslint/no-warning-comments", "error");
+configureRule(config, "eslint/valid-typeof", [
+  { requireStringLiterals: true },
+]);
+disableRule(config, "typescript/no-extra-non-null-assertion");
+addRule(config, "eslint/no-alert", "error");
+
+export default config;
+```
+
+`setRuleSeverity` preserves options. `configureRule` replaces the complete
+options list while preserving severity; it does not deep-merge option objects.
+Both update explicit root and file-override occurrences. `disableRule` turns
+those occurrences off, `addRule` writes to the root, and
+`disableAllRulesBut(config, rule)` isolates one explicit rule for diagnostics.
+Each loader call returns a fresh object, so customization does not mutate the
+prebuilt artifact or later calls.
+
 ## JSON consumption
 
 JSON artifacts contain the same complete objects as the TypeScript loaders. Copy
