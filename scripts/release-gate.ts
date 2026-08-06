@@ -58,9 +58,17 @@ const ruleCustomizationContract = read(
 );
 assert.match(
   ruleCustomizationContract,
+  /\*\*Status:\*\* Superseded by \[RFC 0005\]/u,
+);
+const mergedRuleOptionsContract = read(
+  "docs/rfcs/0005-merge-rule-option-updates.md",
+);
+assert.match(
+  mergedRuleOptionsContract,
   /\*\*Status:\*\* Accepted and implemented/u,
 );
-assert.match(ruleCustomizationContract, /never deep-merges/u);
+assert.match(mergedRuleOptionsContract, /merged recursively/u);
+assert.match(mergedRuleOptionsContract, /including arrays, scalars, and `null`/u);
 
 const readme = read("README.md");
 assert.match(readme, /behavioral coverage/iu);

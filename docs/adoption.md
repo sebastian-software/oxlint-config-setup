@@ -67,9 +67,10 @@ ESM, declarations, JSON data, Oxlint, and its native type-aware backend.
 Use `setRuleSeverity`, `configureRule`, `disableRule`, `addRule`, and
 `disableAllRulesBut` after loading a TypeScript configuration. The helpers
 mutate that config object in place. Severity changes preserve options; option
-changes replace the complete positional options list and preserve severity.
-They update explicit root and existing file-override entries, while `addRule`
-writes to the root configuration.
+changes recursively merge plain objects and preserve both severity and omitted
+positional options. Arrays, scalars, and `null` replace their current value.
+The helpers update explicit root and existing file-override entries, while
+`addRule` writes to the root configuration.
 
 The former ESLint `{ scope }` argument is intentionally absent because the
 Oxlint artifacts do not contain named override blocks. Projects may add normal

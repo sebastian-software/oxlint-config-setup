@@ -130,10 +130,11 @@ addRule(config, "eslint/no-alert", "error");
 export default config;
 ```
 
-`setRuleSeverity` preserves options. `configureRule` replaces the complete
-options list while preserving severity; it does not deep-merge option objects.
-Both update explicit root and file-override occurrences. `disableRule` turns
-those occurrences off, `addRule` writes to the root, and
+`setRuleSeverity` preserves options. `configureRule` recursively merges plain
+option objects while preserving severity and unspecified positional options.
+Arrays, scalars, and `null` replace the value at their position rather than
+being combined. Both helpers update explicit root and file-override occurrences.
+`disableRule` turns those occurrences off, `addRule` writes to the root, and
 `disableAllRulesBut(config, rule)` isolates one explicit rule for diagnostics.
 Each loader call returns a fresh object, so customization does not mutate the
 prebuilt artifact or later calls.

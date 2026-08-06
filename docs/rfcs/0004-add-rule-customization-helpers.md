@@ -1,6 +1,6 @@
 # RFC 0004: Add rule customization helpers
 
-- **Status:** Accepted and implemented for v0.1 beta
+- **Status:** Superseded by [RFC 0005](0005-merge-rule-option-updates.md)
 - **Date:** 2026-08-06
 - **Owners:** Sebastian Software
 - **Source contract:** `eslint-config-setup` rule helpers at

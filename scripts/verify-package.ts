@@ -448,6 +448,32 @@ assert.deepEqual(customized.rules?.["eslint/valid-typeof"], [
 ]);
 assert.equal(customized.rules?.["eslint/no-alert"], "off");
 
+const mergedOptions: OxlintConfig = {
+  rules: {
+    "custom/detailed-options": [
+      "error",
+      {
+        allow: ["warn"],
+        limits: { max: 10, min: 1 },
+        mode: "safe",
+      },
+      "tail",
+    ],
+  },
+};
+publicApi.configureRule(mergedOptions, "custom/detailed-options", [
+  { allow: ["error"], limits: { max: 20 } },
+]);
+assert.deepEqual(mergedOptions.rules?.["custom/detailed-options"], [
+  "error",
+  {
+    allow: ["error"],
+    limits: { max: 20, min: 1 },
+    mode: "safe",
+  },
+  "tail",
+]);
+
 rmSync(distDirectory, { recursive: true, force: true });
 run("pnpm", ["run", "build"]);
 assert.deepEqual(snapshot(distDirectory), firstBuild);
@@ -564,6 +590,9 @@ try {
       'assert.equal(customized.rules["eslint/no-warning-comments"], "error");',
       'assert.deepEqual(customized.rules["eslint/valid-typeof"], ["error", { requireStringLiterals: false }]);',
       'assert.equal(customized.rules["import/no-duplicates"], "off");',
+      'const mergedOptions = { rules: { "custom/detailed-options": ["error", { allow: ["warn"], limits: { max: 10, min: 1 }, mode: "safe" }, "tail"] } };',
+      'configureRule(mergedOptions, "custom/detailed-options", [{ allow: ["error"], limits: { max: 20 } }]);',
+      'assert.deepEqual(mergedOptions.rules["custom/detailed-options"], ["error", { allow: ["error"], limits: { max: 20, min: 1 }, mode: "safe" }, "tail"]);',
       'disableAllRulesBut(customized, "eslint/valid-typeof");',
       'assert.equal(customized.rules["eslint/no-alert"], "off");',
       'copyFileSync(new URL(import.meta.resolve("oxlint-config-setup/json/default")), ".oxlintrc.json");',
