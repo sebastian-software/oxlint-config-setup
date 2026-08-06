@@ -1,0 +1,316 @@
+{
+  "configurations": [
+    {
+      "activeRules": 8,
+      "artifactKb": 0.5,
+      "fileName": "config-82509afeef3f.json",
+      "plugins": 1,
+      "publicName": "essential",
+      "selection": {
+        "level": "essential",
+        "react": false,
+        "node": false,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 12,
+      "artifactKb": 0.6,
+      "fileName": "config-acf63cf99b5d.json",
+      "plugins": 3,
+      "publicName": "essential-react",
+      "selection": {
+        "level": "essential",
+        "react": true,
+        "node": false,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 9,
+      "artifactKb": 0.5,
+      "fileName": "config-8f62aab4e978.json",
+      "plugins": 2,
+      "publicName": "essential-node",
+      "selection": {
+        "level": "essential",
+        "react": false,
+        "node": true,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 13,
+      "artifactKb": 0.6,
+      "fileName": "config-f24164be786a.json",
+      "plugins": 4,
+      "publicName": "essential-react-node",
+      "selection": {
+        "level": "essential",
+        "react": true,
+        "node": true,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 9,
+      "artifactKb": 0.5,
+      "fileName": "config-e92f768e23b7.json",
+      "plugins": 1,
+      "publicName": "essential-ai",
+      "selection": {
+        "level": "essential",
+        "react": false,
+        "node": false,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 13,
+      "artifactKb": 0.7,
+      "fileName": "config-c2c3c0abfc15.json",
+      "plugins": 3,
+      "publicName": "essential-react-ai",
+      "selection": {
+        "level": "essential",
+        "react": true,
+        "node": false,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 10,
+      "artifactKb": 0.6,
+      "fileName": "config-1046d925e8f9.json",
+      "plugins": 2,
+      "publicName": "essential-node-ai",
+      "selection": {
+        "level": "essential",
+        "react": false,
+        "node": true,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 14,
+      "artifactKb": 0.7,
+      "fileName": "config-0198ac2734f5.json",
+      "plugins": 4,
+      "publicName": "essential-react-node-ai",
+      "selection": {
+        "level": "essential",
+        "react": true,
+        "node": true,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 10,
+      "artifactKb": 0.6,
+      "fileName": "config-2f3c4ec11c30.json",
+      "plugins": 2,
+      "publicName": "default",
+      "selection": {
+        "level": "recommended",
+        "react": false,
+        "node": false,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 14,
+      "artifactKb": 0.7,
+      "fileName": "config-a9ce253eb945.json",
+      "plugins": 4,
+      "publicName": "react",
+      "selection": {
+        "level": "recommended",
+        "react": true,
+        "node": false,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 11,
+      "artifactKb": 0.6,
+      "fileName": "config-804226b181d5.json",
+      "plugins": 3,
+      "publicName": "node",
+      "selection": {
+        "level": "recommended",
+        "react": false,
+        "node": true,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 15,
+      "artifactKb": 0.7,
+      "fileName": "config-9c8973d3e28e.json",
+      "plugins": 5,
+      "publicName": "react-node",
+      "selection": {
+        "level": "recommended",
+        "react": true,
+        "node": true,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 11,
+      "artifactKb": 0.6,
+      "fileName": "config-c2ce4a229fa1.json",
+      "plugins": 2,
+      "publicName": "ai",
+      "selection": {
+        "level": "recommended",
+        "react": false,
+        "node": false,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 15,
+      "artifactKb": 0.8,
+      "fileName": "config-caa6192628d4.json",
+      "plugins": 4,
+      "publicName": "react-ai",
+      "selection": {
+        "level": "recommended",
+        "react": true,
+        "node": false,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 12,
+      "artifactKb": 0.7,
+      "fileName": "config-9ca4275ddbb3.json",
+      "plugins": 3,
+      "publicName": "node-ai",
+      "selection": {
+        "level": "recommended",
+        "react": false,
+        "node": true,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 16,
+      "artifactKb": 0.8,
+      "fileName": "config-fb9bc4bcf5ce.json",
+      "plugins": 5,
+      "publicName": "react-node-ai",
+      "selection": {
+        "level": "recommended",
+        "react": true,
+        "node": true,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 12,
+      "artifactKb": 0.6,
+      "fileName": "config-6e5e7d225541.json",
+      "plugins": 2,
+      "publicName": "strict",
+      "selection": {
+        "level": "strict",
+        "react": false,
+        "node": false,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 16,
+      "artifactKb": 0.8,
+      "fileName": "config-a53f054eadae.json",
+      "plugins": 4,
+      "publicName": "strict-react",
+      "selection": {
+        "level": "strict",
+        "react": true,
+        "node": false,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 15,
+      "artifactKb": 0.7,
+      "fileName": "config-0906d8f2bc55.json",
+      "plugins": 3,
+      "publicName": "strict-node",
+      "selection": {
+        "level": "strict",
+        "react": false,
+        "node": true,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 19,
+      "artifactKb": 0.9,
+      "fileName": "config-b6b7f7bf8051.json",
+      "plugins": 5,
+      "publicName": "strict-react-node",
+      "selection": {
+        "level": "strict",
+        "react": true,
+        "node": true,
+        "ai": false
+      }
+    },
+    {
+      "activeRules": 13,
+      "artifactKb": 0.7,
+      "fileName": "config-50a80845ac2f.json",
+      "plugins": 2,
+      "publicName": "strict-ai",
+      "selection": {
+        "level": "strict",
+        "react": false,
+        "node": false,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 17,
+      "artifactKb": 0.8,
+      "fileName": "config-5d4ac567d473.json",
+      "plugins": 4,
+      "publicName": "strict-react-ai",
+      "selection": {
+        "level": "strict",
+        "react": true,
+        "node": false,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 16,
+      "artifactKb": 0.8,
+      "fileName": "config-f4874d816c7b.json",
+      "plugins": 3,
+      "publicName": "strict-node-ai",
+      "selection": {
+        "level": "strict",
+        "react": false,
+        "node": true,
+        "ai": true
+      }
+    },
+    {
+      "activeRules": 20,
+      "artifactKb": 0.9,
+      "fileName": "config-a8b1b44dc3f7.json",
+      "plugins": 5,
+      "publicName": "strict-react-node-ai",
+      "selection": {
+        "level": "strict",
+        "react": true,
+        "node": true,
+        "ai": true
+      }
+    }
+  ]
+}

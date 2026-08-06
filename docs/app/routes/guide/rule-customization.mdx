@@ -1,0 +1,73 @@
+---
+title: Rule Customization
+description: Change severity, merge options, disable or add a rule, and isolate diagnostics without forking a prebuilt configuration.
+order: 4
+---
+
+# Rule Customization
+
+The package exports five in-place helpers for narrow project exceptions:
+
+```ts
+import {
+  addRule,
+  configureRule,
+  disableAllRulesBut,
+  disableRule,
+  getOxlintConfig,
+  setRuleSeverity,
+} from "oxlint-config-setup";
+
+const config = getOxlintConfig({ react: true, ai: true });
+
+setRuleSeverity(config, "eslint/no-warning-comments", "error");
+configureRule(config, "eslint/valid-typeof", [
+  { requireStringLiterals: true },
+]);
+disableRule(config, "typescript/no-extra-non-null-assertion");
+addRule(config, "eslint/no-alert", "error");
+
+export default config;
+```
+
+## Helper behavior
+
+| Helper | Effect |
+| --- | --- |
+| `setRuleSeverity` | Changes severity while preserving options. |
+| `configureRule` | Merges supplied options while preserving severity. |
+| `disableRule` | Turns every explicit occurrence off. |
+| `addRule` | Adds or replaces a rule in the root configuration. |
+| `disableAllRulesBut` | Disables every other explicit rule for diagnostics. |
+
+The first three update explicit root and existing file-override occurrences. Missing rules are left unchanged.
+
+## Option merge semantics
+
+`configureRule` recursively merges plain option objects. Arrays, primitive values, and `null` replace the value at their positional index. Positional options not included in the patch remain unchanged.
+
+Given:
+
+```ts
+["error", { allow: ["legacy"], limits: { min: 1, max: 10 } }, "secondary"]
+```
+
+this patch:
+
+```ts
+configureRule(config, "plugin/rule", [
+  { allow: ["modern"], limits: { max: 20 } },
+]);
+```
+
+produces:
+
+```ts
+["error", { allow: ["modern"], limits: { min: 1, max: 20 } }, "secondary"]
+```
+
+The array is replaced, while `limits.min` and the trailing positional option are retained.
+
+## Scope boundary
+
+The predecessor's named `{ scope }` argument is not present. Oxlint artifacts use one root object plus file overrides, not named flat-config blocks. The helpers update a rule wherever it already occurs explicitly.

@@ -1,0 +1,39 @@
+---
+title: Validation Evidence
+description: See which executable gates support the package, artifact, compatibility, and documentation claims.
+order: 2
+---
+
+# Validation Evidence
+
+The project treats evidence as part of the product contract.
+
+## Rule behavior
+
+The behavioral harness runs valid and invalid fixtures through Oxlint for 27 ledger entries across 11 profiles. It also verifies that the AI option override changes real diagnostics instead of only changing JSON.
+
+## Configuration boundaries
+
+Schema and ledger tests enforce:
+
+- essential ⊂ recommended ⊂ strict;
+- identical base severity and options for rules shared between levels;
+- AI overrides only on already-active level rules;
+- no AI weakening or higher-level activation; and
+- isolation of named and experimental surfaces.
+
+## Package behavior
+
+The package verifier builds and packs the project twice, checks deterministic bytes and exact tarball contents, installs the tarball into clean JavaScript and TypeScript consumers, verifies all public JSON exports, and exercises the public loader and customization APIs.
+
+## Supported matrix
+
+CI runs the complete release gate on the documented Node.js, Oxlint, `oxlint-tsgolint`, and TypeScript versions. Separate consumers install and execute the built package on both supported Node lines.
+
+## Source evidence
+
+- [Rule ledger](https://github.com/sebastian-software/oxlint-config-setup/blob/main/src/ledger.ts)
+- [Behavioral harness](https://github.com/sebastian-software/oxlint-config-setup/blob/main/scripts/test-harness.ts)
+- [Package verifier](https://github.com/sebastian-software/oxlint-config-setup/blob/main/scripts/verify-package.ts)
+- [CI matrix](https://github.com/sebastian-software/oxlint-config-setup/blob/main/.github/workflows/package.yml)
+- [Release review](https://github.com/sebastian-software/oxlint-config-setup/blob/main/docs/release-review.md)

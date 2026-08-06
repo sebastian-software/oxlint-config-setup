@@ -191,6 +191,7 @@ versioning policy.
 
 ## Project documents
 
+- [Documentation site source](docs/app)
 - [Adoption guide](docs/adoption.md)
 - [Migration and companion-tool matrix](docs/migration.md)
 - [Compatibility evidence and timings](docs/compatibility.md)
@@ -206,10 +207,13 @@ Run the complete local gate:
 ```sh
 pnpm install --frozen-lockfile
 pnpm release:check
+pnpm docs:check
 ```
 
 Ledger changes require `pnpm generate`; `pnpm generate:check` fails on stale
-catalog or effective-config snapshots. See [CONTRIBUTING.md](CONTRIBUTING.md).
+catalog or effective-config snapshots. The Ardo site generates its homepage
+statistics and rule-catalog route from the same package sources before every
+build. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

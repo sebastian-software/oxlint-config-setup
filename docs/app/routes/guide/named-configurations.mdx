@@ -1,0 +1,54 @@
+---
+title: Named Configurations
+description: Use complete syntax-only, Vitest, Jest, or experimental React Compiler configurations when the root selector is not the right contract.
+order: 5
+---
+
+# Named Configurations
+
+The 24 configurable artifacts cover the standard type-aware TypeScript path with optional React, Node.js, and AI concerns. Four complete named artifacts handle different execution contracts without expanding that selector matrix.
+
+## Syntax-only TypeScript
+
+Use the syntax-only configuration when no project graph is available:
+
+```ts
+import { getSyntaxOnlyOxlintConfig } from "oxlint-config-setup";
+
+export default getSyntaxOnlyOxlintConfig();
+```
+
+This is the only stable configuration that does not require the type-aware backend.
+
+## Vitest and Jest
+
+Select one test owner deliberately:
+
+```ts
+import { getVitestOxlintConfig } from "oxlint-config-setup";
+
+export default getVitestOxlintConfig();
+```
+
+Use `getJestOxlintConfig()` for Jest. The two are not composed because their shared APIs overlap.
+
+## React Compiler
+
+Compiler diagnostics remain isolated from stable React defaults:
+
+```ts
+import { getExperimentalReactCompilerOxlintConfig } from "oxlint-config-setup";
+
+export default getExperimentalReactCompilerOxlintConfig();
+```
+
+The native compiler rule starts as a warning and the export remains explicitly experimental.
+
+## Public JSON equivalents
+
+Each named loader has a stable JSON subpath:
+
+- `oxlint-config-setup/json/typescript-syntax`
+- `oxlint-config-setup/json/vitest`
+- `oxlint-config-setup/json/jest`
+- `oxlint-config-setup/json/react-compiler`

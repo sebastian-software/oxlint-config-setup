@@ -89,3 +89,23 @@ overlay intends to tighten; unspecified base options remain active.
 Do not commit `dist` or its generated release JSON. Those files are deterministic
 package output created by `build` and `prepack`; CI rejects tracked release output
 and tracked changes caused by the package gate.
+
+## Documentation site
+
+The Ardo workspace in `docs/` contains the public product homepage, guides,
+reference, and generated API documentation. Run it locally from the repository
+root:
+
+```sh
+pnpm docs:dev
+```
+
+Run `pnpm docs:check` before submitting documentation or public API changes. The
+check generates configuration statistics and the routed rule catalog, lints and
+type-checks the workspace, performs Ardo link and frontmatter validation, builds
+every static route, and verifies the required product contract in the output.
+
+Use [docs/PRODUCT.md](docs/PRODUCT.md) for audience, voice, and evidence rules and
+[docs/DESIGN.md](docs/DESIGN.md) for the visual and interaction system. Durable
+framework and register choices are recorded in
+[ADR 0009](docs/adr/0009-use-ardo-for-the-product-and-documentation-site.md).

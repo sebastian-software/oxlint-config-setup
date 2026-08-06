@@ -1,0 +1,26 @@
+---
+title: Migrate from ESLint
+description: Evaluate the Oxlint-native preset by defect coverage, document gaps, and remove the old runtime only after evidence.
+order: 7
+---
+
+# Migrate from ESLint
+
+Treat migration as a behavior change, not a package-name replacement.
+
+1. Keep the existing ESLint command active while the Oxlint configuration is evaluated.
+2. Select the policy level and project contexts that match the codebase.
+3. Run both tools on representative changes and classify differences by defect class, not raw rule count.
+4. Record accepted gaps for the project.
+5. Move formatting, Markdown/MDX, spelling, and package metadata checks to the purpose-built tools that own those formats.
+6. Remove ESLint only when the observed behavior and remaining gaps are acceptable.
+
+## What intentionally does not migrate
+
+The package does not preserve every historical plugin identity. Stable native Oxlint rules take ownership where they cover the same defect. Testing Library, Playwright, Storybook, SonarJS, and regular-expression JavaScript-plugin gaps remain explicit rather than entering the standard runtime without evidence.
+
+## Start smaller when needed
+
+Use `essential` for a low-noise first step, then move to recommended or strict after the initial diagnostics are resolved. Adding the AI overlay does not raise that policy level.
+
+For the detailed project checklist and companion-tool boundaries, use the [repository adoption guide](https://github.com/sebastian-software/oxlint-config-setup/blob/main/docs/adoption.md).
