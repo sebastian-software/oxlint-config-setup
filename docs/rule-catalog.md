@@ -2,7 +2,7 @@
 
 > This file is generated from `src/ledger.ts`. Run `pnpm generate` after ledger changes.
 
-The v0.1 ledger contains **27 reviewed rules**. Stable profiles use only native Oxlint execution paths; the single experimental rule is isolated from every configurable artifact.
+The curated v0.1 ledger contains **27 reviewed additions, overrides, and exceptions** with repository-owned fixtures. The broad baseline is materialized from the pinned Oxlint categories and snapshot-tested; the single experimental rule remains isolated from every configurable artifact.
 
 | Rule | Defect class | Profile | Activation | AI behavior | Path | Severity | Stability | Rationale | Fixtures | Replaces | Conflicts | Review trigger |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

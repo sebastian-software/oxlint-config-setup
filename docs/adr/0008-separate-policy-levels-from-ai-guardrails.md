@@ -2,150 +2,171 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-06
+- **Last updated:** 2026-08-06
 - **Deciders:** Sebastian Software maintainers
 - **Supersedes:** [ADR 0007](0007-add-essential-and-standard-config-levels.md)
 
 ## Context
 
-ADR 0007 introduced `essential` and `standard` as rule-intensity levels while
-retaining AI-assisted development as a freely combinable Boolean dimension.
-That model makes two different decisions look equivalent: how much general
-policy a project adopts, and whether it wants automation-friendly guardrails.
-It also permits an AI profile to activate rules that a caller would reasonably
-expect to be excluded by the selected level.
+The configuration needs to express three independent choices without making
+their effects surprising:
 
-The predecessor `eslint-config-setup` demonstrates the risk. Its AI mode does
-not merely adjust numeric limits: it changes composition, adds rule blocks, and
-changes or removes existing entries. Preserving that behavior as an opaque
-profile would make combinations such as `essential` plus AI difficult to
-explain and review.
+1. how much general project policy a team adopts;
+2. whether React or Node.js rules apply to the project; and
+3. whether automation-friendly AI guardrails should tighten the selected
+   policy.
 
-At the same time, constraining AI to option changes alone would be too narrow.
-Some checks are valuable for generated code precisely because they are tedious
-for a person to enforce consistently, yet they do not belong in a general
-policy progression.
+The predecessor `eslint-config-setup` had broad coverage, but its AI mode also
+changed composition and could pull in policy beyond the expected base preset.
+The first Oxlint implementation avoided that coupling by selecting only
+individually reviewed ledger rules. That boundary was predictable, but it left
+Recommended with a baseline too small for an opinionated general-purpose
+preset.
+
+Oxlint already classifies native rules into stable categories. Those categories
+provide a maintained broad baseline. Publishing category switches directly,
+however, would keep the exact rule set implicit and would prevent the package's
+rule customization helpers from operating consistently on every active rule.
 
 ## Decision
 
 Expose three nested policy levels:
 
-1. `essential` is the small, low-noise correctness, safety, accessibility, and
-   framework floor.
-2. `recommended` is the default and broadly applicable project policy.
-3. `strict` is the complete, more opinionated policy surface.
+1. `essential` enables Oxlint's stable `correctness` category;
+2. `recommended` adds `suspicious` and `perf` and remains the default; and
+3. `strict` adds `pedantic`, `style`, and `restriction`.
 
-`ConfigOptions.level` therefore accepts
-`"essential" | "recommended" | "strict"` and defaults to `recommended`.
-Every rule controlled by this hierarchy has exactly one minimum level, and each
-higher level is a strict superset of the lower levels. Upstream recommended and
-strict presets are evidence for classification, not definitions that are copied
-without review.
+`nursery` stays disabled at every level. Each higher level is a strict
+superset of the lower levels. Stable configurable artifacts use only native
+Oxlint plugins; JavaScript plugins do not enter through category expansion.
+
+Category-enabled configurations are internal build drafts. During generation,
+the pinned Oxlint binary expands every draft with `--print-config`. The
+generator normalizes the result into a complete explicit rule map, turns all
+categories off, reapplies curated repository overrides and exclusions, and
+publishes only the materialized JSON.
+
+This preserves runtime-free artifact selection and deterministic packaging
+while making every effective rule visible and compatible with
+`setRuleSeverity`, `configureRule`, `disableRule`, and the other public
+customization helpers. An Oxlint dependency upgrade therefore produces
+reviewable generated diffs instead of silently changing consumer behavior.
+
+The rule ledger owns curated additions, exclusions, conflicts, option choices,
+AI changes, and repository-controlled behavioral evidence. It does not
+duplicate the entire upstream category registry.
 
 AI is an overlay, not a fourth policy level or a project context. When `ai` is
 enabled, it may do exactly two things:
 
 - modify the severity or options of a level-controlled rule only when that rule
   is already active at the selected level; and
-- activate a rule explicitly classified as AI-only and therefore intentionally
-  outside the level hierarchy.
+- activate a rule explicitly classified as AI-only and intentionally outside
+  the level hierarchy.
 
-AI must not activate a level-controlled rule from a higher level, disable an
+AI must not enable another category, activate a higher-level rule, disable an
 active rule, or reduce its severity. Option overrides require a rationale and a
-behavioral fixture because whether an option is stricter cannot be inferred
-mechanically. AI-only rules are reserved for useful, automation-friendly
-guardrails whose manual enforcement cost makes them unsuitable for the general
-level progression. They are not a route around level classification.
+behavioral fixture. AI-only rules remain explicit exclusions whenever the
+overlay is disabled, even if an upstream category would otherwise activate
+them.
 
-The ledger represents these boundaries with a discriminated activation model:
-`level` entries own a minimum level and may declare an AI override; `ai` entries
-are AI-only; and `named` entries belong only to a named configuration. Schema
-validation rejects ambiguous combinations. Generated artifacts, snapshots, the
-rule catalog, and behavioral tests derive from this model.
+React and Node.js remain independent project-context switches. Their native
+plugin categories enter only when the corresponding context is selected. The
+generator emits all 24 combinations of three levels with React, Node.js, and AI.
+Existing unprefixed JSON names select Recommended; Essential and Strict
+artifacts use their level prefix.
 
-React and Node.js remain independent project-context switches. The generator
-emits all 24 combinations of three levels with React, Node.js, and AI. Existing
-unprefixed JSON names such as `default`, `react`, and `ai` select the recommended
-level. Essential and strict artifacts use `essential-` and `strict-` prefixes.
-Syntax-only TypeScript, Vitest, Jest, and the experimental React Compiler remain
-four named complete configurations and use strict policy where applicable.
+Syntax-only TypeScript remains a narrower named configuration without
+type-aware category expansion. Vitest, Jest, and the experimental React Compiler
+remain separate named configurations with their existing stability boundaries.
 
-This package has not yet published a stable release, so changing the earlier
-`standard` name and default is preferable to preserving a misleading contract.
-All unaffected decisions from ADR 0005 remain in force: build-time composition,
-prebuilt JSON selection, direct Oxlint execution, deterministic packaging,
-pinned compatibility versions, and no ESLint runtime.
+Exact rule counts are generated product data rather than architecture. They may
+change only through a reviewed Oxlint version or policy update and remain
+visible in snapshots, homepage data, and package diffs.
 
 ## Decision drivers
 
-- Match established preset language with an approachable default between a
-  minimum baseline and an opinionated maximum.
+- Provide a credible general-purpose default in the same broad class as the
+  predecessor.
+- Match established Essential, Recommended, and Strict preset language.
+- Reuse Oxlint's maintained native classification instead of manually
+  reclassifying hundreds of upstream rules.
+- Keep every published active rule explicit, deterministic, and customizable.
 - Keep general policy intensity independent from AI-specific enforcement.
-- Make every AI addition and override explicit, reviewable, and testable.
-- Prevent `essential` plus AI from silently acquiring recommended or strict
-  rules.
-- Preserve deterministic, runtime-free selection for every supported option
-  combination.
+- Prevent Essential plus AI from silently acquiring Recommended or Strict
+  policy.
+- Exclude experimental and JavaScript-plugin execution paths from stable
+  defaults.
 
 ## Options considered
 
-### Treat AI as a fourth strictness level
+### Maintain an exhaustive hand-authored ledger
 
-This would make the hierarchy easy to enumerate but would incorrectly imply
-that AI policy is simply stricter general policy and could not be combined with
-different adoption levels.
+This gives every rule a repository-specific rationale, but duplicates upstream
+classification work and keeps the useful preset surface too small.
 
-### Permit AI to change options but never add rules
+### Publish category switches directly
 
-This provides a strong boundary, but excludes checks that are specifically
-valuable for generated code and deliberately unsuitable for general policy.
+This is compact, but makes the effective output implicit and weakens the
+customization API contract.
 
-### Keep AI as an unrestricted independent profile
+### Keep AI as an unrestricted profile
 
-This preserves the predecessor's flexibility but permits surprising cross-level
-activation and makes the effective meaning of each level dependent on another
-flag.
+This preserves predecessor flexibility, but makes level meaning dependent on
+another flag and permits surprising cross-level activation.
 
-### Use nested levels plus a constrained AI overlay
+### Materialize native categories and constrain AI
 
-This separates the two decisions while supporting both active-rule tightening
-and a small, explicitly governed AI-only rule category.
+This combines a broad maintained baseline with explicit deterministic output.
+The ledger remains focused on decisions the repository actually owns, while AI
+cannot widen the selected policy level.
 
 ## Consequences
 
 ### Positive
 
-- The default aligns with the common `recommended` convention.
-- `essential`, `recommended`, and `strict` communicate an ordered adoption path.
-- AI behavior cannot silently widen the selected general policy level.
-- AI-specific guardrails remain possible without misclassifying them as strict
-  general policy.
-- The ledger and generated catalog expose the activation reason for every rule.
+- Recommended is a useful broad default and Essential remains a clear first
+  adoption step.
+- Strict approaches the predecessor's scale through native Oxlint execution
+  paths.
+- Published JSON exposes every active rule and supports all customization
+  helpers.
+- Policy levels, project contexts, and AI behavior remain independently
+  explainable.
+- Oxlint upgrades create explicit generated diffs.
+- AI-specific guardrails remain possible without being misclassified as general
+  strictness.
 
 ### Negative
 
-- Configurable artifacts grow from sixteen to 24.
-- Existing pre-release consumers using `standard` must rename it to `strict` or
-  intentionally adopt the new recommended default.
-- AI option overrides need human review in addition to schema validation.
-- Each added level or Boolean selector multiplies the artifact space and package
-  verification work.
+- Generated artifacts, snapshots, and homepage data are substantially larger.
+- Build and documentation generation invoke the pinned Oxlint binary.
+- Category-owned rules rely on upstream classification and documentation rather
+  than one repository fixture per identifier.
+- Strict intentionally includes opinionated restriction rules and may need
+  project-specific exceptions.
+- An upstream category reassignment can change level membership during a
+  reviewed dependency upgrade.
+- Each additional selector still multiplies the artifact matrix.
 
 ## Validation and review triggers
 
-Ledger validation enforces exclusive activation categories, valid nested levels,
-non-weakening AI severities, and rationales for AI overrides. The fixture harness
-runs every complete invalid fixture through every level with and without AI. It
-asserts that AI adds only AI-classified rules, never adds higher-level rules, and
-changes option behavior only for already-active rules. Package tests verify all
-24 selector mappings, all public JSON exports, and the four named configurations.
+Tests verify the category-to-level mapping, nested active rule sets, disabled
+`nursery`, explicit published rule maps, project-context deltas, AI
+constraints, deterministic builds, and clean-consumer execution. The behavioral
+harness covers curated ledger entries and AI option changes. Generated
+effective-config snapshots and homepage data expose exact rule membership.
 
-Review this decision if adopter evidence shows that the three levels do not
-provide meaningful steps, AI-only rules become a policy dumping ground, option
-overrides routinely need weakening, or the generated artifact matrix becomes
-materially costly.
+Review this decision when Oxlint changes its category model, stable categories
+produce unacceptable noise, AI-only entries become a policy dumping ground,
+materialization materially harms build time or package size, or adopter evidence
+suggests a different Recommended baseline.
 
 ## References
 
+- [Oxlint configuration](https://oxc.rs/docs/guide/usage/linter/config.html)
+- [Oxlint rules and categories](https://oxc.rs/docs/guide/usage/linter/rules.html)
+- [Predecessor eslint-config-setup](https://github.com/sebastian-software/eslint-config-setup)
 - [Policy-level and AI activation research](../research/2026-08-06-policy-level-and-ai-activation.md)
 - [Rule selection and validation RFC](../rfcs/0002-rule-selection-and-validation.md)
 - [Generated rule catalog](../rule-catalog.md)

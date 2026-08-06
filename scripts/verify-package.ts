@@ -82,34 +82,34 @@ const standaloneDirectory = resolve(distDirectory, "standalone");
 const manifestPath = resolve(repositoryRoot, "package.json");
 const workspaceSettingsPath = resolve(repositoryRoot, "pnpm-workspace.yaml");
 const goldenStrictConfigFiles = [
-  "config-6e5e7d225541.json",
-  "config-a53f054eadae.json",
-  "config-0906d8f2bc55.json",
-  "config-b6b7f7bf8051.json",
-  "config-50a80845ac2f.json",
-  "config-5d4ac567d473.json",
-  "config-f4874d816c7b.json",
-  "config-a8b1b44dc3f7.json",
+  "config-52e6793e6c93.json",
+  "config-dc471286f051.json",
+  "config-63031013708b.json",
+  "config-e7e1aaadf7f2.json",
+  "config-fb86e16760f7.json",
+  "config-e726676209a2.json",
+  "config-4352036c232f.json",
+  "config-bae2ef7973d1.json",
 ];
 const goldenEssentialConfigFiles = [
-  "config-82509afeef3f.json",
-  "config-acf63cf99b5d.json",
-  "config-8f62aab4e978.json",
-  "config-f24164be786a.json",
-  "config-e92f768e23b7.json",
-  "config-c2c3c0abfc15.json",
-  "config-1046d925e8f9.json",
-  "config-0198ac2734f5.json",
+  "config-82322083e7bf.json",
+  "config-dadb0daa6205.json",
+  "config-00d52200f3e0.json",
+  "config-189735ef89aa.json",
+  "config-352c2037d43f.json",
+  "config-5742048c56ae.json",
+  "config-125ec151f6e6.json",
+  "config-3382d55694bf.json",
 ];
 const goldenRecommendedConfigFiles = [
-  "config-2f3c4ec11c30.json",
-  "config-a9ce253eb945.json",
-  "config-804226b181d5.json",
-  "config-9c8973d3e28e.json",
-  "config-c2ce4a229fa1.json",
-  "config-caa6192628d4.json",
-  "config-9ca4275ddbb3.json",
-  "config-fb9bc4bcf5ce.json",
+  "config-eb20a29e746f.json",
+  "config-57bab470d5b3.json",
+  "config-2f248429ffd2.json",
+  "config-a984a81622ad.json",
+  "config-3e78a430ec30.json",
+  "config-e5c8cd1bc830.json",
+  "config-ccc3defe84cc.json",
+  "config-ac42a9240369.json",
 ];
 const publicApiNames = [
   "addRule",
@@ -127,6 +127,14 @@ const trackedDiffBefore = run("git", ["diff", "--binary"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function activeRuleCount(config: OxlintConfig): number {
+  return Object.values(config.rules ?? {}).filter((rule) => {
+    if (rule === undefined) return false;
+    const severity: unknown = Array.isArray(rule) ? rule[0] : rule;
+    return severity !== "off" && severity !== "allow" && severity !== 0;
+  }).length;
 }
 
 function parseJson(source: string): unknown {
@@ -208,7 +216,8 @@ async function importPublicPackage(
   const value: unknown = await import(specifier);
   assert(isRecord(value));
   assert.deepEqual(Object.keys(value).toSorted(), publicApiNames);
-  for (const name of publicApiNames) assert.equal(typeof value[name], "function");
+  for (const name of publicApiNames)
+    assert.equal(typeof value[name], "function");
   return value as unknown as PublicPackageApi;
 }
 
@@ -247,7 +256,10 @@ assert.equal(manifest.sideEffects, false);
 assert.deepEqual(manifest.files, ["dist"]);
 assert.equal(manifest.engines?.node, ">=24.11.0");
 assert.equal(manifest.packageManager, "pnpm@11.20.0");
-assert.deepEqual(manifest.publishConfig, { access: "public", provenance: true });
+assert.deepEqual(manifest.publishConfig, {
+  access: "public",
+  provenance: true,
+});
 assert.deepEqual(manifest.dependencies, undefined);
 assert.deepEqual(manifest.optionalDependencies, undefined);
 assert.deepEqual(manifest.peerDependencies, {
@@ -339,7 +351,9 @@ assert.equal(allConfigOptions().length, 24);
 rmSync(distDirectory, { recursive: true, force: true });
 run("pnpm", ["run", "build"]);
 const artifacts = allConfigArtifacts();
-const expectedConfigFiles = artifacts.map((artifact) => artifact.fileName).toSorted();
+const expectedConfigFiles = artifacts
+  .map((artifact) => artifact.fileName)
+  .toSorted();
 const expectedStandaloneFiles = artifacts
   .map((artifact) => `${artifact.publicName}.json`)
   .toSorted();
@@ -372,7 +386,10 @@ for (const artifact of artifacts) {
   );
 }
 
-const declarationSource = readFileSync(resolve(distDirectory, "index.d.ts"), "utf8");
+const declarationSource = readFileSync(
+  resolve(distDirectory, "index.d.ts"),
+  "utf8",
+);
 for (const name of [
   "ConfigLevel",
   "ConfigOptions",
@@ -382,7 +399,10 @@ for (const name of [
   assert.match(declarationSource, new RegExp(name, "u"));
 }
 assert.doesNotMatch(declarationSource, /(?:\.\.\/|\/src\/|private\/tmp)/u);
-const javascriptSource = readFileSync(resolve(distDirectory, "index.js"), "utf8");
+const javascriptSource = readFileSync(
+  resolve(distDirectory, "index.js"),
+  "utf8",
+);
 assert.doesNotMatch(javascriptSource, /from\s+["'][^"']+\.ts["']/u);
 assert.doesNotMatch(javascriptSource, /(?:\.\.\/src\/|private\/tmp)/u);
 
@@ -425,8 +445,11 @@ const essential = publicApi.getOxlintConfig({
   ai: true,
 });
 assert.equal(essential.rules?.["typescript/no-floating-promises"], "error");
-assert.equal(essential.rules?.["typescript/switch-exhaustiveness-check"], undefined);
-assert.equal(essential.plugins?.includes("import"), false);
+assert.equal(
+  essential.rules?.["typescript/switch-exhaustiveness-check"],
+  "off",
+);
+assert.equal(essential.plugins?.includes("import"), true);
 assert.equal(essential.rules?.["eslint/no-warning-comments"], "warn");
 assert.deepEqual(essential.rules?.["eslint/valid-typeof"], [
   "error",
@@ -434,16 +457,24 @@ assert.deepEqual(essential.rules?.["eslint/valid-typeof"], [
 ]);
 const recommended = publicApi.getOxlintConfig();
 assert.equal(recommended.rules?.["import/no-duplicates"], "error");
-assert.equal(recommended.rules?.["import/no-self-import"], undefined);
+assert.equal(recommended.rules?.["import/no-self-import"], "off");
 const strict = publicApi.getOxlintConfig({ level: "strict" });
 assert.equal(strict.rules?.["import/no-self-import"], "error");
-assert.equal(strict.rules?.["eslint/no-warning-comments"], undefined);
-const customized = publicApi.getOxlintConfig({ ai: true });
-publicApi.setRuleSeverity(
-  customized,
-  "eslint/no-warning-comments",
-  "error",
+assert.equal(strict.rules?.["eslint/no-warning-comments"], "off");
+assert.equal(
+  activeRuleCount(publicApi.getOxlintConfig({ level: "essential" })),
+  113,
 );
+assert.equal(activeRuleCount(recommended), 166);
+assert.equal(activeRuleCount(strict), 484);
+assert.equal(
+  activeRuleCount(
+    publicApi.getOxlintConfig({ level: "strict", react: true, node: true }),
+  ),
+  593,
+);
+const customized = publicApi.getOxlintConfig({ ai: true });
+publicApi.setRuleSeverity(customized, "eslint/no-warning-comments", "error");
 publicApi.configureRule(customized, "eslint/valid-typeof", [
   { requireStringLiterals: false },
 ]);
@@ -457,9 +488,7 @@ assert.deepEqual(customized.rules?.["eslint/valid-typeof"], [
 assert.equal(customized.rules?.["import/no-duplicates"], "off");
 assert.equal(customized.rules?.["eslint/no-alert"], "warn");
 assert.equal(
-  publicApi.getOxlintConfig({ ai: true }).rules?.[
-    "eslint/no-warning-comments"
-  ],
+  publicApi.getOxlintConfig({ ai: true }).rules?.["eslint/no-warning-comments"],
   "warn",
   "customizing one loader result must not mutate later results",
 );
@@ -552,12 +581,17 @@ try {
     ),
   );
 
-  const oxlintPackageRoot = realpathSync(resolve(repositoryRoot, "node_modules/oxlint"));
+  const oxlintPackageRoot = realpathSync(
+    resolve(repositoryRoot, "node_modules/oxlint"),
+  );
   const bindingRoot = resolve(oxlintPackageRoot, "../@oxlint");
   const bindingName = readdirSync(bindingRoot).find((name) =>
     name.startsWith("binding-"),
   );
-  assert(bindingName, "the installed Oxlint peer must include its platform binding");
+  assert(
+    bindingName,
+    "the installed Oxlint peer must include its platform binding",
+  );
   const oxlintTarball = packDependency(oxlintPackageRoot, temporaryRoot);
   const bindingTarball = packDependency(
     realpathSync(resolve(bindingRoot, bindingName)),
@@ -597,14 +631,14 @@ try {
       'import { copyFileSync } from "node:fs";',
       'import { addRule, configureRule, disableAllRulesBut, disableRule, getExperimentalReactCompilerOxlintConfig, getJestOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, getVitestOxlintConfig, setRuleSeverity } from "oxlint-config-setup";',
       'assert(getOxlintConfig({ react: true, node: true, ai: true }).plugins.includes("react"));',
-      'assert.equal(getOxlintConfig({ level: "essential" }).rules["typescript/switch-exhaustiveness-check"], undefined);',
-      'assert.equal(getOxlintConfig().rules["import/no-self-import"], undefined);',
+      'assert.equal(getOxlintConfig({ level: "essential" }).rules["typescript/switch-exhaustiveness-check"], "off");',
+      'assert.equal(getOxlintConfig().rules["import/no-self-import"], "off");',
       'assert.equal(getOxlintConfig({ level: "strict" }).rules["import/no-self-import"], "error");',
-      'assert.equal(getSyntaxOnlyOxlintConfig().options.typeAware, false);',
+      "assert.equal(getSyntaxOnlyOxlintConfig().options.typeAware, false);",
       'assert(getVitestOxlintConfig().plugins.includes("vitest"));',
       'assert(getJestOxlintConfig().plugins.includes("jest"));',
       'assert.equal(getExperimentalReactCompilerOxlintConfig().rules["react/react-compiler"], "warn");',
-      'const customized = getOxlintConfig({ ai: true });',
+      "const customized = getOxlintConfig({ ai: true });",
       'setRuleSeverity(customized, "eslint/no-warning-comments", "error");',
       'configureRule(customized, "eslint/valid-typeof", [{ requireStringLiterals: false }]);',
       'disableRule(customized, "import/no-duplicates");',
@@ -649,7 +683,12 @@ try {
   const consumerOxlint = resolve(consumerRoot, "node_modules/.bin/oxlint");
   run(consumerOxlint, ["--config", ".oxlintrc.json", "valid.ts"], consumerRoot);
   assert.throws(
-    () => run(consumerOxlint, ["--config", ".oxlintrc.json", "invalid.ts"], consumerRoot),
+    () =>
+      run(
+        consumerOxlint,
+        ["--config", ".oxlintrc.json", "invalid.ts"],
+        consumerRoot,
+      ),
     (error: unknown) =>
       error instanceof Error &&
       /no-floating-promises/u.test(
@@ -723,7 +762,10 @@ try {
     pnpmConsumerRoot,
   );
   copyFileSync(
-    resolve(pnpmConsumerRoot, "node_modules/oxlint-config-setup/dist/standalone/ai.json"),
+    resolve(
+      pnpmConsumerRoot,
+      "node_modules/oxlint-config-setup/dist/standalone/ai.json",
+    ),
     resolve(pnpmConsumerRoot, ".oxlintrc.json"),
   );
   const aiConfig = parseJson(

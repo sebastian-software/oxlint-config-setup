@@ -1,13 +1,11 @@
 import { useState } from "react";
 
-import type {
-  ConfigLevel,
-  ConfigSelection,
-} from "../../lib/configStats.js";
+import type { ConfigLevel, ConfigSelection } from "../../lib/configStats.js";
 import { getConfigStats } from "../../lib/configStats.js";
 
+import { CodeBlock } from "./CodeBlock.js";
 import { ConfigReadout } from "./ConfigReadout.js";
-import { FLAGS, LEVELS } from "./configuratorData.js";
+import { buildConfigSnippet, FLAGS, LEVELS } from "./configuratorData.js";
 
 const DEFAULT_SELECTION: ConfigSelection = {
   ai: false,
@@ -90,12 +88,31 @@ export function Configurator() {
             </fieldset>
           </div>
 
-          <div className="hp-configurator-output">
-            <ConfigReadout selection={selection} stats={stats} />
-          </div>
+          <section
+            aria-labelledby="hp-config-input-title"
+            className="hp-configurator-input"
+          >
+            <h3 className="hp-configurator-stage" id="hp-config-input-title">
+              Config input
+            </h3>
+            <CodeBlock
+              code={buildConfigSnippet(selection)}
+              title="oxlint.config.ts"
+            />
+          </section>
+
+          <section
+            aria-labelledby="hp-config-output-title"
+            className="hp-configurator-output"
+          >
+            <h3 className="hp-configurator-stage" id="hp-config-output-title">
+              Config output
+            </h3>
+            <ConfigReadout stats={stats} />
+          </section>
         </div>
         <p className="hp-section-close">
-          Same selection, same artifact — on a laptop, in CI, and on the next
+          Same selection, same artifact - on a laptop, in CI, and on the next
           clean install.
         </p>
       </div>

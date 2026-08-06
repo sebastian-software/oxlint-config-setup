@@ -23,6 +23,12 @@ assert.deepEqual(manifest.publishConfig, {
 
 const contributing = read("CONTRIBUTING.md");
 assert.match(contributing, /US English \(`en-US`\)/u);
+assert.match(contributing, /ADRs are living records/iu);
+
+const adrConvention = read("docs/adr/README.md");
+assert.match(adrConvention, /living, mutable records/iu);
+assert.match(adrConvention, /update the existing ADR in place/iu);
+assert.doesNotMatch(adrConvention, /0013/u);
 
 const projectLanguageDecision = read(
   "docs/adr/0006-use-us-english-as-the-project-language.md",
@@ -40,11 +46,12 @@ const policyAndAiDecision = read(
   "docs/adr/0008-separate-policy-levels-from-ai-guardrails.md",
 );
 assert.match(policyAndAiDecision, /\*\*Status:\*\* Accepted/u);
-assert.match(
-  policyAndAiDecision,
-  /"essential" \| "recommended" \| "strict"/u,
-);
+assert.match(policyAndAiDecision, /three nested policy levels/iu);
 assert.match(policyAndAiDecision, /AI is an overlay/u);
+
+assert.match(policyAndAiDecision, /`correctness` category/u);
+assert.match(policyAndAiDecision, /`suspicious` and `perf`/u);
+assert.match(policyAndAiDecision, /nursery.*stays disabled/su);
 
 const closedV01Contract = read(
   "docs/rfcs/0003-close-the-v01-configuration-contract.md",
@@ -68,11 +75,15 @@ assert.match(
   /\*\*Status:\*\* Accepted and implemented/u,
 );
 assert.match(mergedRuleOptionsContract, /merged recursively/u);
-assert.match(mergedRuleOptionsContract, /including arrays, scalars, and `null`/u);
+assert.match(
+  mergedRuleOptionsContract,
+  /including arrays, scalars, and `null`/u,
+);
 
 const readme = read("README.md");
-assert.match(readme, /behavioral coverage/iu);
-assert.match(readme, /identifier mapping/iu);
+assert.match(readme, /113 active base rules/iu);
+assert.match(readme, /484 at Strict/iu);
+assert.match(readme, /mapped about 85\.3%/iu);
 assert.match(readme, /level: "essential"/u);
 assert.match(readme, /level: "strict"/u);
 assert.match(readme, /never activates a level-controlled rule/iu);
@@ -102,7 +113,7 @@ for (const assignment of [
   "Research",
   "Accepted gap",
 ]) {
-  assert.match(migration, new RegExp(`\\| ${assignment} \\|`, "u"));
+  assert.match(migration, new RegExp("\\|\\s+" + assignment + "\\s+\\|", "u"));
 }
 for (const concern of [
   "JavaScript correctness",

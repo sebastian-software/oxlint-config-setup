@@ -11,7 +11,7 @@ const LEVEL_ROWS = [
       react: false,
     }).activeRules,
     description:
-      "Low-noise correctness and safety checks that every supported project should keep.",
+      "Oxlint correctness rules for the lowest-noise supported baseline.",
     label: "Essential",
   },
   {
@@ -21,8 +21,7 @@ const LEVEL_ROWS = [
       node: false,
       react: false,
     }).activeRules,
-    description:
-      "Essential plus broadly applicable project policy. This is the default.",
+    description: "Adds suspicious and performance rules. This is the default.",
     label: "Recommended",
   },
   {
@@ -33,7 +32,7 @@ const LEVEL_ROWS = [
       react: false,
     }).activeRules,
     description:
-      "Recommended plus opinionated policy whose adoption cost deserves an explicit choice.",
+      "Adds pedantic, style, and restriction rules while nursery stays off.",
     label: "Strict",
   },
 ] as const;
@@ -47,9 +46,9 @@ export function PolicySection() {
             Strict should mean chosen, not bundled.
           </h2>
           <p className="hp-section-lead">
-            The levels only decide which rules enter the policy. Shared rules
-            keep the same severity and options, so moving up is predictable and
-            every higher level remains a strict superset.
+            Each level adds stable native Oxlint categories. The build expands
+            them into explicit rules, so moving up is predictable, reviewable,
+            and every higher level remains a strict superset.
           </p>
           <p className="hp-inline-link">
             <Link to="/guide/configuration">Compare the policy levels</Link>

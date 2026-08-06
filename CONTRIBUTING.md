@@ -20,7 +20,8 @@ records the scope and rationale.
 - **RFCs** live in `docs/rfcs/` and specify product behavior, user experience,
   rule policy, or validation requirements. New RFCs begin as `proposed`.
 - **ADRs** live in `docs/adr/` and preserve durable architectural decisions.
-  Accepted ADRs are immutable; a later ADR may supersede one.
+  Accepted ADRs are living records; update the existing ADR in place when its
+  decision evolves instead of creating a successor for the update.
 - **Research notes** live in `docs/research/` and capture dated evidence. They do
   not become requirements merely by being documented.
 
@@ -57,21 +58,24 @@ checks them, and tsdown builds the publishable ESM and declarations. The package
 verifier performs two clean byte-identical builds, verifies the exact tarball,
 and installs it into clean npm and pnpm consumers.
 
-Every enabled rule starts in `src/ledger.ts` with complete rationale, ownership,
-activation, source, fixture, conflict, replacement, and review-trigger
-metadata. Add its valid and invalid case under `fixtures/rules/`, then run
-`pnpm generate`.
-The generated rule catalog and effective-config snapshots are committed source
-artifacts; `pnpm generate:check` rejects drift.
+The pinned Oxlint categories provide the broad native rule baseline. Every
+curated addition, exclusion, conflict, option choice, AI change, or named-rule
+boundary starts in `src/ledger.ts` with complete rationale, ownership,
+activation, source, fixture, replacement, and review-trigger metadata. Add its
+valid and invalid case under `fixtures/rules/`, then run `pnpm generate`.
 
-`essential` is reserved for stable, low-noise correctness, safety,
-accessibility, and framework invariants. Upstream recommended-preset membership
-is evidence, not automatic inclusion. `recommended` contains broadly applicable
-project policy and is the default. `strict` contains useful but more opinionated
-policy with a higher adoption cost. Every higher level must remain a strict
-superset of the lower levels. Levels control membership only: a rule's base
-severity and options must remain identical in every level where it is active.
-Level-specific overrides require a new accepted contract and schema change.
+The generated rule catalog and effective-config snapshots are committed source
+artifacts; `pnpm generate:check` rejects drift. An Oxlint upgrade must review
+the complete materialized rule diff in addition to any ledger changes.
+
+`essential` materializes `correctness`. `recommended` adds `suspicious`
+and `perf` and is the default. `strict` adds `pedantic`, `style`, and
+`restriction`; `nursery` remains off. Every higher level must remain a
+strict superset of the lower levels. Levels control membership only: a curated
+rule's base severity and options remain identical in every level where it is
+active. Policy changes update
+[ADR 0008](docs/adr/0008-separate-policy-levels-from-ai-guardrails.md) in place
+and adjust the corresponding schema, generators, and tests.
 
 AI activation is not a policy level. An AI override may only tighten the
 severity or options of an already-active level rule and needs a rationale plus a
