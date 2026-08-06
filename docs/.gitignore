@@ -1,0 +1,9 @@
+# Generated routes
+app/routes.ts
+app/routes/api-reference/
+app/routes/reference/rule-catalog.mdx
+
+# React Router and Ardo output
+.react-router/
+build/
+.vercel/

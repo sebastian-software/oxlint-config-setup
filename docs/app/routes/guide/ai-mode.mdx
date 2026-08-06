@@ -1,0 +1,37 @@
+---
+title: AI Overlay
+description: Add automation-friendly guardrails without silently activating a higher human policy level.
+order: 3
+---
+
+# AI Overlay
+
+AI-generated code can absorb repetitive feedback that would be expensive or frustrating to enforce manually. The `ai` selector adds that feedback without becoming a fourth policy level.
+
+```ts
+export default getOxlintConfig({
+  level: "essential",
+  ai: true,
+});
+```
+
+## What the overlay may do
+
+- tighten the severity of a rule already active at the selected level;
+- merge stricter options into a rule already active at the selected level; and
+- add a rule explicitly classified as AI-only when manual enforcement cost makes it unsuitable for the level hierarchy.
+
+## What the overlay may not do
+
+- activate a recommended or strict rule when essential is selected;
+- weaken, disable, or relax an active rule;
+- use an AI classification to avoid making a real level decision; or
+- change the membership relationship between essential, recommended, and strict.
+
+Each AI override needs a rationale in the rule ledger. AI-only rules also need a distinct defect class and behavioral fixture.
+
+## Why this matters
+
+Combining an unrestricted `ai: true` flag with essential would make essential unpredictable: selecting AI could silently pull in policy the team deliberately deferred. The overlay contract prevents that. Teams keep control of the human policy level while automation receives feedback tailored to its different enforcement cost.
+
+Review the [rule catalog](/reference/rule-catalog) to see which entries are level-controlled, AI-only, or tightened by the overlay.

@@ -1,0 +1,65 @@
+---
+title: Getting Started
+description: Install the tested Oxlint trio, select a prebuilt policy, and run one native lint command.
+order: 1
+---
+
+# Getting Started
+
+Oxlint Config Setup ships complete configurations for modern TypeScript projects. The normal path is one loader, one configuration object, and one Oxlint command.
+
+> **Beta status:** v0.1 is a reviewed beta candidate. The package and release gates are complete, but publishing remains an explicit maintainer action.
+
+## Prerequisites
+
+- Node.js `24.11.0` or later
+- a discoverable `tsconfig.json` for the standard type-aware configurations
+- pnpm, npm, or another package manager that respects peer dependencies
+
+## Install the tested trio
+
+Keep the preset, Oxlint, and the native type-aware backend on the versions verified together:
+
+```sh
+pnpm add -D oxlint-config-setup oxlint@1.77.0 oxlint-tsgolint@7.0.2001
+```
+
+## Create `oxlint.config.ts`
+
+Recommended is the default. Add only the project contexts you use:
+
+```ts
+import { getOxlintConfig } from "oxlint-config-setup";
+
+export default getOxlintConfig({
+  react: true,
+  node: true,
+});
+```
+
+Use an explicit level when the default is not the right adoption target:
+
+```ts
+export default getOxlintConfig({
+  level: "essential",
+  react: true,
+  ai: true,
+});
+```
+
+The loader selects one of 24 complete JSON artifacts. It does not compose plugin presets or resolve a rule graph at runtime.
+
+## Run Oxlint directly
+
+```sh
+pnpm oxlint .
+```
+
+Add the same command to `package.json` and CI. No ESLint runtime or migration helper is part of the supported lint path.
+
+## Choose your next guide
+
+- [Understand essential, recommended, strict, and the context selectors](/guide/configuration)
+- [Add AI guardrails without raising the policy level](/guide/ai-mode)
+- [Use syntax-only, test-runner, or React Compiler configurations](/guide/named-configurations)
+- [Customize a narrow rule without forking the preset](/guide/rule-customization)

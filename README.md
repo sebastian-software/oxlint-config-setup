@@ -177,13 +177,13 @@ and package metadata remain companion-tool concerns.
 
 | Component | Supported value |
 | --- | --- |
-| Consumer Node.js | `^22.18.0 \|\| >=24.0.0` |
+| Consumer Node.js | `>=24.11.0` |
 | Oxlint | `1.77.0` |
 | `oxlint-tsgolint` | `7.0.2001` |
 | TypeScript behavior target | `7.0.2` |
 | npm clean consumer | major 10 or 11 |
 | pnpm clean consumer | `11.20.0` |
-| Repository build Node.js | `^22.18.0 \|\| >=24.11.0` |
+| Repository build Node.js | `>=24.11.0` |
 
 Support for another Oxlint/backend/TypeScript version begins with an explicit
 matrix run because the type-aware backend is outside Oxlint's normal semantic
@@ -191,6 +191,7 @@ versioning policy.
 
 ## Project documents
 
+- [Documentation site source](docs/app)
 - [Adoption guide](docs/adoption.md)
 - [Migration and companion-tool matrix](docs/migration.md)
 - [Compatibility evidence and timings](docs/compatibility.md)
@@ -206,10 +207,13 @@ Run the complete local gate:
 ```sh
 pnpm install --frozen-lockfile
 pnpm release:check
+pnpm docs:check
 ```
 
 Ledger changes require `pnpm generate`; `pnpm generate:check` fails on stale
-catalog or effective-config snapshots. See [CONTRIBUTING.md](CONTRIBUTING.md).
+catalog or effective-config snapshots. The Ardo site generates its homepage
+statistics and rule-catalog route from the same package sources before every
+build. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

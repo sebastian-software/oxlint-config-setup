@@ -1,0 +1,43 @@
+---
+title: Architecture
+description: Understand the Oxlint-only runtime, prebuilt artifact selection, rule ledger, and validation boundaries.
+order: 6
+---
+
+# Architecture
+
+Oxlint Config Setup is a native Oxlint product, not an ESLint compatibility layer.
+
+## One runtime
+
+The standard command invokes Oxlint directly. JavaScript, TypeScript, imports, React, JSX accessibility, Node.js, Vitest, and Jest are covered through native Oxlint plugins. Type-aware TypeScript rules use the pinned `oxlint-tsgolint` backend through the same command.
+
+## Prebuilt configuration selection
+
+Package generation creates all 24 combinations of:
+
+- three policy levels;
+- React on or off;
+- Node.js on or off; and
+- the AI overlay on or off.
+
+`getOxlintConfig()` normalizes the selectors, derives a deterministic artifact name, reads that JSON file, validates its type-aware contract, and returns a fresh object. It does not compose rules at runtime.
+
+## Rule ledger
+
+Every selected rule is declared in a typed ledger with:
+
+- a defect class and profile owner;
+- minimum level or named activation;
+- severity and options;
+- execution path and stability;
+- rationale, fixtures, replacements, conflicts, and a review trigger; and
+- an optional constrained AI override.
+
+The [generated rule catalog](/reference/rule-catalog) is derived from that ledger.
+
+## Validation layers
+
+The release gate validates the ledger schema, level nesting, AI boundaries, real Oxlint diagnostics, exact package contents, clean consumers, deterministic builds, public exports, and release documentation. Generated artifacts are rejected if they drift from their source.
+
+See [validation evidence](/reference/validation) for the executable boundaries.

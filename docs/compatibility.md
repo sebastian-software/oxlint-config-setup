@@ -2,7 +2,7 @@
 
 - **Measured:** 2026-08-05
 - **Host:** macOS 26.5, Apple M1 Ultra, Node 24.18.0
-- **CI:** Linux on Node 22.18.0 and the current Node 24 line
+- **CI:** Linux on the Node 24 LTS floor and the current Node 26 line
 
 ## Tested matrix
 
@@ -13,7 +13,7 @@
 | TypeScript target | `7.0.2` |
 | pnpm | `11.20.0` |
 | npm consumer | major 10 or 11 |
-| Consumer Node.js | `22.18.0`, `24.0.0`, current 24 |
+| Consumer Node.js | `24.11.0`, `26.0.0`, current 26 |
 
 CI job names and environment variables record this version trio. Upgrading any
 member reruns the entire matrix rather than relying on a broad peer range.

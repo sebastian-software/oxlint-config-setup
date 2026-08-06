@@ -223,7 +223,7 @@ assert.equal(manifest.name, "oxlint-config-setup");
 assert.equal(manifest.type, "module");
 assert.equal(manifest.sideEffects, false);
 assert.deepEqual(manifest.files, ["dist"]);
-assert.equal(manifest.engines?.node, "^22.18.0 || >=24.0.0");
+assert.equal(manifest.engines?.node, ">=24.11.0");
 assert.equal(manifest.packageManager, "pnpm@11.20.0");
 assert.deepEqual(manifest.publishConfig, { access: "public", provenance: true });
 assert.deepEqual(manifest.dependencies, undefined);

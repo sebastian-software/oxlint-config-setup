@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/sebastian-software/oxlint-config-setup#readme",
   "engines": {
-    "node": "^22.18.0 || >=24.0.0"
+    "node": ">=24.11.0"
   },
   "packageManager": "pnpm@11.20.0",
   "exports": {
@@ -60,6 +60,9 @@
     "build": "pnpm run typecheck && tsdown && tsx scripts/generate-configs.ts",
     "benchmark": "pnpm run build && tsx scripts/benchmark.ts",
     "check": "pnpm run lint && pnpm run generate:check && pnpm run test",
+    "docs:build": "pnpm --filter @oxlint-config-setup/docs run build",
+    "docs:check": "pnpm --filter @oxlint-config-setup/docs run check",
+    "docs:dev": "pnpm --filter @oxlint-config-setup/docs run dev",
     "generate": "tsx scripts/generate.ts",
     "generate:check": "tsx scripts/generate.ts --check",
     "lint": "oxlint --type-aware --deny-warnings src scripts tsdown.config.ts",
