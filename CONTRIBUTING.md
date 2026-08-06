@@ -82,9 +82,9 @@ and AI must never disable or weaken an active rule. Named activation is reserved
 for the Vitest, Jest, and React Compiler execution contracts.
 
 AI severity and option overrides use the public rule-helper transformations.
-`configureRule` replaces the complete positional options list; ledger entries
-must therefore declare the full desired AI configuration rather than a partial
-object to merge.
+`configureRule` recursively merges plain option objects and replaces arrays,
+scalars, and `null`. Ledger entries should declare only the values the AI
+overlay intends to tighten; unspecified base options remain active.
 
 Do not commit `dist` or its generated release JSON. Those files are deterministic
 package output created by `build` and `prepack`; CI rejects tracked release output

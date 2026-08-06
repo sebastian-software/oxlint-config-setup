@@ -15,6 +15,15 @@ function exampleConfig(): OxlintConfig {
   return {
     rules: {
       complexity: ["error", 10],
+      "custom/detailed-options": [
+        "error",
+        {
+          allow: ["warn"],
+          limits: { max: 10, min: 1 },
+          mode: "safe",
+        },
+        "root-tail",
+      ],
       "no-console": "error",
       "no-var": "warn",
     },
@@ -23,6 +32,15 @@ function exampleConfig(): OxlintConfig {
         files: ["**/*.test.ts"],
         rules: {
           complexity: ["warn", 20],
+          "custom/detailed-options": [
+            "warn",
+            {
+              allow: ["error"],
+              limits: { max: 20, min: 2 },
+              overrideOnly: true,
+            },
+            "override-tail",
+          ],
           "no-console": "off",
         },
       },
@@ -41,15 +59,42 @@ function exampleConfig(): OxlintConfig {
 
 {
   const config = exampleConfig();
-  configureRule(config, "complexity", [{ max: 30 }]);
-  assert.deepEqual(config.rules?.complexity, ["error", { max: 30 }]);
-  assert.deepEqual(config.overrides?.[0]?.rules?.complexity, [
-    "warn",
-    { max: 30 },
+  configureRule(config, "no-var", []);
+  assert.equal(config.rules?.["no-var"], "warn");
+  configureRule(config, "complexity", [30]);
+  assert.deepEqual(config.rules?.complexity, ["error", 30]);
+  assert.deepEqual(config.overrides?.[0]?.rules?.complexity, ["warn", 30]);
+  configureRule(config, "custom/detailed-options", [
+    { allow: ["debug"], limits: { max: 30 } },
   ]);
+  assert.deepEqual(config.rules?.["custom/detailed-options"], [
+    "error",
+    {
+      allow: ["debug"],
+      limits: { max: 30, min: 1 },
+      mode: "safe",
+    },
+    "root-tail",
+  ]);
+  assert.deepEqual(
+    config.overrides?.[0]?.rules?.["custom/detailed-options"],
+    [
+      "warn",
+      {
+        allow: ["debug"],
+        limits: { max: 30, min: 2 },
+        overrideOnly: true,
+      },
+      "override-tail",
+    ],
+  );
   configureRule(config, "no-console", [{ allow: ["warn"] }]);
   assert.deepEqual(config.rules?.["no-console"], [
     "error",
+    { allow: ["warn"] },
+  ]);
+  assert.deepEqual(config.overrides?.[0]?.rules?.["no-console"], [
+    "off",
     { allow: ["warn"] },
   ]);
 }

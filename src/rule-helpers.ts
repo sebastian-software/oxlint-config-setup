@@ -13,6 +13,41 @@ function isConfiguredRule(
   return Array.isArray(rule);
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const prototype: unknown = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function mergeOption(current: unknown, update: unknown): unknown {
+  if (!isPlainObject(current) || !isPlainObject(update)) return update;
+
+  return {
+    ...current,
+    ...Object.fromEntries(
+      Object.entries(update).map(([key, value]) => [
+        key,
+        mergeOption(current[key], value),
+      ]),
+    ),
+  };
+}
+
+function mergeOptions(
+  current: readonly unknown[],
+  updates: readonly unknown[],
+): unknown[] {
+  return Array.from(
+    { length: Math.max(current.length, updates.length) },
+    (_, index) =>
+      index < updates.length
+        ? mergeOption(current[index], updates[index])
+        : current[index],
+  );
+}
+
 function explicitRuleMaps(config: OxlintConfig): DummyRuleMap[] {
   return [
     ...(config.rules === undefined ? [] : [config.rules]),
@@ -37,7 +72,7 @@ export function setRuleSeverity(
   }
 }
 
-/** Replace an existing rule's complete option list while preserving severity. */
+/** Merge an existing rule's options while preserving severity. */
 export function configureRule(
   config: OxlintConfig,
   ruleName: string,
@@ -45,9 +80,10 @@ export function configureRule(
 ): void {
   for (const rules of explicitRuleMaps(config)) {
     const current = rules[ruleName];
-    if (current === undefined) continue;
+    if (current === undefined || options.length === 0) continue;
     const severity = isConfiguredRule(current) ? current[0] : current;
-    rules[ruleName] = [severity, ...options];
+    const currentOptions = isConfiguredRule(current) ? current.slice(1) : [];
+    rules[ruleName] = [severity, ...mergeOptions(currentOptions, options)];
   }
 }
 
