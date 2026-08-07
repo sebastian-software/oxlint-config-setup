@@ -2,5 +2,6 @@ node_modules/
 dist/
 spikes/config-packaging/packages/shared-config/generated/
 coverage/
+.corpus/
 *.log
 .DS_Store

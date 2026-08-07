@@ -43,6 +43,16 @@ The current preset makes two distinct claims:
 - all 27 curated ledger entries have repository-owned rationale, activation
   boundaries, and executable valid/invalid evidence.
 
+## Real-project differential scorecard
+
+The [real-project differential corpus](research/2026-08-07-real-project-differential-corpus.md)
+compares the predecessor and proposed configurations at pinned public commits.
+Run `pnpm corpus --prepare` to generate its machine-readable `report.json` and
+concise `scorecard.md`. Those reports measure selected JavaScript and TypeScript
+source paths, diagnostics, fix availability, and per-project cold/warm timing;
+they are not evidence that Oxlint replaces companion tools for Markdown, JSON,
+package metadata, formatting, or spelling.
+
 No raw parity percentage is a release gate. A curated rule or exception enters
 only when its defect class, execution path, stability, conflicts, fixture, and
 review trigger are recorded in the ledger. An Oxlint upgrade must separately

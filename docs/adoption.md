@@ -120,5 +120,10 @@ gates.
    tools already responsible for those formats.
 5. Remove ESLint only after accepted gaps are recorded for that project.
 
+Use the [real-project differential scorecard](research/2026-08-07-real-project-differential-corpus.md)
+when collecting that evidence. Its boundary is source-code diagnostics on pinned
+public projects; companion tools remain responsible for non-source formats and
+formatting concerns.
+
 The shared preset intentionally does not translate arbitrary ESLint options or
 load migration helpers at runtime.

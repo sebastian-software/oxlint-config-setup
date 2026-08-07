@@ -70,6 +70,7 @@
   "scripts": {
     "build": "pnpm run typecheck && tsdown && tsx scripts/generate-configs.ts",
     "benchmark": "pnpm run build && tsx scripts/benchmark.ts",
+    "corpus": "pnpm run build && tsx scripts/differential-corpus.ts",
     "check": "pnpm run lint && pnpm run generate:check && pnpm run test",
     "docs:build": "pnpm --filter @oxlint-config-setup/docs run build",
     "docs:check": "pnpm --filter @oxlint-config-setup/docs run check",
@@ -79,7 +80,8 @@
     "lint": "oxlint --type-aware --deny-warnings src scripts tsdown.config.ts",
     "prepack": "pnpm run build",
     "release:check": "pnpm run check && tsx scripts/release-gate.ts",
-    "test": "pnpm run test:ledger && pnpm run test:rule-helpers && pnpm run test:harness && pnpm run test:package",
+    "test": "pnpm run test:ledger && pnpm run test:rule-helpers && pnpm run test:harness && pnpm run test:package && pnpm run test:corpus",
+    "test:corpus": "tsx scripts/test-differential-corpus.ts",
     "test:harness": "tsx scripts/test-harness.ts",
     "test:ledger": "tsx scripts/test-ledger.ts",
     "test:package": "tsx scripts/verify-package.ts",
