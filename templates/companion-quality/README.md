@@ -48,8 +48,9 @@ pnpm run quality:fix
 ## Generated and ignored files
 
 `generated/`, `dist/`, `coverage/`, and `node_modules/` are excluded in every
-tool configuration and in `.gitignore`. The deliberately malformed files under
-`generated/` prove that an ignored generated artifact cannot block `quality`.
+tool configuration and in `.gitignore`. The clean-fixture verifier creates
+malformed generated source, Markdown, and JSON files before running `quality`;
+the passing command proves that ignored generated artifacts cannot block checks.
 Only add a generated path after its source and regeneration command are clear.
 
 ## Editor, pre-commit, and CI

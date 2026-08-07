@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import {
   chmodSync,
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -74,7 +75,8 @@ function copyFixture(packageManager: PackageManager): string {
   cpSync(templateDirectory, target, {
     recursive: true,
     filter(source) {
-      return !source.split(sep).includes("node_modules");
+      const segments = source.split(sep);
+      return !segments.includes("generated") && !segments.includes("node_modules");
     },
   });
   return target;
@@ -94,6 +96,20 @@ function initializeFixtureGit(cwd: string): void {
 
 function runQuality(packageManager: PackageManager, cwd: string): RunResult {
   return run(packageManager, ["run", "quality"], cwd);
+}
+
+function writeIgnoredGeneratedArtifacts(cwd: string): void {
+  const generatedDirectory = resolve(cwd, "generated");
+  mkdirSync(generatedDirectory, { recursive: true });
+  writeFileSync(
+    resolve(generatedDirectory, "malformed.ts"),
+    "export const = ;\n",
+  );
+  writeFileSync(
+    resolve(generatedDirectory, "malformed.md"),
+    "# Duplicate\n\n# Duplicate\n\nZxqvplm\n",
+  );
+  writeFileSync(resolve(generatedDirectory, "malformed.json"), '{"broken":\n');
 }
 
 function verifyPreCommit(packageManager: PackageManager, cwd: string): void {
@@ -117,13 +133,9 @@ function verifyPreCommit(packageManager: PackageManager, cwd: string): void {
     `${packageManager} fixture must keep the distributed pre-commit hook executable`,
   );
 
-  writeFileSync(
-    resolve(cwd, "src/commit-proof.ts"),
-    "export const commitProof = true;\n",
-  );
-  assertSuccess(run("git", ["add", "src/commit-proof.ts"], cwd));
+  assertSuccess(run("git", ["add", "--all"], cwd));
   assertSuccess(
-    run("git", ["commit", "--quiet", "-m", "Verify companion hook"], cwd),
+    run("git", ["commit", "--quiet", "-m", "Adopt companion template"], cwd),
   );
 
   writeFileSync(hookPath, "#!/usr/bin/env sh\nthis-is-not-a-command\n");
@@ -232,6 +244,7 @@ try {
     const fixture = copyFixture(packageManager);
     initializeFixtureGit(fixture);
     installFixture(packageManager, fixture);
+    writeIgnoredGeneratedArtifacts(fixture);
     assertSuccess(runQuality(packageManager, fixture));
     verifyPreCommit(packageManager, fixture);
     verifyFailures(packageManager, fixture);

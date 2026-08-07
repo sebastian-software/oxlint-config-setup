@@ -47,9 +47,9 @@ package-key fixes. JSON Schema changes and spelling additions deserve review.
 ## Generated files, editor, hooks, and CI
 
 The template consistently excludes `generated/`, `dist/`, `coverage/`, and
-`node_modules/`. Its fixture intentionally leaves malformed generated files in
-place; the complete quality command still passes, proving generated output does
-not create noisy diagnostics.
+`node_modules/`. Its fixture creates malformed generated source, Markdown, and
+JSON files before the complete quality command; the command still passes,
+proving generated output does not create noisy diagnostics.
 
 VS Code recommendations install Biome, markdownlint, and CSpell support. The
 workspace settings format with Biome and offer explicit Biome organize-imports
