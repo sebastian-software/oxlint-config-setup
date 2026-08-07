@@ -54,12 +54,13 @@ export function runCommand(
   }
 }
 
-export async function fetchWithTimeout(
+export async function fetchWithTimeout<T>(
   operation: string,
   url: string,
+  consume: (response: Response) => Promise<T>,
   init: RequestInit = {},
   options: FetchOptions = {},
-): Promise<Response> {
+): Promise<T> {
   const timeoutMilliseconds =
     options.timeoutMilliseconds ?? EXTERNAL_OPERATION_TIMEOUT_MILLISECONDS;
   const controller = new AbortController();
@@ -67,10 +68,11 @@ export async function fetchWithTimeout(
     controller.abort();
   }, timeoutMilliseconds);
   try {
-    return await (options.fetchImplementation ?? fetch)(url, {
+    const response = await (options.fetchImplementation ?? fetch)(url, {
       ...init,
       signal: controller.signal,
     });
+    return await consume(response);
   } catch (error: unknown) {
     if (controller.signal.aborted) {
       throw new Error(

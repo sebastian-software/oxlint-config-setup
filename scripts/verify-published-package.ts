@@ -159,9 +159,13 @@ async function waitForRegistry(): Promise<RegistryPackage> {
 }
 
 async function githubJson<T>(path: string): Promise<T> {
-  const response = await fetchWithTimeout(
+  return fetchWithTimeout(
     `query GitHub API ${path}`,
     `https://api.github.com${path}`,
+    async (response) => {
+      assert.equal(response.ok, true, `GitHub API request failed: ${path}`);
+      return (await response.json()) as T;
+    },
     {
       headers: {
         Accept: "application/vnd.github+json",
@@ -171,8 +175,6 @@ async function githubJson<T>(path: string): Promise<T> {
       },
     },
   );
-  assert.equal(response.ok, true, `GitHub API request failed: ${path}`);
-  return (await response.json()) as T;
 }
 
 async function verifyGitHubRelease(): Promise<void> {
