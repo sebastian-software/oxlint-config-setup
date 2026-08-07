@@ -222,6 +222,16 @@ exit 0
 `,
   );
   chmodSync(resolve(fakePnpmDirectory, "pnpm"), 0o755);
+  writeFileSync(
+    resolve(fakePnpmDirectory, "rg"),
+    `#!/bin/sh
+if [ "$1" = "-q" ] && [ "$2" = 'executionPath: "javascript-plugin"' ] && grep -q "$2" "$3"; then
+  exit 0
+fi
+exit 1
+`,
+  );
+  chmodSync(resolve(fakePnpmDirectory, "rg"), 0o755);
   const profileOutput = resolve(cleanRunner, "profile-output");
   const detectedProfile = runCleanWorkflowCommand(
     experimentalDetection.run,
