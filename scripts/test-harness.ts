@@ -49,9 +49,28 @@ const profileCases: Array<{
   { ai: true, profile: "ai" },
   { profile: "react-compiler", surface: "experimental" },
 ];
+const experimentalOnly = process.env.CANARY_EXPERIMENTAL_ONLY === "true";
+const nativeOnly = process.env.CANARY_NATIVE_ONLY === "true";
+
+function isJavaScriptPluginCase(
+  testCase: (typeof profileCases)[number],
+): boolean {
+  return selectRules([testCase.profile], {
+    ai: testCase.ai,
+    level: testCase.level,
+    surface: testCase.surface,
+  }).some((entry) => entry.executionPath === "javascript-plugin");
+}
+
+const selectedProfileCases = profileCases.filter((testCase) => {
+  const isJavaScriptPlugin = isJavaScriptPluginCase(testCase);
+  if (experimentalOnly) return isJavaScriptPlugin;
+  if (nativeOnly) return !isJavaScriptPlugin;
+  return true;
+});
 
 try {
-  for (const testCase of profileCases) {
+  for (const testCase of selectedProfileCases) {
     const config = composeProfiles([testCase.profile], {
       ai: testCase.ai,
       level: testCase.level,
@@ -127,7 +146,8 @@ try {
     );
   }
 
-  const configurableProfiles = [
+  if (!experimentalOnly) {
+    const configurableProfiles = [
     "core",
     "imports",
     "typescript-syntax",
@@ -277,7 +297,7 @@ try {
       "utf8",
     ),
   ) as Record<string, unknown>;
-  for (const artifact of allConfigArtifacts()) {
+    for (const artifact of allConfigArtifacts()) {
     const configPath = writeConfig(
       `print-${artifact.publicName}`,
       artifact.config,
@@ -311,11 +331,12 @@ try {
       snapshots[artifact.publicName],
       `${artifact.publicName} --print-config snapshot must be current`,
     );
+    }
   }
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
 }
 
 console.log(
-  `Behaviorally verified ${ruleLedger.length} rules across ${profileCases.length} profiles.`,
+  `Behaviorally verified ${ruleLedger.length} rules across ${selectedProfileCases.length} profiles.`,
 );

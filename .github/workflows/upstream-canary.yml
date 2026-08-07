@@ -1,0 +1,116 @@
+name: Upstream compatibility canary
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-compatibility-canary-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native:
+    name: Native · Node ${{ matrix.node }} · pnpm ${{ matrix.pnpm }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node: 24.11.0
+            pnpm: 11.20.0
+          - node: 26.x
+            pnpm: latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: ${{ matrix.pnpm }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install the pinned benchmark baseline
+        run: pnpm install --frozen-lockfile
+      - name: Measure the pinned benchmark baseline
+        run: |
+          mkdir -p canary-artifacts
+          pnpm run benchmark > canary-artifacts/pinned-benchmark.json
+      - name: Install the latest upstream compatibility trio
+        run: |
+          if ! pnpm install --lockfile=false --config.overrides.oxlint=latest --config.overrides.oxlint-tsgolint=latest --config.overrides.typescript=latest; then
+            echo "::error title=Upstream install failure::The latest Oxlint, oxlint-tsgolint, and TypeScript trio could not be resolved."
+            exit 1
+          fi
+      - name: Run the native compatibility canary
+        env:
+          CANARY_ALLOW_PNPM_VERSION: "true"
+          CANARY_NATIVE_ONLY: "true"
+          CANARY_OUTPUT_DIR: canary-artifacts
+          CANARY_PERFORMANCE_BASELINE: canary-artifacts/pinned-benchmark.json
+          CANARY_PERFORMANCE_REGRESSION_THRESHOLD: "0.25"
+        run: pnpm run canary:upstream
+      - name: Summarize the canary
+        if: always()
+        run: |
+          if [ -f canary-artifacts/summary.md ]; then
+            cat canary-artifacts/summary.md >> "$GITHUB_STEP_SUMMARY"
+            if [ -f canary-artifacts/native-category-surface.diff.md ]; then
+              cat canary-artifacts/native-category-surface.diff.md >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "## Upstream compatibility canary" >> "$GITHUB_STEP_SUMMARY"
+            echo "Install failed before the canary could create its categorized summary." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: upstream-canary-node-${{ matrix.node }}-pnpm-${{ matrix.pnpm }}
+          path: canary-artifacts
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Reject manifest, lockfile, and generated-source mutation
+        if: always()
+        run: git diff --exit-code
+
+  experimental-js-plugin:
+    name: Experimental JavaScript-plugin profiles
+    needs: native
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: profiles
+        name: Detect JavaScript-plugin profiles
+        run: |
+          if rg -q 'executionPath: "javascript-plugin"' src/ledger.ts; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        if: steps.profiles.outputs.present == 'true'
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.profiles.outputs.present == 'true'
+        with:
+          node-version: 24.11.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Run isolated JavaScript-plugin fixtures
+        if: steps.profiles.outputs.present == 'true'
+        run: |
+          pnpm install --lockfile=false --config.overrides.oxlint=latest --config.overrides.oxlint-tsgolint=latest --config.overrides.typescript=latest
+          CANARY_EXPERIMENTAL_ONLY=true pnpm run test:harness
+      - name: Report absent JavaScript-plugin profiles
+        if: steps.profiles.outputs.present != 'true'
+        run: echo "No experimental JavaScript-plugin profile is present; native canary results are authoritative."

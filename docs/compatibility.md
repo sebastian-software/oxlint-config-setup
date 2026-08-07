@@ -18,6 +18,64 @@
 CI job names and environment variables record this version trio. Upgrading any
 member reruns the entire matrix rather than relying on a broad peer range.
 
+## Upstream compatibility canary
+
+The separate **Upstream compatibility canary** runs every Monday at 03:17 UTC
+and can also be started with `workflow_dispatch`. It keeps the checked-in
+manifest, lockfile, peer ranges, and supported-version claim pinned. On the
+same Linux runner, it first measures the pinned toolchain, then resolves the
+latest Oxlint, `oxlint-tsgolint`, and TypeScript versions only into
+`node_modules`. It runs on the Node 24 LTS floor with the supported pnpm and on
+the current Node 26 line with current pnpm; neither combination is a release
+matrix claim.
+
+The canary reports install, type, config, diagnostic, snapshot, packaging, and
+performance results separately. Diagnostic coverage includes behavioral
+fixtures plus crash and timeout classification. Packaging coverage builds the
+tarball and exercises clean npm and pnpm consumers. It uploads the resolved
+versions, two-run benchmark comparison, native effective category/rule surface,
+and a Markdown diff for review. A native surface change is a snapshot failure,
+not an automatic support update.
+
+Performance compares two fresh upstream measurements with a pinned baseline on
+the same runner, using the existing one-thread warm-up and sample protocol. A
+regression must exceed 25% in both measurements to fail; a one-off exceedance
+is recorded as a warning so ordinary runner noise does not fail the canary.
+
+JavaScript-plugin profiles remain out of the native job. The isolated job
+detects a `javascript-plugin` ledger entry and runs only its profile fixtures
+against the latest toolchain; when none exists it records that native results
+are authoritative. This prevents an experimental plugin crash or diagnostic
+change from obscuring native regressions.
+
+When Renovate or another dependency update PR is ready for review, link its
+updated-toolchain change to a successful canary run. To reproduce a run locally
+without changing tracked manifests or the lockfile:
+
+```sh
+pnpm install --frozen-lockfile
+mkdir -p canary-artifacts
+pnpm run benchmark > canary-artifacts/pinned-benchmark.json
+pnpm install --lockfile=false \
+  --config.overrides.oxlint=latest \
+  --config.overrides.oxlint-tsgolint=latest \
+  --config.overrides.typescript=latest
+CANARY_ALLOW_PNPM_VERSION=true \
+CANARY_OUTPUT_DIR=canary-artifacts \
+CANARY_PERFORMANCE_BASELINE=canary-artifacts/pinned-benchmark.json \
+pnpm run canary:upstream
+git diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml docs fixtures src
+```
+
+Triage an install failure as an upstream resolution incompatibility; type,
+config, diagnostic, snapshot, or packaging failures as candidate compatibility
+changes; and a repeated performance failure as a candidate regression. Retain
+the artifacts, open or update the dependency PR with the canary URL, and only
+change supported versions after a reviewed update lands. Scheduled failures do
+not publish packages or notify consumers directly; repository maintainers triage
+them in the next working day and use normal issue or PR notifications for a
+confirmed upstream change.
+
 ## Executable evidence
 
 The shared harness invokes the supported `oxlint` executable directly and checks:
