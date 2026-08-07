@@ -4,7 +4,12 @@ import { dirname, resolve } from "node:path";
 import type { OxlintConfig } from "oxlint";
 
 import { allConfigArtifacts } from "../src/artifacts.js";
+import {
+  COMPOSITION_SNAPSHOT_CASES,
+  createCompositionSnapshotConfig,
+} from "../src/composition-fixtures.js";
 import { ruleLedger } from "../src/ledger.js";
+import { materializeConfig } from "../src/materialize.js";
 import { assertGeneratedContent } from "./generation.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
@@ -122,6 +127,24 @@ const generated = new Map<string, string>([
         allConfigArtifacts().map((artifact) => [
           artifact.publicName,
           effectiveProjection(artifact.config),
+        ]),
+      ),
+      null,
+      2,
+      )}\n`,
+  ],
+  [
+    "fixtures/snapshots/composed-effective-configs.json",
+    `${JSON.stringify(
+      Object.fromEntries(
+        COMPOSITION_SNAPSHOT_CASES.map((testCase) => [
+          testCase.name,
+          effectiveProjection(
+            materializeConfig(
+              createCompositionSnapshotConfig(testCase),
+              testCase.file,
+            ),
+          ),
         ]),
       ),
       null,

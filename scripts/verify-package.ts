@@ -15,12 +15,13 @@ import { tmpdir } from "node:os";
 import { relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { OxlintConfig } from "oxlint";
+import type { OxlintConfig, OxlintOverride } from "oxlint";
 
 import { allConfigArtifacts, NAMED_ARTIFACTS } from "../src/artifacts.js";
 import {
   allConfigOptions,
   configFileName,
+  type ConfigLevel,
   type ConfigOptions,
 } from "../src/options.js";
 import type { RuleSeverity } from "../src/rule-helpers.js";
@@ -72,6 +73,12 @@ interface PublicPackageApi {
   disableAllRulesBut(config: OxlintConfig, keepRuleName: string): void;
   disableRule(config: OxlintConfig, ruleName: string): void;
   getExperimentalReactCompilerOxlintConfig(): OxlintConfig;
+  getComposedOxlintConfig(options?: {
+    ai?: boolean;
+    level?: ConfigLevel;
+    overrides?: readonly OxlintOverride[];
+    scopes?: readonly ("react" | "node" | "vitest" | "jest" | "scripts" | "config" | "declarations" | { files?: readonly string[]; scope: "react" | "node" | "vitest" | "jest" | "scripts" | "config" | "declarations" })[];
+  }): OxlintConfig;
   getJestOxlintConfig(): OxlintConfig;
   getOxlintConfig(options?: ConfigOptions): OxlintConfig;
   getSyntaxOnlyOxlintConfig(): OxlintConfig;
@@ -124,6 +131,7 @@ const publicApiNames = [
   "configureRule",
   "disableAllRulesBut",
   "disableRule",
+  "getComposedOxlintConfig",
   "getExperimentalReactCompilerOxlintConfig",
   "getJestOxlintConfig",
   "getOxlintConfig",
@@ -413,6 +421,11 @@ const declarationSource = readFileSync(
 for (const name of [
   "ConfigLevel",
   "ConfigOptions",
+  "ComposedConfigOptions",
+  "ScopedConfig",
+  "ScopedConfigInput",
+  "ScopedConfigSelection",
+  "RuleTarget",
   "RuleSeverity",
   ...publicApiNames,
 ]) {
@@ -481,6 +494,20 @@ assert.equal(recommended.rules?.["import/no-self-import"], "off");
 const strict = publicApi.getOxlintConfig({ level: "strict" });
 assert.equal(strict.rules?.["import/no-self-import"], "error");
 assert.equal(strict.rules?.["eslint/no-warning-comments"], "off");
+const composed = publicApi.getComposedOxlintConfig({
+  scopes: ["react", "vitest", "scripts"],
+  overrides: [
+    {
+      files: ["**/*.test.tsx"],
+      plugins: ["jsx-a11y"],
+      rules: { "react/jsx-key": "off" },
+    },
+  ],
+});
+assert.equal(composed.options?.typeAware, true);
+assert(composed.plugins?.includes("vitest"));
+assert(composed.plugins?.includes("node"));
+assert.deepEqual(composed.overrides?.at(-1)?.plugins, composed.plugins);
 assert.equal(
   activeRuleCount(publicApi.getOxlintConfig({ level: "essential" })),
   113,
@@ -659,7 +686,7 @@ try {
     [
       'import assert from "node:assert/strict";',
       'import { copyFileSync } from "node:fs";',
-      'import { addRule, configureRule, disableAllRulesBut, disableRule, getExperimentalReactCompilerOxlintConfig, getJestOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, getVitestOxlintConfig, setRuleSeverity } from "oxlint-config-setup";',
+      'import { addRule, configureRule, disableAllRulesBut, disableRule, getComposedOxlintConfig, getExperimentalReactCompilerOxlintConfig, getJestOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, getVitestOxlintConfig, setRuleSeverity } from "oxlint-config-setup";',
       'assert(getOxlintConfig({ react: true, node: true, ai: true }).plugins.includes("react"));',
       'assert.equal(getOxlintConfig({ level: "essential" }).rules["typescript/switch-exhaustiveness-check"], "off");',
       'assert.equal(getOxlintConfig().rules["import/no-self-import"], "off");',
@@ -668,6 +695,10 @@ try {
       'assert(getVitestOxlintConfig().plugins.includes("vitest"));',
       'assert(getJestOxlintConfig().plugins.includes("jest"));',
       'assert.equal(getExperimentalReactCompilerOxlintConfig().rules["react/react-compiler"], "warn");',
+      'const composed = getComposedOxlintConfig({ scopes: ["react", "vitest"], overrides: [{ files: ["**/*.test.tsx"], plugins: ["jsx-a11y"] }] });',
+      'assert.equal(composed.options.typeAware, true);',
+      'assert(composed.plugins.includes("vitest"));',
+      'assert.deepEqual(composed.overrides.at(-1).plugins, composed.plugins);',
       "const customized = getOxlintConfig({ ai: true });",
       'setRuleSeverity(customized, "eslint/no-warning-comments", "error");',
       'configureRule(customized, "eslint/valid-typeof", [{ requireStringLiterals: false }]);',
@@ -746,12 +777,15 @@ try {
   writeFileSync(
     resolve(consumerRoot, "consumer.ts"),
     [
-      'import { getOxlintConfig, getVitestOxlintConfig, setRuleSeverity, type ConfigLevel, type ConfigOptions, type RuleSeverity } from "oxlint-config-setup";',
+    'import { getComposedOxlintConfig, getOxlintConfig, getVitestOxlintConfig, setRuleSeverity, type ComposedConfigOptions, type ConfigLevel, type ConfigOptions, type RuleSeverity, type ScopedConfig } from "oxlint-config-setup";',
       'const level: ConfigLevel = "essential";',
       'const severity: RuleSeverity = "warn";',
       "const options = { level, react: true, ai: true } satisfies ConfigOptions;",
+      'const scope: ScopedConfig = "vitest";',
+      'const composedOptions = { scopes: [scope] } satisfies ComposedConfigOptions;',
       "void getVitestOxlintConfig();",
       "const config = getOxlintConfig(options);",
+      "void getComposedOxlintConfig(composedOptions);",
       'setRuleSeverity(config, "eslint/no-warning-comments", severity);',
       "export default config;",
       "",

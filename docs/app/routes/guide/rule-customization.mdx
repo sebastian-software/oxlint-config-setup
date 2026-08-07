@@ -68,6 +68,16 @@ produces:
 
 The array is replaced, while `limits.min` and the trailing positional option are retained.
 
-## Scope boundary
+## Scoped composition targets
 
-The predecessor's named `{ scope }` argument is not present. Oxlint artifacts use one root object plus file overrides, not named flat-config blocks. The helpers update a rule wherever it already occurs explicitly.
+Unscoped calls update the root and every explicit override occurrence. A config
+created by `getComposedOxlintConfig()` also supports a final `{ scope }` target:
+
+```ts
+disableRule(config, "vitest/no-focused-tests", { scope: "vitest" });
+```
+
+The target is an identity assigned to the package-created file override, not a
+guess based on a glob. Unknown and unselected scopes throw. User-authored
+overrides remain ordinary Oxlint overrides and are intentionally not given a
+package scope identity.

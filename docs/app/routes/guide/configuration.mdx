@@ -59,6 +59,39 @@ export default getOxlintConfig({
 
 `ai: true` does not select a stricter level or enable another category. It tightens already-active rules and adds rules explicitly classified as AI-only. See [AI mode](/guide/ai-mode) for the guardrails.
 
+## Mixed repositories
+
+Use `getComposedOxlintConfig()` when contexts apply to file groups rather than
+the whole repository. It uses the same prebuilt type-aware root artifacts and
+adds stable native overrides:
+
+```ts
+import { getComposedOxlintConfig } from "oxlint-config-setup";
+
+export default getComposedOxlintConfig({
+  scopes: [
+    "react",
+    { scope: "node", files: ["packages/api/**/*.{ts,mts}"] },
+    "vitest",
+    "scripts",
+  ],
+});
+```
+
+`react`, `node`, `vitest`, `jest`, `scripts`, `config`, and `declarations` are
+available scopes. Test scopes only match canonical `*.test`/`*.spec` and
+`__tests__` or `__mocks__` patterns. Consumer overrides append after package
+fragments; their plugin arrays are unioned with required plugins so an override
+cannot accidentally replace them. Rules, environments, and globals then follow
+Oxlint's normal later-override behavior.
+
+Select either the Vitest or Jest scope for one configuration. The loader rejects
+both together because their runner rules overlap.
+
+The composition API is TypeScript-only because it constructs file overrides at
+runtime. Public JSON exports remain complete root configurations. Playwright/E2E
+and Storybook patterns are reserved for future accepted native profiles.
+
 ## Defaults
 
 | Option  | Default         |

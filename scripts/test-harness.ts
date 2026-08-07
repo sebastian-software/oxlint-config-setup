@@ -4,6 +4,10 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { allConfigArtifacts } from "../src/artifacts.js";
+import {
+  COMPOSITION_SNAPSHOT_CASES,
+  createCompositionSnapshotConfig,
+} from "../src/composition-fixtures.js";
 import { ruleLedger } from "../src/ledger.js";
 import { composeProfiles, selectRules } from "../src/profiles.js";
 import type { RuleProfile } from "../src/schema.js";
@@ -341,6 +345,44 @@ try {
           projection,
           snapshots[artifact.publicName],
           `${artifact.publicName} --print-config snapshot must be current`,
+        );
+      }
+
+      const compositionSnapshots = JSON.parse(
+        readFileSync(
+          resolve(
+            repositoryRoot,
+            "fixtures/snapshots/composed-effective-configs.json",
+          ),
+          "utf8",
+        ),
+      ) as Record<string, unknown>;
+      for (const testCase of COMPOSITION_SNAPSHOT_CASES) {
+        const configPath = writeConfig(
+          `print-composed-${testCase.name}`,
+          createCompositionSnapshotConfig(testCase),
+        );
+        const printed = runProcess(
+          oxlint,
+          ["--config", configPath, "--print-config", testCase.file],
+          { cwd: repositoryRoot },
+        );
+        assert.equal(printed.kind, "success");
+        const effective = JSON.parse(printed.stdout) as Record<string, unknown>;
+        const projection = {
+          categories: effective.categories,
+          options: effective.options,
+          plugins: Array.isArray(effective.plugins)
+            ? effective.plugins.toSorted((left, right) =>
+                String(left).localeCompare(String(right)),
+              )
+            : effective.plugins,
+          rules: effective.rules,
+        };
+        assert.deepEqual(
+          projection,
+          compositionSnapshots[testCase.name],
+          `${testCase.name} composed effective-config snapshot must be current`,
         );
       }
     }
