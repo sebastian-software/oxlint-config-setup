@@ -3,11 +3,10 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
+import type { OxlintOverride } from "oxlint";
+
 import { allConfigArtifacts } from "../src/artifacts.js";
-import {
-  COMPOSITION_SNAPSHOT_CASES,
-  createCompositionSnapshotConfig,
-} from "../src/composition-fixtures.js";
+import { createCompositionFixtureConfig } from "../src/composition-fixtures.js";
 import { ruleLedger } from "../src/ledger.js";
 import { composeProfiles, selectRules } from "../src/profiles.js";
 import type { RuleProfile } from "../src/schema.js";
@@ -32,6 +31,14 @@ function runOxlint(config: string, files: readonly string[]) {
     oxlint,
     ["--config", config, "--format", "json", ...files],
     { cwd: repositoryRoot },
+  );
+}
+
+function diagnosticCodes(config: string, files: readonly string[]): Set<string> {
+  return new Set(
+    parseOxlintJson(runOxlint(config, files)).diagnostics.map((diagnostic) =>
+      normalizeDiagnosticCode(diagnostic.code),
+    ),
   );
 }
 
@@ -280,6 +287,126 @@ try {
       "Jest-specific Jasmine usage must not be inferred from a Vitest fixture",
     );
 
+    const reactVitestConfig = writeConfig(
+      "composition-react-vitest",
+      createCompositionFixtureConfig(["react", "vitest"]),
+    );
+    const overlapCodes = diagnosticCodes(reactVitestConfig, [
+      "fixtures/composition/packages/web/src/Overlap.test.tsx",
+    ]);
+    assert(
+      overlapCodes.has("react/jsx-key"),
+      "a React + Vitest test file must receive React diagnostics",
+    );
+    assert(
+      overlapCodes.has("vitest/no-focused-tests"),
+      "a React + Vitest test file must receive Vitest diagnostics",
+    );
+    const vitestLeakCodes = diagnosticCodes(reactVitestConfig, [
+      "fixtures/composition/packages/web/src/VitestLeak.tsx",
+    ]);
+    assert(
+      !vitestLeakCodes.has("vitest/no-focused-tests"),
+      "Vitest rules must not leak from canonical test patterns into regular React files",
+    );
+
+    const nodeScriptsConfig = writeConfig(
+      "composition-node-scripts",
+      createCompositionFixtureConfig([
+        {
+          scope: "node",
+          files: ["**/packages/api/**/*.{js,cjs,mjs,ts,cts,mts}"],
+        },
+        "scripts",
+      ]),
+    );
+    const scriptCodes = diagnosticCodes(nodeScriptsConfig, [
+      "fixtures/composition/packages/api/scripts/invalid.cjs",
+    ]);
+    assert(
+      scriptCodes.has("node/no-exports-assign"),
+      "Node rules must apply to a matching script file",
+    );
+    const nodeLeakCodes = diagnosticCodes(nodeScriptsConfig, [
+      "fixtures/composition/packages/web/src/node-leak.cjs",
+    ]);
+    assert(
+      !nodeLeakCodes.has("node/no-exports-assign"),
+      "Node rules must not leak outside selected Node and script patterns",
+    );
+
+    const configFilesConfig = writeConfig(
+      "composition-config-files",
+      createCompositionFixtureConfig(["config"]),
+    );
+    const configFileCodes = diagnosticCodes(configFilesConfig, [
+      "fixtures/composition/packages/api/invalid.config.ts",
+    ]);
+    assert(
+      configFileCodes.has("node/no-exports-assign"),
+      "Node rules must apply to a matching configuration file",
+    );
+
+    const declarationsConfig = writeConfig(
+      "composition-declarations",
+      createCompositionFixtureConfig(["declarations"]),
+    );
+    const declarationCodes = diagnosticCodes(declarationsConfig, [
+      "fixtures/composition/packages/shared/src/index.d.ts",
+    ]);
+    assert(
+      !declarationCodes.has("typescript/ban-ts-comment"),
+      "the declaration relaxation must apply only to declaration files",
+    );
+    const sourceCodes = diagnosticCodes(declarationsConfig, [
+      "fixtures/composition/packages/shared/src/index.ts",
+    ]);
+    assert(
+      sourceCodes.has("typescript/ban-ts-comment"),
+      "the declaration relaxation must not leak into TypeScript source files",
+    );
+
+    const pluginRetentionOverride: OxlintOverride = {
+      files: ["**/Overlap.test.tsx"],
+      plugins: ["jsx-a11y"],
+    };
+    const pluginRetentionConfig = writeConfig(
+      "composition-consumer-plugin-retention",
+      createCompositionFixtureConfig(
+        ["react", "vitest"],
+        [pluginRetentionOverride],
+      ),
+    );
+    const pluginRetentionCodes = diagnosticCodes(pluginRetentionConfig, [
+      "fixtures/composition/packages/web/src/Overlap.test.tsx",
+    ]);
+    assert(
+      pluginRetentionCodes.has("react/jsx-key") &&
+        pluginRetentionCodes.has("vitest/no-focused-tests"),
+      "a consumer plugin override must retain required React and Vitest plugins",
+    );
+
+    const consumerPrecedenceConfig = writeConfig(
+      "composition-consumer-precedence",
+      createCompositionFixtureConfig(["react", "vitest"], [
+        {
+          files: ["**/Overlap.test.tsx"],
+          rules: {
+            "react/jsx-key": "off",
+            "vitest/no-focused-tests": "off",
+          },
+        },
+      ]),
+    );
+    const consumerPrecedenceCodes = diagnosticCodes(consumerPrecedenceConfig, [
+      "fixtures/composition/packages/web/src/Overlap.test.tsx",
+    ]);
+    assert(
+      !consumerPrecedenceCodes.has("react/jsx-key") &&
+        !consumerPrecedenceCodes.has("vitest/no-focused-tests"),
+      "a later consumer override must take precedence over package scopes",
+    );
+
     const unsupportedConfig = writeConfig("unsupported", {
       rules: { "not-a-real-plugin/not-a-real-rule": "error" },
     });
@@ -348,43 +475,6 @@ try {
         );
       }
 
-      const compositionSnapshots = JSON.parse(
-        readFileSync(
-          resolve(
-            repositoryRoot,
-            "fixtures/snapshots/composed-effective-configs.json",
-          ),
-          "utf8",
-        ),
-      ) as Record<string, unknown>;
-      for (const testCase of COMPOSITION_SNAPSHOT_CASES) {
-        const configPath = writeConfig(
-          `print-composed-${testCase.name}`,
-          createCompositionSnapshotConfig(testCase),
-        );
-        const printed = runProcess(
-          oxlint,
-          ["--config", configPath, "--print-config", testCase.file],
-          { cwd: repositoryRoot },
-        );
-        assert.equal(printed.kind, "success");
-        const effective = JSON.parse(printed.stdout) as Record<string, unknown>;
-        const projection = {
-          categories: effective.categories,
-          options: effective.options,
-          plugins: Array.isArray(effective.plugins)
-            ? effective.plugins.toSorted((left, right) =>
-                String(left).localeCompare(String(right)),
-              )
-            : effective.plugins,
-          rules: effective.rules,
-        };
-        assert.deepEqual(
-          projection,
-          compositionSnapshots[testCase.name],
-          `${testCase.name} composed effective-config snapshot must be current`,
-        );
-      }
     }
   }
 } finally {

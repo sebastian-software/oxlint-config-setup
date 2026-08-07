@@ -182,10 +182,12 @@ Tests verify the category-to-level mapping, nested active rule sets, disabled
 `nursery`, explicit published rule maps, project-context deltas, AI
 constraints, deterministic builds, and clean-consumer execution. Composition
 tests cover canonical scope globs, consumer plugin union, rule/environment/global
-override behavior, scoped helper errors, and React-test and Node-script effective
-config overlaps. The behavioral harness covers curated ledger entries and AI
-option changes. Generated effective-config snapshots and homepage data expose
-exact rule membership.
+override behavior, and scoped helper errors. The behavioral harness runs matching
+and nonmatching composition fixtures through Oxlint diagnostics for React + Vitest
+overlap, Node scripts and configuration files, declaration-only relaxations,
+retained consumer plugins, and consumer-override precedence. Generated
+effective-config snapshots and
+homepage data expose root artifact rule membership.
 
 Review this decision when Oxlint changes its category model, stable categories
 produce unacceptable noise, AI-only entries become a policy dumping ground,
