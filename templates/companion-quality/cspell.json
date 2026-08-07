@@ -1,0 +1,22 @@
+{
+  "version": "0.2",
+  "language": "en_US",
+  "useGitignore": true,
+  "files": ["**/*.{js,jsx,ts,tsx,json,jsonc,md,mdx}"],
+  "ignorePaths": ["coverage/**", "dist/**", "generated/**", "node_modules/**"],
+  "words": [
+    "ajv",
+    "Biome",
+    "biomejs",
+    "cspell",
+    "davidanson",
+    "Husky",
+    "lockfiles",
+    "lintstaged",
+    "markdownlint",
+    "MDX",
+    "Oxlint",
+    "pnpm",
+    "publint"
+  ]
+}

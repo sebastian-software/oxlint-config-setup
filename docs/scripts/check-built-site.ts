@@ -32,6 +32,7 @@ for (const route of [
   "index.html",
   "guide/getting-started/index.html",
   "guide/ai-mode/index.html",
+  "guide/companion-quality/index.html",
   "reference/rule-catalog/index.html",
   "api-reference/index.html",
 ]) {
@@ -51,6 +52,7 @@ for (const expected of [
   "Config output",
   "typescript/no-floating-promises",
   "Rule Catalog",
+  "Companion quality stack",
   "Toggle theme",
 ]) {
   if (!renderedHtml.includes(expected)) {

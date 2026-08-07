@@ -1,0 +1,74 @@
+---
+title: Companion quality stack
+description: Add tested formatting, documentation, prose, JSON, and package checks without expanding the Oxlint runtime.
+order: 8
+---
+
+# Companion quality stack
+
+Oxlint owns JavaScript and TypeScript program analysis. Formatting, import
+organization, Markdown and MDX, spelling, JSON Schema, and package metadata are
+different formats with purpose-built tools. They are not rules in this package
+and they do not become `oxlint-config-setup` runtime dependencies.
+
+Use the repository-owned [companion-quality template](https://github.com/sebastian-software/oxlint-config-setup/tree/main/templates/companion-quality)
+as a starting point. It pins each tool and includes configuration, lockfiles,
+editor settings, a staged-file hook, CI, and an executable clean-fixture proof.
+
+## Install and check
+
+Copy the template contents, including dotfiles and both lockfiles, then choose
+one package manager:
+
+```sh
+npm ci
+npm run quality
+```
+
+```sh
+pnpm install --frozen-lockfile
+pnpm run quality
+```
+
+The commands are package-manager neutral: `quality` runs the local binaries in
+this order.
+
+| Concern | Command | Configuration |
+| --- | --- | --- |
+| Formatting and import organization | `quality:format` | `biome.json` |
+| Markdown and MDX | `quality:markdown` | `.markdownlint-cli2.jsonc` |
+| Spelling and prose | `quality:spelling` | `cspell.json` |
+| JSON syntax and schema | `quality:json` | `config/app.schema.json` |
+| Package metadata and ordering | `quality:package` | `package.json` |
+
+Run `quality:fix` through either npm or pnpm to apply safe Biome, Markdown, and
+package-key fixes. JSON Schema changes and spelling additions deserve review.
+
+## Generated files, editor, hooks, and CI
+
+The template consistently excludes `generated/`, `dist/`, `coverage/`, and
+`node_modules/`. Its fixture creates malformed generated source, Markdown, and
+JSON files before the complete quality command; the command still passes,
+proving generated output does not create noisy diagnostics.
+
+VS Code recommendations install Biome, markdownlint, and CSpell support. The
+workspace settings format with Biome and offer explicit Biome organize-imports
+and fix actions on save. Installation enables Husky; its pre-commit hook invokes
+`lint-staged` for changed files. Run `npm exec -- lint-staged` or
+`pnpm exec lint-staged` to diagnose the hook.
+
+The supplied GitHub Actions workflow uses frozen pnpm installation followed by
+`pnpm run quality` on pull requests and `main`. It is the whole-repository
+backstop; a staged-file pre-commit check never replaces CI.
+
+## Keep the boundary clear
+
+Run the companion command alongside, not inside, source analysis:
+
+```sh
+pnpm oxlint .
+pnpm run quality
+```
+
+The core package remains free of these unrelated dependencies. [ADR 0004](https://github.com/sebastian-software/oxlint-config-setup/blob/main/docs/adr/0004-separate-non-code-quality-tools.md)
+records the template delivery model and review trigger.

@@ -261,6 +261,7 @@ versioning policy.
 - [Documentation site source](docs/app)
 - [Adoption guide](docs/adoption.md)
 - [Migration and companion-tool matrix](docs/migration.md)
+- [Turnkey companion-quality template](templates/companion-quality/README.md)
 - [Compatibility evidence and timings](docs/compatibility.md)
 - [Generated rule catalog](docs/rule-catalog.md)
 - [v0.1 beta review](docs/release-review.md)

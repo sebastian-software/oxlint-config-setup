@@ -164,8 +164,9 @@ gates.
 2. Select the root profile matching the project context.
 3. Run both tools on representative changes and classify differences by defect
    class, not rule count.
-4. Move formatting, Markdown/MDX, spelling, and package metadata to the companion
-   tools already responsible for those formats.
+4. Copy the [turnkey companion-quality template](../templates/companion-quality)
+   for formatting, Markdown/MDX, spelling, JSON schema, and package metadata;
+   keep its `quality` command separate from Oxlint source analysis.
 5. Remove ESLint only after accepted gaps are recorded for that project.
 
 The shared preset intentionally does not translate arbitrary ESLint options or
