@@ -160,6 +160,16 @@ assert.match(publishWorkflow, /tsx scripts\/verify-published-package\.ts/u);
 assert.match(publishWorkflow, /npm publish --access public --provenance/u);
 assert.match(publishWorkflow, /already exists in npm; preserving the immutable/u);
 
+const publishedPackageVerifier = read("scripts/verify-published-package.ts");
+assert.match(
+  publishedPackageVerifier,
+  /preparePublishedPackageBaseline\(\)/u,
+);
+assert.match(
+  read("scripts/test-published-package-verifier.ts"),
+  /Fresh published-package baseline includes the built dist artifact/u,
+);
+
 const compatibility = read("docs/compatibility.md");
 for (const version of ["1.77.0", "7.0.2001", "7.0.2", "11.20.0"]) {
   assert.match(compatibility, new RegExp(version.replaceAll(".", "\\."), "u"));
