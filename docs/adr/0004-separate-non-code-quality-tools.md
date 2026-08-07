@@ -37,8 +37,9 @@ The template includes maintained configurations, exact npm and pnpm commands,
 VS Code recommendations, a staged-file Husky/lint-staged hook, and a GitHub
 Actions workflow. `scripts/test-companion-quality.ts` copies the template to
 clean npm and pnpm directories, verifies the full passing stack and ignored
-generated artifacts, and proves representative failures. These tools are not
-represented as Oxlint rule coverage and do not enter the standard lint path.
+generated artifacts, executes the installed Husky hook through real Git commits,
+and proves representative failures including a malformed hook. These tools are
+not represented as Oxlint rule coverage and do not enter the standard lint path.
 
 ## Decision drivers
 
