@@ -302,7 +302,9 @@ const tsdownManifest = readManifest(
   resolve(repositoryRoot, "node_modules/tsdown/package.json"),
 );
 assert.equal(tsdownManifest.engines?.node, "^22.18.0 || >=24.11.0");
-assert.equal(run("pnpm", ["--version"]).trim(), "11.20.0");
+if (process.env.CANARY_ALLOW_PNPM_VERSION !== "true") {
+  assert.equal(run("pnpm", ["--version"]).trim(), "11.20.0");
+}
 assert([10, 11].includes(Number.parseInt(run("npm", ["--version"]), 10)));
 const pnpmConfig = parseJson(run("pnpm", ["config", "list", "--json"]));
 assert(isRecord(pnpmConfig));

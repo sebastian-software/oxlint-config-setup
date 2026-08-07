@@ -78,6 +78,8 @@
   "scripts": {
     "build": "pnpm run typecheck && tsdown && tsx scripts/generate-configs.ts",
     "benchmark": "pnpm run build && tsx scripts/benchmark.ts",
+    "canary:native-surface": "tsx scripts/native-surface.ts",
+    "canary:upstream": "tsx scripts/upstream-canary.ts",
     "check": "pnpm run lint && pnpm run generate:check && pnpm run test",
     "docs:build": "pnpm --filter @oxlint-config-setup/docs run build",
     "docs:check": "pnpm --filter @oxlint-config-setup/docs run check",
