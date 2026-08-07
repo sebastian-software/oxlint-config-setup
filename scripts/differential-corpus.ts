@@ -8,7 +8,6 @@ import { runProcess } from "./harness.js";
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const defaultCorpusRoot = resolve(repositoryRoot, ".corpus");
 const predecessorRevision = "4543246c62326047f7372765931f260f04beea56";
-const oxlintRevision = "173812f";
 
 export const deltaClassifications = [
   "native coverage",
@@ -106,12 +105,25 @@ export interface ProjectReport {
   timings: Record<Tool, { coldMs: number; warmMs: number }>;
 }
 
+export interface CorpusProvenance {
+  oxlintConfigSetup: string;
+  predecessor: string;
+}
+
 function command(binary: string, args: readonly string[], cwd: string): string {
   const result = spawnSync(binary, args, { cwd, encoding: "utf8" });
   if (result.status !== 0) {
     throw new Error(`${binary} ${args.join(" ")} failed in ${cwd}: ${result.stderr || result.stdout}`);
   }
   return result.stdout;
+}
+
+export function currentCheckoutRevision(root = repositoryRoot): string {
+  const revision = command("git", ["rev-parse", "HEAD"], root).trim();
+  if (!/^[0-9a-f]{40}$/u.test(revision)) {
+    throw new Error(`Current checkout did not resolve to a full Git revision: ${revision}`);
+  }
+  return revision;
 }
 
 function ensureCheckout(project: CorpusProject, corpusRoot: string): string {
@@ -213,15 +225,25 @@ function key(diagnostic: Diagnostic): string {
 }
 
 export function classifyDeltas(eslint: Diagnostic[], oxlint: Diagnostic[]): { deltas: Delta[]; matched: number } {
-  const unmatchedOxlint = new Map(oxlint.map((diagnostic) => [key(diagnostic), diagnostic]));
+  const unmatchedOxlint = new Map<string, Diagnostic[]>();
+  for (const diagnostic of oxlint) {
+    const matching = unmatchedOxlint.get(key(diagnostic)) ?? [];
+    matching.push(diagnostic);
+    unmatchedOxlint.set(key(diagnostic), matching);
+  }
   const eslintOnly: Diagnostic[] = [];
   let matched = 0;
   for (const diagnostic of eslint) {
-    if (unmatchedOxlint.delete(key(diagnostic))) matched += 1;
-    else eslintOnly.push(diagnostic);
+    const matching = unmatchedOxlint.get(key(diagnostic));
+    if (matching?.shift() !== undefined) {
+      matched += 1;
+      if (matching.length === 0) unmatchedOxlint.delete(key(diagnostic));
+    } else {
+      eslintOnly.push(diagnostic);
+    }
   }
   const groups = new Map<string, Delta>();
-  for (const [kind, diagnostics] of [["eslint-only", eslintOnly], ["oxlint-only", [...unmatchedOxlint.values()]]] as const) {
+  for (const [kind, diagnostics] of [["eslint-only", eslintOnly], ["oxlint-only", [...unmatchedOxlint.values()].flat()]] as const) {
     for (const diagnostic of diagnostics) {
       const groupKey = `${kind}:${diagnostic.defectClass}:${diagnostic.classification}`;
       const group = groups.get(groupKey) ?? { classification: diagnostic.classification, defectClass: diagnostic.defectClass, diagnostics: [], kind };
@@ -267,8 +289,8 @@ function runProject(project: CorpusProject, projectRoot: string, predecessorRoot
   }
 }
 
-export function scorecard(reports: readonly ProjectReport[]): string {
-  const lines = ["# ESLint/Oxlint differential scorecard", "", `- Oxlint Config Setup: \`${oxlintRevision}\``, `- Predecessor: \`${predecessorRevision}\``, "- Timing: one cold process followed by one warm process per tool and project.", "- Evidence boundary: public source is cloned into ignored `.corpus/`; this report contains diagnostics and metadata, not third-party source.", "", "| Project | Matched | ESLint only | Oxlint only | ESLint cold/warm | Oxlint cold/warm |", "| --- | ---: | ---: | ---: | ---: | ---: |"];
+export function scorecard(reports: readonly ProjectReport[], provenance: CorpusProvenance): string {
+  const lines = ["# ESLint/Oxlint differential scorecard", "", `- Oxlint Config Setup: \`${provenance.oxlintConfigSetup}\``, `- Predecessor: \`${provenance.predecessor}\``, "- Timing: one cold process followed by one warm process per tool and project.", "- Evidence boundary: public source is cloned into ignored `.corpus/`; this report contains diagnostics and metadata, not third-party source.", "", "| Project | Matched | ESLint only | Oxlint only | ESLint cold/warm | Oxlint cold/warm |", "| --- | ---: | ---: | ---: | ---: | ---: |"];
   for (const report of reports) {
     const eslintOnly = report.deltas.filter((delta) => delta.kind === "eslint-only").reduce((total, delta) => total + delta.diagnostics.length, 0);
     const oxlintOnly = report.deltas.filter((delta) => delta.kind === "oxlint-only").reduce((total, delta) => total + delta.diagnostics.length, 0);
@@ -293,10 +315,11 @@ function parseArguments(): { corpusRoot: string; output: string; prepare: boolea
 
 if (import.meta.main) {
   const options = parseArguments();
+  const provenance = { oxlintConfigSetup: currentCheckoutRevision(), predecessor: predecessorRevision };
   const predecessorRoot = options.prepare ? provisionPredecessor(options.corpusRoot) : verifiedPredecessor(options.corpusRoot);
   const reports = corpusProjects.map((project) => runProject(project, options.prepare ? ensureCheckout(project, options.corpusRoot) : verifiedCheckout(project, options.corpusRoot), predecessorRoot));
   mkdirSync(options.output, { recursive: true });
-  writeFileSync(resolve(options.output, "report.json"), `${JSON.stringify({ generatedAt: new Date().toISOString(), projects: corpusProjects, reports, versions: { oxlintConfigSetup: oxlintRevision, predecessor: predecessorRevision } }, null, 2)}\n`);
-  writeFileSync(resolve(options.output, "scorecard.md"), scorecard(reports));
+  writeFileSync(resolve(options.output, "report.json"), `${JSON.stringify({ generatedAt: new Date().toISOString(), projects: corpusProjects, reports, versions: provenance }, null, 2)}\n`);
+  writeFileSync(resolve(options.output, "scorecard.md"), scorecard(reports, provenance));
   console.log(`Wrote ${resolve(options.output, "report.json")} and ${resolve(options.output, "scorecard.md")}`);
 }
