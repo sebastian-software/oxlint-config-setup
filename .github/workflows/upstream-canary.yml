@@ -51,6 +51,7 @@ jobs:
       - name: Run the native compatibility canary
         env:
           CANARY_ALLOW_PNPM_VERSION: "true"
+          CANARY_ALLOW_PINNED_PEER_MISMATCH: "true"
           CANARY_NATIVE_ONLY: "true"
           CANARY_OUTPUT_DIR: canary-artifacts
           CANARY_PERFORMANCE_BASELINE: canary-artifacts/pinned-benchmark.json

@@ -239,6 +239,8 @@ function packDependency(packagePath: string, destination: string): string {
 }
 
 const manifest = readManifest(manifestPath);
+const allowPinnedPeerMismatch =
+  process.env.CANARY_ALLOW_PINNED_PEER_MISMATCH === "true";
 assert.equal(manifest.name, "oxlint-config-setup");
 assert.equal(
   manifest.description,
@@ -643,6 +645,7 @@ try {
       "--no-fund",
       "--no-package-lock",
       "--omit=optional",
+      ...(allowPinnedPeerMismatch ? ["--legacy-peer-deps"] : []),
       tarballPath,
       oxlintTarball,
       bindingTarball,
