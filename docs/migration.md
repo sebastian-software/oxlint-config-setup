@@ -45,8 +45,10 @@ The current preset makes two distinct claims:
 
 ## Real-project differential scorecard
 
-The [real-project differential corpus](research/2026-08-07-real-project-differential-corpus.md)
-compares the predecessor and proposed configurations at pinned public commits.
+The [reviewed differential scorecard](research/2026-08-07-differential-scorecard.md)
+records the current inspectable evidence boundary. The [real-project differential
+corpus](research/2026-08-07-real-project-differential-corpus.md) compares the
+predecessor and proposed configurations at pinned public commits.
 Run `pnpm corpus --prepare` to generate its machine-readable `report.json` and
 concise `scorecard.md`. Those reports measure selected JavaScript and TypeScript
 source paths, diagnostics, fix availability, and per-project cold/warm timing;
