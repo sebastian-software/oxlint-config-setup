@@ -150,6 +150,16 @@ assert.match(notes, /Stable surfaces/u);
 assert.match(notes, /Experimental surface/u);
 assert.match(notes, /Known gaps/u);
 
+assert.match(readme, /npm Trusted Publishing with GitHub Actions OIDC/u);
+assert.match(readme, /Published npm versions are immutable/u);
+assert.match(readme, /follow-up patch release/u);
+
+const publishWorkflow = read(".github/workflows/publish.yml");
+assert.match(publishWorkflow, /Verify published npm artifact/u);
+assert.match(publishWorkflow, /tsx scripts\/verify-published-package\.ts/u);
+assert.match(publishWorkflow, /npm publish --access public --provenance/u);
+assert.match(publishWorkflow, /already exists in npm; preserving the immutable/u);
+
 const compatibility = read("docs/compatibility.md");
 for (const version of ["1.77.0", "7.0.2001", "7.0.2", "11.20.0"]) {
   assert.match(compatibility, new RegExp(version.replaceAll(".", "\\."), "u"));
