@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/app.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": ["name", "enabled"]
+}

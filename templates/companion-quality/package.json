@@ -1,0 +1,36 @@
+{
+  "name": "companion-quality-template",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Turnkey companion quality checks for an Oxlint project.",
+  "type": "module",
+  "scripts": {
+    "prepare": "husky",
+    "quality": "npm run quality:format && npm run quality:markdown && npm run quality:spelling && npm run quality:json && npm run quality:package",
+    "quality:fix": "biome check --write . && markdownlint-cli2 --fix && sort-package-json package.json",
+    "quality:format": "biome check .",
+    "quality:json": "ajv validate --spec=draft2020 -s config/app.schema.json -d config/app.json --all-errors --errors=text",
+    "quality:markdown": "markdownlint-cli2",
+    "quality:package": "sort-package-json --check package.json && publint",
+    "quality:spelling": "cspell lint --no-progress"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc}": "biome check --write",
+    "*.{md,mdx}": "markdownlint-cli2 --fix",
+    "*.{js,jsx,ts,tsx,json,jsonc,md,mdx}": "cspell lint --no-progress"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.7",
+    "ajv-cli": "5.0.0",
+    "cspell": "10.0.1",
+    "husky": "9.1.7",
+    "lint-staged": "17.3.0",
+    "markdownlint-cli2": "0.23.2",
+    "publint": "0.3.23",
+    "sort-package-json": "4.0.0"
+  },
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=24.11.0"
+  }
+}

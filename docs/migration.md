@@ -23,10 +23,10 @@ approved.
 | Playwright                     | Research       | No JavaScript plugin                                                    | Requires conformant API, crash, and performance evidence                                  |
 | Storybook                      | Research       | No JavaScript plugin                                                    | Custom source-extension needs remain unproven                                             |
 | SonarJS                        | Research       | No JavaScript plugin                                                    | Select defect classes; rule volume is not a gate                                          |
-| Sorting and formatting         | Companion tool | Formatter/import organizer                                              | Layout is outside the linter budget                                                       |
-| JSON and package metadata      | Companion tool | JSON Schema or package-specific validator                               | Oxlint source coverage does not include these formats                                     |
-| Markdown and MDX               | Companion tool | Markdown-aware linter                                                   | JavaScript-plugin support does not make custom formats executable                         |
-| Spelling                       | Companion tool | Spell checker                                                           | Repository prose quality is not program linting                                           |
+| Sorting and formatting         | Companion tool | Biome via `quality:format` and `biome.json`                             | Layout is outside the linter budget                                                       |
+| JSON and package metadata      | Companion tool | Ajv, publint, and sort-package-json via `quality:json`/`quality:package` | Oxlint source coverage does not include these formats                                     |
+| Markdown and MDX               | Companion tool | markdownlint-cli2 via `quality:markdown`                                | JavaScript-plugin support does not make custom formats executable                         |
+| Spelling                       | Companion tool | CSpell via `quality:spelling`                                           | Repository prose quality is not program linting                                           |
 | Project-specific policy trivia | Accepted gap   | Not generalized                                                         | Shared defaults include only portable defect classes                                      |
 | AI-assisted development        | Oxlint         | Constrained overlay with explicit additions and option changes          | AI cannot widen the selected policy category set                                          |
 
@@ -47,3 +47,23 @@ No raw parity percentage is a release gate. A curated rule or exception enters
 only when its defect class, execution path, stability, conflicts, fixture, and
 review trigger are recorded in the ledger. An Oxlint upgrade must separately
 review every generated category diff.
+
+## Turnkey companion stack
+
+The repository-owned [companion-quality template](../templates/companion-quality)
+turns the four companion rows into a runnable stack. It is separate from the
+published Oxlint package: copy its configuration and exact development
+dependencies into the consuming repository, then run either:
+
+```sh
+npm ci
+npm run quality
+```
+
+```sh
+pnpm install --frozen-lockfile
+pnpm run quality
+```
+
+See the template README for maintained configuration, fixes, JSON Schema wiring,
+ignore/generated-file behavior, editor settings, pre-commit handling, and CI.
