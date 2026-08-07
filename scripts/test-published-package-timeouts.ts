@@ -20,6 +20,7 @@ await assert.rejects(
   fetchWithTimeout(
     "stalled GitHub release query",
     "https://example.invalid/release",
+    async (response) => response,
     {},
     {
       timeoutMilliseconds: 10,
@@ -32,6 +33,31 @@ await assert.rejects(
     },
   ),
   /stalled GitHub release query timed out after 10ms while fetching/u,
+);
+
+await assert.rejects(
+  fetchWithTimeout(
+    "stalled GitHub release body",
+    "https://example.invalid/release",
+    async (response) => response.json(),
+    {},
+    {
+      timeoutMilliseconds: 10,
+      fetchImplementation: async (_url, init) => {
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            init?.signal?.addEventListener("abort", () => {
+              controller.error(init.signal?.reason);
+            });
+          },
+        });
+        return new Response(body, {
+          headers: { "content-type": "application/json" },
+        });
+      },
+    },
+  ),
+  /stalled GitHub release body timed out after 10ms while fetching/u,
 );
 
 console.log("Published-package timeout guards fail stalled operations promptly.");
