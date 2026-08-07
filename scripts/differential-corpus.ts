@@ -1,8 +1,8 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { hostname, platform, release } from "node:os";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { hostname, platform, release, tmpdir } from "node:os";
 import { performance } from "node:perf_hooks";
-import { isAbsolute, relative, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 
 import { runProcess } from "./harness.js";
 
@@ -19,6 +19,7 @@ export const deltaClassifications = [
 ] as const;
 
 export type DeltaClassification = (typeof deltaClassifications)[number];
+export type ReportClassification = DeltaClassification | "review-required";
 type Tool = "eslint" | "oxlint";
 
 export interface CorpusProject {
@@ -80,7 +81,6 @@ export const corpusProjects: readonly CorpusProject[] = [
 ];
 
 export interface Diagnostic {
-  classification: DeltaClassification;
   column: number;
   defectClass: string;
   file: string;
@@ -95,17 +95,34 @@ export interface FixEvidence {
   availability: "available" | "none" | "unknown";
   equivalence: "not-reviewed" | "equivalent" | "different";
   safety: "not-reviewed" | "safe" | "unsafe";
+  probe: "completed" | "unavailable";
+  changedFiles: number;
 }
 
 export interface Adjudication {
-  classification: DeltaClassification;
-  falsePositive: "confirmed" | "suspected" | "no";
-  suppression: "none" | "required";
+  classification: ReportClassification;
+  falsePositive: "confirmed" | "suspected" | "no" | "review-required";
+  suppression: "none" | "required" | "review-required";
   rationale: string;
+  source: string;
 }
 
+/**
+ * Human-reviewed decisions keyed by direction and normalized defect class.
+ * New deltas intentionally do not fall back to a direction-based decision.
+ */
+export const corpusAdjudications: Readonly<Record<string, Omit<Adjudication, "source">>> = {
+  "eslint-only:predecessor parser-service incompatibility": {
+    classification: "defect",
+    falsePositive: "no",
+    suppression: "none",
+    rationale: "A parser-service failure is runner/configuration evidence, not an accepted migration gap.",
+  },
+};
+
 export interface Delta {
-  classification: DeltaClassification;
+  adjudication: Adjudication;
+  classification: ReportClassification;
   defectClass: string;
   kind: "eslint-only" | "oxlint-only";
   diagnostics: Diagnostic[];
@@ -159,7 +176,7 @@ export function currentCheckoutRevision(root = repositoryRoot): string {
   return revision;
 }
 
-function assertCleanCheckout(root: string, expectedOrigin?: string): void {
+export function assertCleanCheckout(root: string, expectedOrigin?: string): void {
   if (expectedOrigin !== undefined) {
     const origin = command("git", ["remote", "get-url", "origin"], root).trim().replace(/\.git$/u, "");
     if (origin !== expectedOrigin.replace(/\.git$/u, "")) throw new Error(`Unexpected origin for ${root}: ${origin}`);
@@ -217,6 +234,7 @@ function provisionPredecessor(corpusRoot: string): string {
   if (!existsSync(resolve(source, "node_modules"))) command("pnpm", ["install", "--frozen-lockfile"], source);
   command("pnpm", ["--filter", "eslint-config-setup", "build"], source);
   command("pnpm", ["--filter", "eslint-config-setup", "generate"], source);
+  assertCleanCheckout(source, "https://github.com/sebastian-software/eslint-config-setup.git");
   return source;
 }
 
@@ -225,15 +243,8 @@ function verifiedPredecessor(corpusRoot: string): string {
   if (!existsSync(source)) throw new Error(`Missing predecessor checkout at ${source}; rerun with --prepare.`);
   const actual = command("git", ["rev-parse", "HEAD"], source).trim();
   if (actual !== predecessorRevision) throw new Error(`Predecessor resolved ${actual}, not ${predecessorRevision}; rerun with --prepare.`);
+  assertCleanCheckout(source, "https://github.com/sebastian-software/eslint-config-setup.git");
   return source;
-}
-
-function classificationFor(tool: Tool, rule: string): DeltaClassification {
-  if (rule === "eslint/parse-error") return "defect";
-  if (/^(?:cspell|json|mdx|package-json|prettier|perfectionist)\//u.test(rule)) return "companion-tool concern";
-  if (/^(?:testing-library|playwright|storybook|regexp)\//u.test(rule)) return "optional-plugin candidate";
-  if (tool === "oxlint") return "native coverage";
-  return "accepted gap";
 }
 
 function defectClassFor(rule: string): string {
@@ -262,7 +273,7 @@ export function normalizeEslintDiagnostics(value: unknown, projectRoot: string):
       if (message === null || typeof message !== "object") return [];
       const diagnostic = message as { column?: unknown; fix?: unknown; line?: unknown; ruleId?: unknown; severity?: unknown };
       const rule = typeof diagnostic.ruleId === "string" ? diagnostic.ruleId : "eslint/parse-error";
-      return [{ classification: classificationFor("eslint", rule), column: Number(diagnostic.column) || 0, defectClass: defectClassFor(rule), file: normalizeFilename(projectRoot, filePath), fix: { availability: diagnostic.fix === undefined ? "none" : "available", equivalence: "not-reviewed", safety: "not-reviewed" }, line: Number(diagnostic.line) || 0, rule, severity: diagnostic.severity === 2 ? "error" : "warning", tool: "eslint" as const }];
+      return [{ column: Number(diagnostic.column) || 0, defectClass: defectClassFor(rule), file: normalizeFilename(projectRoot, filePath), fix: { availability: diagnostic.fix === undefined ? "none" : "available", changedFiles: 0, equivalence: "not-reviewed", probe: "unavailable", safety: "not-reviewed" }, line: Number(diagnostic.line) || 0, rule, severity: diagnostic.severity === 2 ? "error" : "warning", tool: "eslint" as const }];
     });
   });
 }
@@ -275,12 +286,24 @@ export function normalizeOxlintDiagnostics(value: unknown, projectRoot: string):
     if (typeof diagnostic.code !== "string" || typeof diagnostic.filename !== "string") return [];
     const label = Array.isArray(diagnostic.labels) ? diagnostic.labels[0] as { span?: { line?: unknown; column?: unknown } } | undefined : undefined;
     const rule = diagnostic.code.replace(/^([^()]+)\(([^()]+)\)$/u, "$1/$2");
-    return [{ classification: classificationFor("oxlint", rule), column: Number(label?.span?.column) || 0, defectClass: defectClassFor(rule), file: normalizeFilename(projectRoot, diagnostic.filename), fix: { availability: "unknown", equivalence: "not-reviewed", safety: "not-reviewed" }, line: Number(label?.span?.line) || 0, rule, severity: diagnostic.severity === "error" ? "error" : "warning", tool: "oxlint" as const }];
+    return [{ column: Number(label?.span?.column) || 0, defectClass: defectClassFor(rule), file: normalizeFilename(projectRoot, diagnostic.filename), fix: { availability: "unknown", changedFiles: 0, equivalence: "not-reviewed", probe: "unavailable", safety: "not-reviewed" }, line: Number(label?.span?.line) || 0, rule, severity: diagnostic.severity === "error" ? "error" : "warning", tool: "oxlint" as const }];
   });
 }
 
 function key(diagnostic: Diagnostic): string {
   return [diagnostic.file, diagnostic.line, diagnostic.column, diagnostic.defectClass, diagnostic.severity].join(":");
+}
+
+function adjudicationFor(kind: Delta["kind"], defectClass: string): Adjudication {
+  const decision = corpusAdjudications[`${kind}:${defectClass}`];
+  if (decision !== undefined) return { ...decision, source: "scripts/differential-corpus.ts:corpusAdjudications" };
+  return {
+    classification: "review-required",
+    falsePositive: "review-required",
+    suppression: "review-required",
+    rationale: "No human adjudication has been recorded for this direction and defect class.",
+    source: "review-required",
+  };
 }
 
 export function classifyDeltas(eslint: Diagnostic[], oxlint: Diagnostic[]): { deltas: Delta[]; matched: number } {
@@ -304,8 +327,9 @@ export function classifyDeltas(eslint: Diagnostic[], oxlint: Diagnostic[]): { de
   const groups = new Map<string, Delta>();
   for (const [kind, diagnostics] of [["eslint-only", eslintOnly], ["oxlint-only", [...unmatchedOxlint.values()].flat()]] as const) {
     for (const diagnostic of diagnostics) {
-      const groupKey = `${kind}:${diagnostic.defectClass}:${diagnostic.classification}`;
-      const group = groups.get(groupKey) ?? { classification: diagnostic.classification, defectClass: diagnostic.defectClass, diagnostics: [], kind };
+      const adjudication = adjudicationFor(kind, diagnostic.defectClass);
+      const groupKey = `${kind}:${diagnostic.defectClass}:${adjudication.classification}`;
+      const group = groups.get(groupKey) ?? { adjudication, classification: adjudication.classification, defectClass: diagnostic.defectClass, diagnostics: [], kind };
       group.diagnostics.push(diagnostic);
       groups.set(groupKey, group);
     }
@@ -334,13 +358,44 @@ function eslintConfig(project: CorpusProject, projectRoot: string, predecessorRo
   return config;
 }
 
+/** Runs each tool's write-capable fixer only against copies under the system temp directory. */
+export function probeFixes(binary: string, args: readonly string[], projectRoot: string, paths: readonly string[], fixArgument: string): FixEvidence {
+  const temporaryRoot = resolve(tmpdir(), `oxlint-corpus-fix-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  mkdirSync(temporaryRoot, { recursive: true });
+  try {
+    for (const path of paths) {
+      const source = resolve(projectRoot, path);
+      const destination = resolve(temporaryRoot, path);
+      mkdirSync(dirname(destination), { recursive: true });
+      copyFileSync(source, destination);
+    }
+    const before = new Map(paths.map((path) => [path, readFileSync(resolve(temporaryRoot, path), "utf8")]));
+    const result = runProcess(binary, [...args, fixArgument, ...paths], { cwd: temporaryRoot, timeout: 120_000 });
+    if (result.kind !== "success" && result.kind !== "diagnostics") {
+      return { availability: "unknown", changedFiles: 0, equivalence: "not-reviewed", probe: "unavailable", safety: "not-reviewed" };
+    }
+    const changedFiles = paths.filter((path) => before.get(path) !== readFileSync(resolve(temporaryRoot, path), "utf8")).length;
+    return { availability: changedFiles > 0 ? "available" : "none", changedFiles, equivalence: "not-reviewed", probe: "completed", safety: "not-reviewed" };
+  } finally {
+    rmSync(temporaryRoot, { force: true, recursive: true });
+  }
+}
+
+function withFixEvidence(diagnostics: Diagnostic[], evidence: FixEvidence): Diagnostic[] {
+  return diagnostics.map((diagnostic) => ({ ...diagnostic, fix: evidence }));
+}
+
 function runProject(project: CorpusProject, projectRoot: string, predecessorRoot: string): ProjectReport {
   const config = eslintConfig(project, projectRoot, predecessorRoot);
   try {
-    const eslint = runTimed(resolve(predecessorRoot, "node_modules/eslint/bin/eslint.js"), ["--config", config, "--ext", ".js,.cjs,.mjs,.jsx,.ts,.cts,.mts,.tsx", "--format", "json", ...project.paths], projectRoot);
-    const oxlint = runTimed(resolve(repositoryRoot, "node_modules/.bin/oxlint"), ["--config", resolve(repositoryRoot, "dist/standalone", `${project.oxlintArtifact}.json`), "--format", "json", ...project.paths], projectRoot);
-    const eslintDiagnostics = normalizeEslintDiagnostics(JSON.parse(eslint.output), projectRoot);
-    const oxlintDiagnostics = normalizeOxlintDiagnostics(JSON.parse(oxlint.output), projectRoot);
+    const eslintBinary = resolve(predecessorRoot, "node_modules/eslint/bin/eslint.js");
+    const eslintArguments = ["--config", config, "--ext", ".js,.cjs,.mjs,.jsx,.ts,.cts,.mts,.tsx", "--format", "json"];
+    const oxlintBinary = resolve(repositoryRoot, "node_modules/.bin/oxlint");
+    const oxlintArguments = ["--config", resolve(repositoryRoot, "dist/standalone", `${project.oxlintArtifact}.json`), "--format", "json"];
+    const eslint = runTimed(eslintBinary, [...eslintArguments, ...project.paths], projectRoot);
+    const oxlint = runTimed(oxlintBinary, [...oxlintArguments, ...project.paths], projectRoot);
+    const eslintDiagnostics = withFixEvidence(normalizeEslintDiagnostics(JSON.parse(eslint.output), projectRoot), probeFixes(eslintBinary, eslintArguments, projectRoot, project.paths, "--fix-dry-run"));
+    const oxlintDiagnostics = withFixEvidence(normalizeOxlintDiagnostics(JSON.parse(oxlint.output), projectRoot), probeFixes(oxlintBinary, oxlintArguments, projectRoot, project.paths, "--fix"));
     const comparison = classifyDeltas(eslintDiagnostics, oxlintDiagnostics);
     return { deltas: comparison.deltas, diagnostics: { eslint: eslintDiagnostics, oxlint: oxlintDiagnostics }, id: project.id, matched: comparison.matched, outcome: "complete", suppressions: [], timings: { eslint: { coldMs: eslint.coldMs, warmMs: eslint.warmMs }, oxlint: { coldMs: oxlint.coldMs, warmMs: oxlint.warmMs } } };
   } finally {
@@ -354,10 +409,15 @@ export function scorecard(reports: readonly ProjectReport[], provenance: CorpusP
     const eslintOnly = report.deltas.filter((delta) => delta.kind === "eslint-only").reduce((total, delta) => total + delta.diagnostics.length, 0);
     const oxlintOnly = report.deltas.filter((delta) => delta.kind === "oxlint-only").reduce((total, delta) => total + delta.diagnostics.length, 0);
     lines.push(`| ${report.id}${report.outcome === "failed" ? " (failed)" : ""} | ${report.matched} | ${eslintOnly} | ${oxlintOnly} | ${report.timings.eslint.coldMs}/${report.timings.eslint.warmMs} ms | ${report.timings.oxlint.coldMs}/${report.timings.oxlint.warmMs} ms |`);
-    if (report.failure !== undefined) lines.push(`| ${report.id} failure | — | — | — | ${report.failure.replaceAll("|", "\\|")} | — |`);
+    if (report.failure !== undefined) lines.push(`| ${report.id} failure | — | — | — | ${report.failure.replaceAll("|", "\\|").replaceAll(/\s+/gu, " ").slice(0, 240)} | — |`);
   }
   lines.push("", "## Delta classification", "", "| Project | Direction | Defect class | Classification | Count |", "| --- | --- | --- | --- | ---: |");
   for (const report of reports) for (const delta of report.deltas) lines.push(`| ${report.id} | ${delta.kind} | ${delta.defectClass} | ${delta.classification} | ${delta.diagnostics.length} |`);
+  lines.push("", "## Fix probing", "", "| Project | Tool | Availability | Disposable-copy probe | Equivalence | Safety | Changed files |", "| --- | --- | --- | --- | --- | --- | ---: |");
+  for (const report of reports) for (const tool of ["eslint", "oxlint"] as const) {
+    const evidence = report.diagnostics[tool][0]?.fix;
+    lines.push(`| ${report.id} | ${tool} | ${evidence?.availability ?? "unknown"} | ${evidence?.probe ?? "unavailable"} | ${evidence?.equivalence ?? "not-reviewed"} | ${evidence?.safety ?? "not-reviewed"} | ${evidence?.changedFiles ?? 0} |`);
+  }
   return `${lines.join("\n")}\n`;
 }
 
@@ -369,12 +429,26 @@ export function checkpointReports(output: string, reports: readonly ProjectRepor
   const temporaryScorecard = `${scorecardPath}.tmp`;
   writeFileSync(temporaryReport, `${JSON.stringify({ environment, generatedAt: new Date().toISOString(), projects: corpusProjects, reports, versions: provenance }, null, 2)}\n`);
   writeFileSync(temporaryScorecard, scorecard(reports, provenance, environment));
-  rmSync(reportPath, { force: true });
-  rmSync(scorecardPath, { force: true });
-  writeFileSync(reportPath, readFileSync(temporaryReport));
-  writeFileSync(scorecardPath, readFileSync(temporaryScorecard));
-  rmSync(temporaryReport, { force: true });
-  rmSync(temporaryScorecard, { force: true });
+  renameSync(temporaryReport, reportPath);
+  renameSync(temporaryScorecard, scorecardPath);
+}
+
+export function loadCheckpointReports(output: string, provenance: CorpusProvenance): ProjectReport[] {
+  const reportPath = resolve(output, "report.json");
+  if (!existsSync(reportPath)) return [];
+  const parsed = JSON.parse(readFileSync(reportPath, "utf8")) as { reports?: unknown; versions?: Partial<CorpusProvenance> };
+  if (parsed.versions?.oxlintConfigSetup !== provenance.oxlintConfigSetup || parsed.versions.predecessor !== provenance.predecessor) return [];
+  if (!Array.isArray(parsed.reports)) throw new TypeError(`Checkpoint ${reportPath} does not contain reports`);
+  return parsed.reports as ProjectReport[];
+}
+
+export function aggregateReports(previous: readonly ProjectReport[], updates: readonly ProjectReport[]): ProjectReport[] {
+  const byId = new Map(previous.map((report) => [report.id, report]));
+  for (const report of updates) byId.set(report.id, report);
+  return corpusProjects.flatMap((project) => {
+    const report = byId.get(project.id);
+    return report === undefined ? [] : [report];
+  });
 }
 
 function parseArguments(): { corpusRoot: string; output: string; prepare: boolean; project?: string } {
@@ -393,6 +467,8 @@ if (import.meta.main) {
   const options = parseArguments();
   assertCleanCheckout(repositoryRoot);
   const provenance = { oxlintConfigSetup: currentCheckoutRevision(), predecessor: predecessorRevision };
+  const selectedProjects = options.project === undefined ? corpusProjects : corpusProjects.filter((project) => project.id === options.project);
+  if (selectedProjects.length === 0) throw new Error(`Unknown corpus project: ${options.project}`);
   const environment: EnvironmentEvidence = { eslint: "unavailable", host: `${platform()} ${release()} ${hostname()}`, node: process.version, oxlint: command(resolve(repositoryRoot, "node_modules/.bin/oxlint"), ["--version"], repositoryRoot).trim(), pnpm: command("pnpm", ["--version"], repositoryRoot).trim(), tsgolint: packageVersion(resolve(repositoryRoot, "node_modules/oxlint-tsgolint/package.json")), typescript: command(resolve(repositoryRoot, "node_modules/.bin/tsc"), ["--version"], repositoryRoot).trim() };
   let predecessorRoot: string | undefined;
   try {
@@ -400,21 +476,21 @@ if (import.meta.main) {
     environment.eslint = command(resolve(predecessorRoot, "node_modules/eslint/bin/eslint.js"), ["--version"], repositoryRoot).trim();
   } catch (error) {
     const failure = error instanceof Error ? error.message : String(error);
-    const reports = corpusProjects.map((project) => ({ deltas: [], diagnostics: { eslint: [], oxlint: [] }, failure, id: project.id, matched: 0, outcome: "failed" as const, suppressions: [], timings: { eslint: { coldMs: 0, warmMs: 0 }, oxlint: { coldMs: 0, warmMs: 0 } } }));
+    const reports = aggregateReports(loadCheckpointReports(options.output, provenance), selectedProjects.map((project) => ({ deltas: [], diagnostics: { eslint: [], oxlint: [] }, failure, id: project.id, matched: 0, outcome: "failed" as const, suppressions: [], timings: { eslint: { coldMs: 0, warmMs: 0 }, oxlint: { coldMs: 0, warmMs: 0 } } })));
     checkpointReports(options.output, reports, provenance, environment);
     process.exit(1);
   }
-  const selectedProjects = options.project === undefined ? corpusProjects : corpusProjects.filter((project) => project.id === options.project);
-  if (selectedProjects.length === 0) throw new Error(`Unknown corpus project: ${options.project}`);
-  const reports: ProjectReport[] = [];
+  let reports = loadCheckpointReports(options.output, provenance);
   for (const project of selectedProjects) {
+    let report: ProjectReport;
     try {
-      reports.push(runProject(project, options.prepare ? ensureCheckout(project, options.corpusRoot) : verifiedCheckout(project, options.corpusRoot), predecessorRoot));
+      report = runProject(project, options.prepare ? ensureCheckout(project, options.corpusRoot) : verifiedCheckout(project, options.corpusRoot), predecessorRoot);
     } catch (error) {
-      reports.push({ deltas: [], diagnostics: { eslint: [], oxlint: [] }, failure: error instanceof Error ? error.message : String(error), id: project.id, matched: 0, outcome: "failed", suppressions: [], timings: { eslint: { coldMs: 0, warmMs: 0 }, oxlint: { coldMs: 0, warmMs: 0 } } });
+      report = { deltas: [], diagnostics: { eslint: [], oxlint: [] }, failure: error instanceof Error ? error.message : String(error), id: project.id, matched: 0, outcome: "failed", suppressions: [], timings: { eslint: { coldMs: 0, warmMs: 0 }, oxlint: { coldMs: 0, warmMs: 0 } } };
     }
+    reports = aggregateReports(reports, [report]);
     checkpointReports(options.output, reports, provenance, environment);
   }
   console.log(`Wrote ${resolve(options.output, "report.json")} and ${resolve(options.output, "scorecard.md")}`);
-  if (reports.some((report) => report.outcome === "failed")) process.exitCode = 1;
+  if (reports.length !== corpusProjects.length || reports.some((report) => report.outcome === "failed" || report.deltas.some((delta) => delta.classification === "review-required"))) process.exitCode = 1;
 }
