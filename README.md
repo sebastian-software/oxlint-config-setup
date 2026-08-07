@@ -190,6 +190,11 @@ artifact, and validates the published package, release tag, clean npm and pnpm
 consumers, public exports, package contents, and the GitHub Actions SLSA
 provenance attestation.
 
+Each external process and request times out after 30 seconds. Registry
+propagation has at most ten attempts with 15-second delays (a maximum of seven
+minutes and 15 seconds before the remaining verification steps), and the
+verification job has a 15-minute wall-clock limit.
+
 Published npm versions are immutable. If post-publication verification fails,
 do not retry publication or try to overwrite the version. Fix the cause in a
 follow-up patch release, then verify that new version instead.

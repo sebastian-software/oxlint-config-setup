@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import {
   appendFileSync,
   mkdirSync,
@@ -12,6 +11,10 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { preparePublishedPackageBaseline } from "./prepare-published-package-baseline.js";
+import {
+  fetchWithTimeout,
+  runCommand,
+} from "./published-package-timeouts.js";
 
 interface PackageManifest {
   name: string;
@@ -77,17 +80,18 @@ const retryDelayMilliseconds = 15_000;
 assert(repository, "GITHUB_REPOSITORY is required to verify the release");
 assert(expectedCommit, "GITHUB_SHA is required to verify the release");
 
-function run(binary: string, args: string[], cwd?: string): string {
-  return execFileSync(binary, args, {
-    cwd,
-    encoding: "utf8",
-    env: { ...process.env, NO_COLOR: "1" },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+function run(
+  operation: string,
+  binary: string,
+  args: string[],
+  cwd?: string,
+): string {
+  return runCommand(operation, binary, args, { cwd });
 }
 
 function pack(directory: string, destination: string): string {
   const output = run(
+    `pack ${directory === "." ? "the expected artifact" : packageSpecifier}`,
     "npm",
     [
       "pack",
@@ -106,7 +110,7 @@ function pack(directory: string, destination: string): string {
 }
 
 function tarFiles(tarball: string): string[] {
-  return run("tar", ["-tzf", tarball])
+  return run(`list files in ${tarball}`, "tar", ["-tzf", tarball])
     .trim()
     .split("\n")
     .filter((file) => file.length > 0 && !file.endsWith("/"))
@@ -115,7 +119,7 @@ function tarFiles(tarball: string): string[] {
 
 function readRegistryPackage(): RegistryPackage {
   return JSON.parse(
-    run("npm", ["view", packageSpecifier, "--json"]),
+    run("query npm registry metadata", "npm", ["view", packageSpecifier, "--json"]),
   ) as RegistryPackage;
 }
 
@@ -155,14 +159,18 @@ async function waitForRegistry(): Promise<RegistryPackage> {
 }
 
 async function githubJson<T>(path: string): Promise<T> {
-  const response = await fetch(`https://api.github.com${path}`, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      ...(process.env.GITHUB_TOKEN
-        ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-        : {}),
+  const response = await fetchWithTimeout(
+    `query GitHub API ${path}`,
+    `https://api.github.com${path}`,
+    {
+      headers: {
+        Accept: "application/vnd.github+json",
+        ...(process.env.GITHUB_TOKEN
+          ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+          : {}),
+      },
     },
-  });
+  );
   assert.equal(response.ok, true, `GitHub API request failed: ${path}`);
   return (await response.json()) as T;
 }
@@ -194,7 +202,7 @@ function verifyConsumer(consumerRoot: string): void {
       "",
     ].join("\n"),
   );
-  run("node", ["verify.mjs"], consumerRoot);
+  run("execute the consumer smoke test", "node", ["verify.mjs"], consumerRoot);
 }
 
 function verifyConsumers(temporaryRoot: string): void {
@@ -205,6 +213,7 @@ function verifyConsumers(temporaryRoot: string): void {
     '{"name":"npm-registry-consumer","private":true,"type":"module"}\n',
   );
   run(
+    "install the npm consumer",
     "npm",
     [
       "install",
@@ -226,6 +235,7 @@ function verifyConsumers(temporaryRoot: string): void {
     '{"name":"pnpm-registry-consumer","private":true,"type":"module"}\n',
   );
   run(
+    "install the pnpm consumer",
     "pnpm",
     ["add", "--ignore-scripts", "--no-optional", packageSpecifier],
     pnpmConsumer,
@@ -257,6 +267,7 @@ function decodeProvenance(audit: AuditResult): Record<string, unknown> {
 function verifyProvenance(npmConsumer: string): void {
   const audit = JSON.parse(
     run(
+      "verify npm package signatures and provenance",
       "npm",
       ["audit", "signatures", "--json", "--include-attestations"],
       npmConsumer,
@@ -317,7 +328,7 @@ try {
   assert.deepEqual(tarFiles(publishedTarball), tarFiles(expectedTarball));
   const extractedPackage = resolve(publishedRoot, "package");
   mkdirSync(extractedPackage);
-  run("tar", ["-xzf", publishedTarball, "-C", extractedPackage]);
+  run("extract the published package", "tar", ["-xzf", publishedTarball, "-C", extractedPackage]);
   assert.equal(
     readFileSync(resolve(repositoryRoot, "README.md"), "utf8"),
     readFileSync(resolve(extractedPackage, "package", "README.md"), "utf8"),

@@ -156,6 +156,7 @@ assert.match(readme, /follow-up patch release/u);
 
 const publishWorkflow = read(".github/workflows/publish.yml");
 assert.match(publishWorkflow, /Verify published npm artifact/u);
+assert.match(publishWorkflow, /timeout-minutes: 15/u);
 assert.match(publishWorkflow, /tsx scripts\/verify-published-package\.ts/u);
 assert.match(publishWorkflow, /npm publish --access public --provenance/u);
 assert.match(publishWorkflow, /already exists in npm; preserving the immutable/u);
@@ -168,6 +169,10 @@ assert.match(
 assert.match(
   read("scripts/test-published-package-verifier.ts"),
   /Fresh published-package baseline includes the built dist artifact/u,
+);
+assert.match(
+  read("scripts/test-published-package-timeouts.ts"),
+  /Published-package timeout guards fail stalled operations promptly/u,
 );
 
 const compatibility = read("docs/compatibility.md");

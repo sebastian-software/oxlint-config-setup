@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { preparePublishedPackageBaseline } from "./prepare-published-package-baseline.js";
+import { runCommand } from "./published-package-timeouts.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const temporaryRoot = mkdtempSync(
@@ -13,7 +13,8 @@ const temporaryRoot = mkdtempSync(
 
 try {
   preparePublishedPackageBaseline();
-  const output = execFileSync(
+  const output = runCommand(
+    "pack the fresh expected package baseline",
     "npm",
     [
       "pack",
@@ -23,19 +24,15 @@ try {
       temporaryRoot,
       ".",
     ],
-    {
-      cwd: repositoryRoot,
-      encoding: "utf8",
-      env: { ...process.env, NO_COLOR: "1" },
-    },
+    { cwd: repositoryRoot },
   );
   const packed = JSON.parse(output) as Array<{ filename?: string }>;
   const filename = packed[0]?.filename;
   assert(filename, "npm pack did not return a tarball filename");
-  const files = execFileSync(
+  const files = runCommand(
+    "list the fresh expected package baseline",
     "tar",
     ["-tzf", resolve(temporaryRoot, filename)],
-    { encoding: "utf8" },
   )
     .trim()
     .split("\n");

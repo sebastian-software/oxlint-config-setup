@@ -73,6 +73,7 @@ jobs:
     name: Verify published npm artifact
     needs: publish-npm
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
 

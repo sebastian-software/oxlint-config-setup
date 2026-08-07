@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
+
+import { runCommand } from "./published-package-timeouts.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const distDirectory = resolve(repositoryRoot, "dist");
@@ -13,10 +14,8 @@ export function preparePublishedPackageBaseline(): void {
     false,
     "the expected package baseline must start without dist",
   );
-  execFileSync("pnpm", ["run", "build"], {
+  runCommand("build the expected package baseline", "pnpm", ["run", "build"], {
     cwd: repositoryRoot,
-    encoding: "utf8",
-    env: { ...process.env, NO_COLOR: "1" },
     stdio: "inherit",
   });
   assert.equal(
