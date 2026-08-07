@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.0](https://github.com/sebastian-software/oxlint-config-setup/compare/oxlint-config-setup-v0.0.0-development...oxlint-config-setup-v0.1.0) (2026-08-07)
+## [0.1.0](https://github.com/sebastian-software/oxlint-config-setup/compare/76077e5f15569100fa431fadf12d999bd0f50232...oxlint-config-setup-v0.1.0) (2026-08-07)
 
 
 ### Features

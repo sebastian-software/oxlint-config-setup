@@ -26,12 +26,20 @@ import {
 import type { RuleSeverity } from "../src/rule-helpers.js";
 
 interface PackageManifest {
+  author?: {
+    name?: string;
+    url?: string;
+  };
   description?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   engines?: Record<string, string>;
   exports?: Record<string, unknown>;
   files?: string[];
+  funding?: {
+    type?: string;
+    url?: string;
+  };
   homepage?: string;
   keywords?: string[];
   name?: string;
@@ -256,6 +264,14 @@ assert.equal(manifest.sideEffects, false);
 assert.deepEqual(manifest.files, ["dist"]);
 assert.equal(manifest.engines?.node, ">=24.11.0");
 assert.equal(manifest.packageManager, "pnpm@11.20.0");
+assert.deepEqual(manifest.author, {
+  name: "Sebastian Software GmbH",
+  url: "https://sebastian-software.com",
+});
+assert.deepEqual(manifest.funding, {
+  type: "github",
+  url: "https://github.com/sponsors/sebastian-software",
+});
 assert.deepEqual(manifest.publishConfig, {
   access: "public",
   provenance: true,
@@ -580,6 +596,15 @@ try {
       (file) => !file.endsWith(".ts") || file.endsWith(".d.ts"),
     ),
   );
+  const packedManifest = parseJson(
+    run("tar", ["-xOf", tarballPath, "package/package.json"]),
+  );
+  assert(isRecord(packedManifest));
+  assert.deepEqual(packedManifest.author, manifest.author);
+  assert.deepEqual(packedManifest.funding, manifest.funding);
+  const packedReadme = run("tar", ["-xOf", tarballPath, "package/README.md"]);
+  assert.match(packedReadme, /`v0\.1\.0` is the current published release\./u);
+  assert.doesNotMatch(packedReadme, /publishing remains an explicit maintainer action/u);
 
   const oxlintPackageRoot = realpathSync(
     resolve(repositoryRoot, "node_modules/oxlint"),

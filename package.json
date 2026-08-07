@@ -16,6 +16,14 @@
   "type": "module",
   "sideEffects": false,
   "license": "MIT",
+  "author": {
+    "name": "Sebastian Software GmbH",
+    "url": "https://sebastian-software.com"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/sebastian-software"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sebastian-software/oxlint-config-setup.git"
