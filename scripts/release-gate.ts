@@ -36,6 +36,11 @@ const projectLanguageDecision = read(
 assert.match(projectLanguageDecision, /\*\*Status:\*\* Accepted/u);
 assert.match(projectLanguageDecision, /US English \(`en-US`\)/u);
 
+const nodeLtsDecision = read("docs/adr/0010-require-node-24-lts.md");
+assert.match(nodeLtsDecision, /\*\*Status:\*\* Accepted/u);
+assert.match(nodeLtsDecision, /before the initial\nnpm publication/u);
+assert.doesNotMatch(nodeLtsDecision, /is still an unpublished beta/u);
+
 const configLevelDecision = read(
   "docs/adr/0007-add-essential-and-standard-config-levels.md",
 );
