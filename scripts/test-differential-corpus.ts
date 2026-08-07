@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
-import { classifyDeltas, corpusProjects, currentCheckoutRevision, deltaClassifications, normalizeEslintDiagnostics, normalizeOxlintDiagnostics, normalizeFilename, scorecard, validateProjectPaths } from "./differential-corpus.js";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { checkpointReports, classifyDeltas, corpusProjects, currentCheckoutRevision, deltaClassifications, normalizeEslintDiagnostics, normalizeOxlintDiagnostics, normalizeFilename, scorecard, validateProjectPaths } from "./differential-corpus.js";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
@@ -33,6 +33,13 @@ assert.deepEqual(collidingComparison.deltas, [], "fully matched colliding diagno
 
 const temporaryProject = resolve(tmpdir(), "oxlint-corpus-path-test");
 rmSync(temporaryProject, { force: true, recursive: true });
+
+const checkpointRoot = resolve(tmpdir(), "oxlint-corpus-checkpoint-test");
+rmSync(checkpointRoot, { force: true, recursive: true });
+checkpointReports(checkpointRoot, [{ deltas: [], diagnostics: { eslint: [], oxlint: [] }, failure: "simulated preparation failure", id: "failed-project", matched: 0, outcome: "failed", suppressions: [], timings: { eslint: { coldMs: 0, warmMs: 0 }, oxlint: { coldMs: 0, warmMs: 0 } } }], { oxlintConfigSetup: currentRevision, predecessor: "predecessor-fixture" }, { eslint: "unavailable", host: "fixture", node: "fixture", oxlint: "fixture", pnpm: "fixture", tsgolint: "fixture", typescript: "fixture" });
+assert.match(readFileSync(resolve(checkpointRoot, "report.json"), "utf8"), /simulated preparation failure/u);
+assert.match(readFileSync(resolve(checkpointRoot, "scorecard.md"), "utf8"), /failed-project \(failed\)/u);
+rmSync(checkpointRoot, { force: true, recursive: true });
 mkdirSync(temporaryProject, { recursive: true });
 writeFileSync(resolve(temporaryProject, "present.ts"), "export {};\n");
 validateProjectPaths({ ...corpusProjects[0]!, paths: ["present.ts"] }, temporaryProject);

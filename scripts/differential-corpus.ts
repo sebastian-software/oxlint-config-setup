@@ -361,6 +361,22 @@ export function scorecard(reports: readonly ProjectReport[], provenance: CorpusP
   return `${lines.join("\n")}\n`;
 }
 
+export function checkpointReports(output: string, reports: readonly ProjectReport[], provenance: CorpusProvenance, environment: EnvironmentEvidence): void {
+  mkdirSync(output, { recursive: true });
+  const reportPath = resolve(output, "report.json");
+  const scorecardPath = resolve(output, "scorecard.md");
+  const temporaryReport = `${reportPath}.tmp`;
+  const temporaryScorecard = `${scorecardPath}.tmp`;
+  writeFileSync(temporaryReport, `${JSON.stringify({ environment, generatedAt: new Date().toISOString(), projects: corpusProjects, reports, versions: provenance }, null, 2)}\n`);
+  writeFileSync(temporaryScorecard, scorecard(reports, provenance, environment));
+  rmSync(reportPath, { force: true });
+  rmSync(scorecardPath, { force: true });
+  writeFileSync(reportPath, readFileSync(temporaryReport));
+  writeFileSync(scorecardPath, readFileSync(temporaryScorecard));
+  rmSync(temporaryReport, { force: true });
+  rmSync(temporaryScorecard, { force: true });
+}
+
 function parseArguments(): { corpusRoot: string; output: string; prepare: boolean } {
   const args = process.argv.slice(2);
   const option = (name: string) => {
@@ -377,18 +393,26 @@ if (import.meta.main) {
   const options = parseArguments();
   assertCleanCheckout(repositoryRoot);
   const provenance = { oxlintConfigSetup: currentCheckoutRevision(), predecessor: predecessorRevision };
-  const predecessorRoot = options.prepare ? provisionPredecessor(options.corpusRoot) : verifiedPredecessor(options.corpusRoot);
-  const reports = corpusProjects.map((project) => {
+  const environment: EnvironmentEvidence = { eslint: "unavailable", host: `${platform()} ${release()} ${hostname()}`, node: process.version, oxlint: command(resolve(repositoryRoot, "node_modules/.bin/oxlint"), ["--version"], repositoryRoot).trim(), pnpm: command("pnpm", ["--version"], repositoryRoot).trim(), tsgolint: packageVersion(resolve(repositoryRoot, "node_modules/oxlint-tsgolint/package.json")), typescript: command(resolve(repositoryRoot, "node_modules/.bin/tsc"), ["--version"], repositoryRoot).trim() };
+  let predecessorRoot: string | undefined;
+  try {
+    predecessorRoot = options.prepare ? provisionPredecessor(options.corpusRoot) : verifiedPredecessor(options.corpusRoot);
+    environment.eslint = command(resolve(predecessorRoot, "node_modules/eslint/bin/eslint.js"), ["--version"], repositoryRoot).trim();
+  } catch (error) {
+    const failure = error instanceof Error ? error.message : String(error);
+    const reports = corpusProjects.map((project) => ({ deltas: [], diagnostics: { eslint: [], oxlint: [] }, failure, id: project.id, matched: 0, outcome: "failed" as const, suppressions: [], timings: { eslint: { coldMs: 0, warmMs: 0 }, oxlint: { coldMs: 0, warmMs: 0 } } }));
+    checkpointReports(options.output, reports, provenance, environment);
+    process.exit(1);
+  }
+  const reports: ProjectReport[] = [];
+  for (const project of corpusProjects) {
     try {
-      return runProject(project, options.prepare ? ensureCheckout(project, options.corpusRoot) : verifiedCheckout(project, options.corpusRoot), predecessorRoot);
+      reports.push(runProject(project, options.prepare ? ensureCheckout(project, options.corpusRoot) : verifiedCheckout(project, options.corpusRoot), predecessorRoot));
     } catch (error) {
-      return { deltas: [], diagnostics: { eslint: [], oxlint: [] }, failure: error instanceof Error ? error.message : String(error), id: project.id, matched: 0, outcome: "failed" as const, suppressions: [], timings: { eslint: { coldMs: 0, warmMs: 0 }, oxlint: { coldMs: 0, warmMs: 0 } } };
+      reports.push({ deltas: [], diagnostics: { eslint: [], oxlint: [] }, failure: error instanceof Error ? error.message : String(error), id: project.id, matched: 0, outcome: "failed", suppressions: [], timings: { eslint: { coldMs: 0, warmMs: 0 }, oxlint: { coldMs: 0, warmMs: 0 } } });
     }
-  });
-  mkdirSync(options.output, { recursive: true });
-  const environment: EnvironmentEvidence = { eslint: command(resolve(predecessorRoot, "node_modules/eslint/bin/eslint.js"), ["--version"], repositoryRoot).trim(), host: `${platform()} ${release()} ${hostname()}`, node: process.version, oxlint: command(resolve(repositoryRoot, "node_modules/.bin/oxlint"), ["--version"], repositoryRoot).trim(), pnpm: command("pnpm", ["--version"], repositoryRoot).trim(), tsgolint: packageVersion(resolve(repositoryRoot, "node_modules/oxlint-tsgolint/package.json")), typescript: command(resolve(repositoryRoot, "node_modules/.bin/tsc"), ["--version"], repositoryRoot).trim() };
-  writeFileSync(resolve(options.output, "report.json"), `${JSON.stringify({ environment, generatedAt: new Date().toISOString(), projects: corpusProjects, reports, versions: provenance }, null, 2)}\n`);
-  writeFileSync(resolve(options.output, "scorecard.md"), scorecard(reports, provenance, environment));
+    checkpointReports(options.output, reports, provenance, environment);
+  }
   console.log(`Wrote ${resolve(options.output, "report.json")} and ${resolve(options.output, "scorecard.md")}`);
   if (reports.some((report) => report.outcome === "failed")) process.exitCode = 1;
 }
