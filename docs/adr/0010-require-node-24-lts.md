@@ -13,9 +13,10 @@ starts later in the Node.js 22 line. With strict engine validation enabled, a
 full workspace install at the old consumer floor cannot install the documented
 toolchain even when the package code itself would still execute there.
 
-Node.js 24 is the current LTS line. The package is still an unpublished beta, so
-this is the least disruptive point to choose one maintained baseline for
-consumers, contributors, documentation, and CI.
+Node.js 24 is the current LTS line. This decision was made before the initial
+npm publication, while the package was a beta, so this was the least disruptive
+point to choose one maintained baseline for consumers, contributors,
+documentation, and CI.
 
 ## Decision
 
