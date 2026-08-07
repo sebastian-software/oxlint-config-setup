@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { hostname, platform, release } from "node:os";
 import { performance } from "node:perf_hooks";
-import { relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 
 import { runProcess } from "./harness.js";
 
@@ -32,13 +33,13 @@ export interface CorpusProject {
 
 export const corpusProjects: readonly CorpusProject[] = [
   {
-    id: "react-testing-library",
-    repository: "https://github.com/testing-library/react-testing-library.git",
-    revision: "be9d81d91314c9f0bafaa363f70b409b4b31989c",
-    paths: ["src/pure.js", "src/act-compat.js"],
+    id: "react-testing-library-consumer",
+    repository: "https://github.com/facebook/create-react-app.git",
+    revision: "6254386531d263688ccfa542d0e628fbc0de0b28",
+    paths: ["packages/cra-template/template/src/App.js", "packages/cra-template/template/src/App.test.js"],
     predecessorOptions: { react: true },
     oxlintArtifact: "react",
-    rationale: "React library whose public test API is exercised by Testing Library users.",
+    rationale: "Public React application template that consumes Testing Library in its application test layout.",
   },
   {
     id: "node-p-queue",
@@ -62,7 +63,7 @@ export const corpusProjects: readonly CorpusProject[] = [
     id: "vitest",
     repository: "https://github.com/vitest-dev/vitest.git",
     revision: "c67d296f42f93ec888ff148e821877194969cea9",
-    paths: ["packages/vitest/src/node/create.ts", "packages/vitest/src/node/config.ts"],
+    paths: ["packages/vitest/src/node/state.ts", "packages/vitest/src/node/config/resolveConfig.ts"],
     predecessorOptions: { node: true },
     oxlintArtifact: "vitest",
     rationale: "The upstream Vitest implementation provides an executable test-runner project.",
@@ -83,11 +84,24 @@ export interface Diagnostic {
   column: number;
   defectClass: string;
   file: string;
-  fix: "available" | "none";
+  fix: FixEvidence;
   line: number;
   rule: string;
   severity: "warning" | "error";
   tool: Tool;
+}
+
+export interface FixEvidence {
+  availability: "available" | "none" | "unknown";
+  equivalence: "not-reviewed" | "equivalent" | "different";
+  safety: "not-reviewed" | "safe" | "unsafe";
+}
+
+export interface Adjudication {
+  classification: DeltaClassification;
+  falsePositive: "confirmed" | "suspected" | "no";
+  suppression: "none" | "required";
+  rationale: string;
 }
 
 export interface Delta {
@@ -102,12 +116,25 @@ export interface ProjectReport {
   diagnostics: { eslint: Diagnostic[]; oxlint: Diagnostic[] };
   id: string;
   matched: number;
+  outcome: "complete" | "failed";
+  failure?: string;
+  suppressions: string[];
   timings: Record<Tool, { coldMs: number; warmMs: number }>;
 }
 
 export interface CorpusProvenance {
   oxlintConfigSetup: string;
   predecessor: string;
+}
+
+export interface EnvironmentEvidence {
+  eslint: string;
+  host: string;
+  node: string;
+  oxlint: string;
+  pnpm: string;
+  tsgolint: string;
+  typescript: string;
 }
 
 function command(binary: string, args: readonly string[], cwd: string): string {
@@ -118,12 +145,40 @@ function command(binary: string, args: readonly string[], cwd: string): string {
   return result.stdout;
 }
 
+function packageVersion(path: string): string {
+  const value = JSON.parse(readFileSync(path, "utf8")) as { version?: unknown };
+  if (typeof value.version !== "string") throw new Error(`Missing package version in ${path}`);
+  return value.version;
+}
+
 export function currentCheckoutRevision(root = repositoryRoot): string {
   const revision = command("git", ["rev-parse", "HEAD"], root).trim();
   if (!/^[0-9a-f]{40}$/u.test(revision)) {
     throw new Error(`Current checkout did not resolve to a full Git revision: ${revision}`);
   }
   return revision;
+}
+
+function assertCleanCheckout(root: string, expectedOrigin?: string): void {
+  if (expectedOrigin !== undefined) {
+    const origin = command("git", ["remote", "get-url", "origin"], root).trim().replace(/\.git$/u, "");
+    if (origin !== expectedOrigin.replace(/\.git$/u, "")) throw new Error(`Unexpected origin for ${root}: ${origin}`);
+  }
+  if (command("git", ["status", "--porcelain", "--untracked-files=all"], root).trim() !== "") throw new Error(`Dirty checkout: ${root}`);
+}
+
+export function normalizeFilename(projectRoot: string, filename: string): string {
+  const normalizedRoot = projectRoot.replaceAll("\\", "/").replace(/\/$/u, "");
+  const normalizedFilename = filename.replaceAll("\\", "/");
+  if (normalizedFilename === normalizedRoot) return ".";
+  if (normalizedFilename.startsWith(`${normalizedRoot}/`)) return normalizedFilename.slice(normalizedRoot.length + 1);
+  const absolute = isAbsolute(filename) ? filename : resolve(projectRoot, filename);
+  return relative(projectRoot, absolute).replaceAll("\\", "/");
+}
+
+export function validateProjectPaths(project: CorpusProject, projectRoot: string): void {
+  const missing = project.paths.filter((path) => !existsSync(resolve(projectRoot, path)));
+  if (missing.length > 0) throw new Error(`${project.id} has missing pinned paths: ${missing.join(", ")}`);
 }
 
 function ensureCheckout(project: CorpusProject, corpusRoot: string): string {
@@ -136,6 +191,8 @@ function ensureCheckout(project: CorpusProject, corpusRoot: string): string {
   command("git", ["checkout", "--detach", project.revision], destination);
   const actual = command("git", ["rev-parse", "HEAD"], destination).trim();
   if (actual !== project.revision) throw new Error(`${project.id} resolved ${actual}, not ${project.revision}`);
+  assertCleanCheckout(destination, project.repository);
+  validateProjectPaths(project, destination);
   return destination;
 }
 
@@ -144,6 +201,8 @@ function verifiedCheckout(project: CorpusProject, corpusRoot: string): string {
   if (!existsSync(destination)) throw new Error(`Missing ${project.id} checkout at ${destination}; rerun with --prepare.`);
   const actual = command("git", ["rev-parse", "HEAD"], destination).trim();
   if (actual !== project.revision) throw new Error(`${project.id} resolved ${actual}, not ${project.revision}; rerun with --prepare.`);
+  assertCleanCheckout(destination, project.repository);
+  validateProjectPaths(project, destination);
   return destination;
 }
 
@@ -203,7 +262,7 @@ export function normalizeEslintDiagnostics(value: unknown, projectRoot: string):
       if (message === null || typeof message !== "object") return [];
       const diagnostic = message as { column?: unknown; fix?: unknown; line?: unknown; ruleId?: unknown; severity?: unknown };
       const rule = typeof diagnostic.ruleId === "string" ? diagnostic.ruleId : "eslint/parse-error";
-      return [{ classification: classificationFor("eslint", rule), column: Number(diagnostic.column) || 0, defectClass: defectClassFor(rule), file: relative(projectRoot, filePath), fix: diagnostic.fix === undefined ? "none" : "available", line: Number(diagnostic.line) || 0, rule, severity: diagnostic.severity === 2 ? "error" : "warning", tool: "eslint" as const }];
+      return [{ classification: classificationFor("eslint", rule), column: Number(diagnostic.column) || 0, defectClass: defectClassFor(rule), file: normalizeFilename(projectRoot, filePath), fix: { availability: diagnostic.fix === undefined ? "none" : "available", equivalence: "not-reviewed", safety: "not-reviewed" }, line: Number(diagnostic.line) || 0, rule, severity: diagnostic.severity === 2 ? "error" : "warning", tool: "eslint" as const }];
     });
   });
 }
@@ -216,7 +275,7 @@ export function normalizeOxlintDiagnostics(value: unknown, projectRoot: string):
     if (typeof diagnostic.code !== "string" || typeof diagnostic.filename !== "string") return [];
     const label = Array.isArray(diagnostic.labels) ? diagnostic.labels[0] as { span?: { line?: unknown; column?: unknown } } | undefined : undefined;
     const rule = diagnostic.code.replace(/^([^()]+)\(([^()]+)\)$/u, "$1/$2");
-    return [{ classification: classificationFor("oxlint", rule), column: Number(label?.span?.column) || 0, defectClass: defectClassFor(rule), file: relative(projectRoot, diagnostic.filename), fix: "none", line: Number(label?.span?.line) || 0, rule, severity: diagnostic.severity === "error" ? "error" : "warning", tool: "oxlint" as const }];
+    return [{ classification: classificationFor("oxlint", rule), column: Number(label?.span?.column) || 0, defectClass: defectClassFor(rule), file: normalizeFilename(projectRoot, diagnostic.filename), fix: { availability: "unknown", equivalence: "not-reviewed", safety: "not-reviewed" }, line: Number(label?.span?.line) || 0, rule, severity: diagnostic.severity === "error" ? "error" : "warning", tool: "oxlint" as const }];
   });
 }
 
@@ -283,18 +342,19 @@ function runProject(project: CorpusProject, projectRoot: string, predecessorRoot
     const eslintDiagnostics = normalizeEslintDiagnostics(JSON.parse(eslint.output), projectRoot);
     const oxlintDiagnostics = normalizeOxlintDiagnostics(JSON.parse(oxlint.output), projectRoot);
     const comparison = classifyDeltas(eslintDiagnostics, oxlintDiagnostics);
-    return { deltas: comparison.deltas, diagnostics: { eslint: eslintDiagnostics, oxlint: oxlintDiagnostics }, id: project.id, matched: comparison.matched, timings: { eslint: { coldMs: eslint.coldMs, warmMs: eslint.warmMs }, oxlint: { coldMs: oxlint.coldMs, warmMs: oxlint.warmMs } } };
+    return { deltas: comparison.deltas, diagnostics: { eslint: eslintDiagnostics, oxlint: oxlintDiagnostics }, id: project.id, matched: comparison.matched, outcome: "complete", suppressions: [], timings: { eslint: { coldMs: eslint.coldMs, warmMs: eslint.warmMs }, oxlint: { coldMs: oxlint.coldMs, warmMs: oxlint.warmMs } } };
   } finally {
     rmSync(config, { force: true });
   }
 }
 
-export function scorecard(reports: readonly ProjectReport[], provenance: CorpusProvenance): string {
-  const lines = ["# ESLint/Oxlint differential scorecard", "", `- Oxlint Config Setup: \`${provenance.oxlintConfigSetup}\``, `- Predecessor: \`${provenance.predecessor}\``, "- Timing: one cold process followed by one warm process per tool and project.", "- Evidence boundary: public source is cloned into ignored `.corpus/`; this report contains diagnostics and metadata, not third-party source.", "", "| Project | Matched | ESLint only | Oxlint only | ESLint cold/warm | Oxlint cold/warm |", "| --- | ---: | ---: | ---: | ---: | ---: |"];
+export function scorecard(reports: readonly ProjectReport[], provenance: CorpusProvenance, environment?: EnvironmentEvidence): string {
+  const lines = ["# ESLint/Oxlint differential scorecard", "", `- Oxlint Config Setup: \`${provenance.oxlintConfigSetup}\``, `- Predecessor: \`${provenance.predecessor}\``, ...(environment === undefined ? [] : [`- Environment: Node \`${environment.node}\`, pnpm \`${environment.pnpm}\`, ESLint \`${environment.eslint}\`, Oxlint \`${environment.oxlint}\`, tsgolint \`${environment.tsgolint}\`, TypeScript \`${environment.typescript}\`, host \`${environment.host}\`.`]), "- Timing: one cold process followed by one warm process per tool and project.", "- Evidence boundary: public source is cloned into ignored `.corpus/`; this report contains diagnostics and metadata, not third-party source.", "", "| Project | Matched | ESLint only | Oxlint only | ESLint cold/warm | Oxlint cold/warm |", "| --- | ---: | ---: | ---: | ---: | ---: |"];
   for (const report of reports) {
     const eslintOnly = report.deltas.filter((delta) => delta.kind === "eslint-only").reduce((total, delta) => total + delta.diagnostics.length, 0);
     const oxlintOnly = report.deltas.filter((delta) => delta.kind === "oxlint-only").reduce((total, delta) => total + delta.diagnostics.length, 0);
-    lines.push(`| ${report.id} | ${report.matched} | ${eslintOnly} | ${oxlintOnly} | ${report.timings.eslint.coldMs}/${report.timings.eslint.warmMs} ms | ${report.timings.oxlint.coldMs}/${report.timings.oxlint.warmMs} ms |`);
+    lines.push(`| ${report.id}${report.outcome === "failed" ? " (failed)" : ""} | ${report.matched} | ${eslintOnly} | ${oxlintOnly} | ${report.timings.eslint.coldMs}/${report.timings.eslint.warmMs} ms | ${report.timings.oxlint.coldMs}/${report.timings.oxlint.warmMs} ms |`);
+    if (report.failure !== undefined) lines.push(`| ${report.id} failure | — | — | — | ${report.failure.replaceAll("|", "\\|")} | — |`);
   }
   lines.push("", "## Delta classification", "", "| Project | Direction | Defect class | Classification | Count |", "| --- | --- | --- | --- | ---: |");
   for (const report of reports) for (const delta of report.deltas) lines.push(`| ${report.id} | ${delta.kind} | ${delta.defectClass} | ${delta.classification} | ${delta.diagnostics.length} |`);
@@ -315,11 +375,20 @@ function parseArguments(): { corpusRoot: string; output: string; prepare: boolea
 
 if (import.meta.main) {
   const options = parseArguments();
+  assertCleanCheckout(repositoryRoot);
   const provenance = { oxlintConfigSetup: currentCheckoutRevision(), predecessor: predecessorRevision };
   const predecessorRoot = options.prepare ? provisionPredecessor(options.corpusRoot) : verifiedPredecessor(options.corpusRoot);
-  const reports = corpusProjects.map((project) => runProject(project, options.prepare ? ensureCheckout(project, options.corpusRoot) : verifiedCheckout(project, options.corpusRoot), predecessorRoot));
+  const reports = corpusProjects.map((project) => {
+    try {
+      return runProject(project, options.prepare ? ensureCheckout(project, options.corpusRoot) : verifiedCheckout(project, options.corpusRoot), predecessorRoot);
+    } catch (error) {
+      return { deltas: [], diagnostics: { eslint: [], oxlint: [] }, failure: error instanceof Error ? error.message : String(error), id: project.id, matched: 0, outcome: "failed" as const, suppressions: [], timings: { eslint: { coldMs: 0, warmMs: 0 }, oxlint: { coldMs: 0, warmMs: 0 } } };
+    }
+  });
   mkdirSync(options.output, { recursive: true });
-  writeFileSync(resolve(options.output, "report.json"), `${JSON.stringify({ generatedAt: new Date().toISOString(), projects: corpusProjects, reports, versions: provenance }, null, 2)}\n`);
-  writeFileSync(resolve(options.output, "scorecard.md"), scorecard(reports, provenance));
+  const environment: EnvironmentEvidence = { eslint: command(resolve(predecessorRoot, "node_modules/eslint/bin/eslint.js"), ["--version"], repositoryRoot).trim(), host: `${platform()} ${release()} ${hostname()}`, node: process.version, oxlint: command(resolve(repositoryRoot, "node_modules/.bin/oxlint"), ["--version"], repositoryRoot).trim(), pnpm: command("pnpm", ["--version"], repositoryRoot).trim(), tsgolint: packageVersion(resolve(repositoryRoot, "node_modules/oxlint-tsgolint/package.json")), typescript: command(resolve(repositoryRoot, "node_modules/.bin/tsc"), ["--version"], repositoryRoot).trim() };
+  writeFileSync(resolve(options.output, "report.json"), `${JSON.stringify({ environment, generatedAt: new Date().toISOString(), projects: corpusProjects, reports, versions: provenance }, null, 2)}\n`);
+  writeFileSync(resolve(options.output, "scorecard.md"), scorecard(reports, provenance, environment));
   console.log(`Wrote ${resolve(options.output, "report.json")} and ${resolve(options.output, "scorecard.md")}`);
+  if (reports.some((report) => report.outcome === "failed")) process.exitCode = 1;
 }

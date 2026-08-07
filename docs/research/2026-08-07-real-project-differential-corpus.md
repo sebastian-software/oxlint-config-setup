@@ -1,7 +1,7 @@
 # Real-project ESLint/Oxlint differential corpus
 
 - **Status:** Reproducible evidence protocol
-- **Measured tool revisions:** `oxlint-config-setup` `173812f`; `eslint-config-setup` `4543246c62326047f7372765931f260f04beea56`
+- **Measured tool revisions:** recorded by each generated report; predecessor `eslint-config-setup` is pinned at `4543246c62326047f7372765931f260f04beea56`
 - **Runner:** `pnpm corpus --prepare`
 
 ## Purpose
@@ -13,9 +13,9 @@ in this repository. It does not claim equivalent messages, rule counts, or
 custom-format coverage.
 
 The runner writes `report.json` for review tooling and `scorecard.md` for
-humans. Both are intentionally generated below ignored `.corpus/report/` and
-are not committed: a result is valid only for its recorded source revisions,
-tool versions, host, and local checkout state.
+humans below ignored `.corpus/report/`. A result is valid only for its recorded
+source revisions, tool versions, host, and clean checkout state. The runner
+emits partial artifacts with failure evidence before returning a nonzero status.
 
 ## Selection and provenance
 
@@ -28,7 +28,7 @@ smallest useful source paths.
 
 | Required evidence | Project and pinned revision | Scoped paths | Why it is included |
 | --- | --- | --- | --- |
-| React with Testing Library | [`testing-library/react-testing-library`](https://github.com/testing-library/react-testing-library/tree/be9d81d91314c9f0bafaa363f70b409b4b31989c) `be9d81d` | Two React Testing Library implementation modules | Public React library representing the Testing Library ecosystem. |
+| React with Testing Library | [`facebook/create-react-app`](https://github.com/facebook/create-react-app/tree/6254386531d263688ccfa542d0e628fbc0de0b28) `6254386` | React application and its Testing Library test | Public consumer application template with a real test layout. |
 | Node.js library | [`sindresorhus/p-queue`](https://github.com/sindresorhus/p-queue/tree/180ab9e25cd10b6f548767d7176076b50d25e188) `180ab9e` | Queue entry point and implementation | Small TypeScript Node.js library with a conventional source layout. |
 | Mixed React/Node monorepo | [`vercel/turborepo`](https://github.com/vercel/turborepo/tree/a98e5cde97796088c6107684a64a40a967cd1ef0) `a98e5cd` | with-yarn React page, UI component, and Node generator | Preserves workspace and React/Node resolution while limiting noise. |
 | Vitest | [`vitest-dev/vitest`](https://github.com/vitest-dev/vitest/tree/c67d296f42f93ec888ff148e821877194969cea9) `c67d296` | Two Vitest Node implementation modules | Maintained implementation of the required runner. |
@@ -66,9 +66,16 @@ output is normalized into file, line, column, severity, rule, fix availability,
 and defect class. Matching requires the same location, severity, and normalized
 defect class; message text is not used as a parity proxy.
 
+The JSON report records the full current Git revision, predecessor revision,
+Node.js, pnpm, ESLint, Oxlint, tsgolint, TypeScript, and host versions. It
+rejects reused checkouts with a changed origin, tracked changes, or untracked
+files.
+
 ## Delta decisions and evidence boundary
 
-Every unmatched diagnostic receives exactly one reviewable classification:
+Every unmatched diagnostic must receive an explicit human-reviewable
+classification, false-positive confidence, suppression decision, and fix
+equivalence/safety decision before it is treated as a migration decision.
 
 | Classification | Meaning |
 | --- | --- |
