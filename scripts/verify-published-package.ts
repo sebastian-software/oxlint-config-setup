@@ -11,6 +11,8 @@ import {
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
+import { preparePublishedPackageBaseline } from "./prepare-published-package-baseline.js";
+
 interface PackageManifest {
   name: string;
   version: string;
@@ -301,6 +303,8 @@ function writeSummary(): void {
 
 await waitForRegistry();
 await verifyGitHubRelease();
+console.log("Building the clean expected release artifact.");
+preparePublishedPackageBaseline();
 
 const temporaryRoot = mkdtempSync(resolve(tmpdir(), "oxlint-config-published-"));
 try {

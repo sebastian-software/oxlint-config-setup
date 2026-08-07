@@ -185,9 +185,10 @@ and package metadata remain companion-tool concerns.
 
 The release workflow uses npm Trusted Publishing with GitHub Actions OIDC; it
 does not use an npm token. After npm accepts a release, a separate verification
-job waits for bounded registry propagation and validates the published package,
-the release tag, clean npm and pnpm consumers, public exports, package contents,
-and the GitHub Actions SLSA provenance attestation.
+job waits for bounded registry propagation, deliberately builds a clean expected
+artifact, and validates the published package, release tag, clean npm and pnpm
+consumers, public exports, package contents, and the GitHub Actions SLSA
+provenance attestation.
 
 Published npm versions are immutable. If post-publication verification fails,
 do not retry publication or try to overwrite the version. Fix the cause in a
