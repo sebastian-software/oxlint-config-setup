@@ -72,7 +72,7 @@ function renderCatalog(): string {
     "",
     "## Stability boundary",
     "",
-    "`react/react-compiler` is emitted only by the explicitly named experimental artifact and begins as a warning. No JavaScript-plugin-backed entry is present in a stable default. Test-library, Playwright, Storybook, SonarJS, and regular-expression plugin gaps remain research items in the migration guide.",
+    "`react/react-compiler` is emitted only by the explicitly named experimental artifact and begins as a warning. No JavaScript-plugin-backed entry is present in a stable default. Test-library and Playwright remain research items; Storybook, SonarJS, and regular-expression plugin domains are Deferred with explicit re-entry gates in the migration guide.",
     "",
   );
   return lines.join("\n");
