@@ -2,7 +2,7 @@
 
 - **Review date:** 2026-08-06
 - **Review status:** **Complete** for the beta candidate
-- **Publication status:** Manual publish intentionally not performed by this gate
+- **Publication status:** `v0.1.0` was subsequently published with npm Trusted Publishing
 
 | Decision | Area | Review result |
 | --- | --- | --- |
@@ -18,7 +18,7 @@
 | ADJUST | Rule catalog | The former capability sketch is replaced by a generated 27-entry ledger catalog. |
 | DEFER | JavaScript-plugin domains | Testing Library, Playwright, Storybook, SonarJS, and regex gaps remain research. |
 | DEFER | Stable React Compiler | Compiler diagnostics remain an isolated warning until upstream stability changes. |
-| DEFER | Automatic publication | Provenance metadata is configured, but publishing requires a deliberate maintainer release action. |
+| KEEP | Automated publication | Release Please and npm Trusted Publishing publish released versions from `main`. |
 | DEFER | Expanded version ranges | New Oxlint, tsgolint, TypeScript, Node, or package-manager versions require a full matrix run. |
 
 ## Exit evidence
@@ -31,6 +31,5 @@
 - Migration, companion-tool, experimental-surface, and release documentation: complete.
 - `pnpm release:check`: required before creating the beta tag.
 
-The beta may be tagged only from a clean commit where the release check and CI
-matrix pass. This record does not claim that an npm version has already been
-published.
+The beta was tagged from a clean commit where the release check and CI matrix
+passed. `v0.1.0` was subsequently published to npm.
