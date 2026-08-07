@@ -32,7 +32,7 @@ smallest useful source paths.
 | Node.js library | [`sindresorhus/p-queue`](https://github.com/sindresorhus/p-queue/tree/180ab9e25cd10b6f548767d7176076b50d25e188) `180ab9e` | Queue entry point and implementation | Small TypeScript Node.js library with a conventional source layout. |
 | Mixed React/Node monorepo | [`vercel/turborepo`](https://github.com/vercel/turborepo/tree/a98e5cde97796088c6107684a64a40a967cd1ef0) `a98e5cd` | with-yarn React page, UI component, and Node generator | Preserves workspace and React/Node resolution while limiting noise. |
 | Vitest | [`vitest-dev/vitest`](https://github.com/vitest-dev/vitest/tree/c67d296f42f93ec888ff148e821877194969cea9) `c67d296` | Two Vitest Node implementation modules | Maintained implementation of the required runner. |
-| Playwright | [`microsoft/playwright`](https://github.com/microsoft/playwright/tree/931121dc6f1ce8d672ce2bd5845220203cb98920) `931121d` | Playwright test runner and fixtures modules | Suitable maintained public Playwright source is available. |
+| Playwright | [`microsoft/playwright`](https://github.com/microsoft/playwright/tree/931121dc6f1ce8d672ce2bd5845220203cb98920) `931121d` | Basic Playwright test and fixtures modules | Suitable maintained public Playwright source is available. |
 
 The selected paths deliberately exclude documentation, generated output, lock
 files, and package metadata. This is a source-code corpus, not a claim that

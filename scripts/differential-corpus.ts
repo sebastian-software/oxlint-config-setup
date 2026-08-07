@@ -73,7 +73,7 @@ export const corpusProjects: readonly CorpusProject[] = [
     id: "playwright",
     repository: "https://github.com/microsoft/playwright.git",
     revision: "931121dc6f1ce8d672ce2bd5845220203cb98920",
-    paths: ["tests/playwright-test/playwright-test.spec.ts", "tests/playwright-test/playwright-test-fixtures.ts"],
+    paths: ["tests/playwright-test/basic.spec.ts", "tests/playwright-test/playwright-test-fixtures.ts"],
     predecessorOptions: { node: true },
     oxlintArtifact: "node",
     rationale: "The public Playwright repository is the suitable maintained source for Playwright-specific evidence.",
