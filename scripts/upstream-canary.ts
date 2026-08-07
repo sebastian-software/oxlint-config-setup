@@ -29,14 +29,20 @@ function parseBenchmark(source: string): BenchmarkResult {
   return JSON.parse(trimmed.slice(start)) as BenchmarkResult;
 }
 
-function run(command: string, args: string[]): string {
+function run(
+  command: string,
+  args: string[],
+  environment: NodeJS.ProcessEnv = {},
+): string {
   const result = spawnSync(command, args, {
     cwd: repositoryRoot,
     encoding: "utf8",
-    env: { ...process.env, NO_COLOR: "1" },
+    env: { ...process.env, ...environment, NO_COLOR: "1" },
   });
   if (result.status !== 0) {
-    throw new Error((result.stderr || result.stdout || "command failed").trim());
+    throw new Error(
+      (result.stderr || result.stdout || "command failed").trim(),
+    );
   }
   return result.stdout;
 }
@@ -66,7 +72,8 @@ function summarize(
     "| Category | Command | Result |",
     "| --- | --- | --- |",
     ...stages.map(
-      (stage) => `| ${stage.category} | \`${stage.command}\` | ${stage.status} |`,
+      (stage) =>
+        `| ${stage.category} | \`${stage.command}\` | ${stage.status} |`,
     ),
     "",
     ...(failure === undefined
@@ -79,12 +86,17 @@ function summarize(
         ]),
     "Native category and rule-surface details are in `native-category-surface.diff.md`.",
   ];
-  writeFileSync(resolve(outputDirectory, "summary.md"), `${lines.join("\n")}\n`);
+  writeFileSync(
+    resolve(outputDirectory, "summary.md"),
+    `${lines.join("\n")}\n`,
+  );
 }
 
 function benchmark(): void {
   if (baselinePath === undefined) {
-    throw new Error("performance failure: CANARY_PERFORMANCE_BASELINE is required");
+    throw new Error(
+      "performance failure: CANARY_PERFORMANCE_BASELINE is required",
+    );
   }
   const baseline = parseBenchmark(readFileSync(baselinePath, "utf8"));
   const candidates = [
@@ -155,7 +167,12 @@ writeFileSync(
   )}\n`,
 );
 
-const stages: Array<{ args: string[]; category: string; command: string }> = [
+const stages: Array<{
+  args: string[];
+  category: string;
+  command: string;
+  environment?: NodeJS.ProcessEnv;
+}> = [
   {
     args: ["run", "typecheck"],
     category: "type",
@@ -165,11 +182,6 @@ const stages: Array<{ args: string[]; category: string; command: string }> = [
     args: ["run", "test:ledger"],
     category: "config",
     command: "pnpm run test:ledger",
-  },
-  {
-    args: ["run", "test:harness"],
-    category: "diagnostic",
-    command: "pnpm run test:harness (fixtures, crash, timeout)",
   },
   {
     args: [
@@ -184,6 +196,12 @@ const stages: Array<{ args: string[]; category: string; command: string }> = [
     command: "pnpm run canary:native-surface -- --fail-on-diff",
   },
   {
+    args: ["run", "test:harness"],
+    category: "diagnostic",
+    command: "pnpm run test:harness (fixtures, crash, timeout)",
+    environment: { CANARY_SKIP_SNAPSHOTS: "true" },
+  },
+  {
     args: ["run", "test:package"],
     category: "packaging",
     command: "pnpm run test:package (clean npm and pnpm consumers)",
@@ -194,7 +212,7 @@ const results: StageResult[] = [];
 try {
   for (const stage of stages) {
     try {
-      run("pnpm", stage.args);
+      run("pnpm", stage.args, stage.environment);
       results.push({ ...stage, status: "passed" });
     } catch (error: unknown) {
       results.push({ ...stage, status: "failed" });
@@ -203,7 +221,9 @@ try {
         category: stage.category,
         message,
       });
-      console.error(`::error title=Upstream ${stage.category} failure::${message}`);
+      console.error(
+        `::error title=Upstream ${stage.category} failure::${message}`,
+      );
       throw new Error(`${stage.category} failure: ${message}`);
     }
   }

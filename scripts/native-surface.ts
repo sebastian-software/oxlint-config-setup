@@ -1,4 +1,10 @@
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
@@ -8,11 +14,20 @@ import { runProcess } from "./harness.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const outputArgument = process.argv.indexOf("--output");
+const expectedArgument = process.argv.indexOf("--expected");
 const outputDirectory = resolve(
   repositoryRoot,
   outputArgument === -1
-    ? process.env.CANARY_OUTPUT_DIR ?? "canary-artifacts"
+    ? (process.env.CANARY_OUTPUT_DIR ?? "canary-artifacts")
     : (process.argv[outputArgument + 1] ?? "canary-artifacts"),
+);
+const expectedPath = resolve(
+  repositoryRoot,
+  expectedArgument === -1
+    ? (process.env.CANARY_EXPECTED_SNAPSHOT ??
+        "fixtures/snapshots/effective-configs.json")
+    : (process.argv[expectedArgument + 1] ??
+        "fixtures/snapshots/effective-configs.json"),
 );
 const failOnDiff = process.argv.includes("--fail-on-diff");
 const temporaryRoot = mkdtempSync(resolve(tmpdir(), "oxlint-native-surface-"));
@@ -58,7 +73,12 @@ function ruleChanges(
 function categoryChanges(expected: JsonRecord, actual: JsonRecord): string[] {
   const expectedCategories = asRecord(expected.categories);
   const actualCategories = asRecord(actual.categories);
-  return [...new Set([...Object.keys(expectedCategories), ...Object.keys(actualCategories)])]
+  return [
+    ...new Set([
+      ...Object.keys(expectedCategories),
+      ...Object.keys(actualCategories),
+    ]),
+  ]
     .filter(
       (category) =>
         !jsonEqual(expectedCategories[category], actualCategories[category]),
@@ -72,46 +92,57 @@ function renderList(label: string, values: readonly string[]): string[] {
     : [`- ${label}: ${values.map((value) => `\`${value}\``).join(", ")}`];
 }
 
-const expected = JSON.parse(
-  readFileSync(
-    resolve(repositoryRoot, "fixtures/snapshots/effective-configs.json"),
-    "utf8",
-  ),
-) as Record<string, unknown>;
+const expected = JSON.parse(readFileSync(expectedPath, "utf8")) as Record<
+  string,
+  unknown
+>;
 const actual: Record<string, unknown> = {};
+const failures = new Map<string, string>();
+
+mkdirSync(outputDirectory, { recursive: true });
 
 try {
   for (const artifact of allConfigArtifacts()) {
-    const configPath = resolve(temporaryRoot, `${artifact.publicName}.json`);
-    writeFileSync(configPath, `${JSON.stringify(artifact.config, null, 2)}\n`);
-    const source = artifact.typeAware
-      ? "fixtures/rules/typescript-type-aware/valid.ts"
-      : "fixtures/rules/typescript-syntax/valid.ts";
-    const printed = runProcess(
-      oxlint,
-      ["--config", configPath, "--print-config", source],
-      { cwd: repositoryRoot },
-    );
-    if (printed.kind !== "success") {
-      throw new Error(
-        `${artifact.publicName} --print-config failed as ${printed.kind}: ${printed.stderr || printed.stdout}`,
+    try {
+      const configPath = resolve(temporaryRoot, `${artifact.publicName}.json`);
+      writeFileSync(
+        configPath,
+        `${JSON.stringify(artifact.config, null, 2)}\n`,
       );
+      const source = artifact.typeAware
+        ? "fixtures/rules/typescript-type-aware/valid.ts"
+        : "fixtures/rules/typescript-syntax/valid.ts";
+      const printed = runProcess(
+        oxlint,
+        ["--config", configPath, "--print-config", source],
+        { cwd: repositoryRoot },
+      );
+      if (printed.kind !== "success") {
+        throw new Error(
+          `${artifact.publicName} --print-config failed as ${printed.kind}: ${printed.stderr || printed.stdout}`,
+        );
+      }
+      const value = JSON.parse(printed.stdout) as JsonRecord;
+      actual[artifact.publicName] = {
+        categories: value.categories,
+        options: value.options,
+        plugins: Array.isArray(value.plugins)
+          ? value.plugins.toSorted((left, right) =>
+              String(left).localeCompare(String(right)),
+            )
+          : value.plugins,
+        rules: value.rules,
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      failures.set(artifact.publicName, message);
+      actual[artifact.publicName] = { failure: message };
     }
-    const value = JSON.parse(printed.stdout) as JsonRecord;
-    actual[artifact.publicName] = {
-      categories: value.categories,
-      options: value.options,
-      plugins: Array.isArray(value.plugins)
-        ? value.plugins.toSorted((left, right) => String(left).localeCompare(String(right)))
-        : value.plugins,
-      rules: value.rules,
-    };
   }
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
 }
 
-mkdirSync(outputDirectory, { recursive: true });
 writeFileSync(
   resolve(outputDirectory, "native-category-surface.json"),
   `${JSON.stringify(actual, null, 2)}\n`,
@@ -130,11 +161,16 @@ const report = [
 ];
 
 for (const name of changedArtifacts) {
+  const failure = failures.get(name);
   const expectedConfig = asRecord(expected[name]);
   const actualConfig = asRecord(actual[name]);
   const rules = ruleChanges(expectedConfig, actualConfig);
   const categories = categoryChanges(expectedConfig, actualConfig);
   report.push(`## ${name}`, "");
+  if (failure !== undefined) {
+    report.push(`- Effective-config failure: ${failure}`, "");
+    continue;
+  }
   report.push(...renderList("changed categories", categories));
   report.push(...renderList("added rules", rules.added));
   report.push(...renderList("changed rules", rules.changed));
@@ -154,7 +190,9 @@ writeFileSync(
   resolve(outputDirectory, "native-category-surface.diff.md"),
   `${report.join("\n")}\n`,
 );
-console.log(`Recorded ${changedArtifacts.length} changed native configuration surface(s).`);
+console.log(
+  `Recorded ${changedArtifacts.length} changed native configuration surface(s).`,
+);
 
 if (failOnDiff && changedArtifacts.length > 0) {
   throw new Error(

@@ -6,14 +6,14 @@
 
 ## Tested matrix
 
-| Component | Version |
-| --- | --- |
-| Oxlint | `1.77.0` |
-| `oxlint-tsgolint` | `7.0.2001` |
-| TypeScript target | `7.0.2` |
-| pnpm | `11.20.0` |
-| npm consumer | major 10 or 11 |
-| Consumer Node.js | `24.11.0`, `26.0.0`, current 26 |
+| Component         | Version                         |
+| ----------------- | ------------------------------- |
+| Oxlint            | `1.77.0`                        |
+| `oxlint-tsgolint` | `7.0.2001`                      |
+| TypeScript target | `7.0.2`                         |
+| pnpm              | `11.20.0`                       |
+| npm consumer      | major 10 or 11                  |
+| Consumer Node.js  | `24.11.0`, `26.0.0`, current 26 |
 
 CI job names and environment variables record this version trio. Upgrading any
 member reruns the entire matrix rather than relying on a broad peer range.
@@ -62,10 +62,9 @@ without changing tracked manifests or the lockfile:
 pnpm install --frozen-lockfile
 mkdir -p canary-artifacts
 pnpm run benchmark > canary-artifacts/pinned-benchmark.json
-pnpm install --lockfile=false \
-  --config.overrides.oxlint=latest \
-  --config.overrides.oxlint-tsgolint=latest \
-  --config.overrides.typescript=latest
+pnpm run canary:upstream-toolchain -- --record canary-artifacts/requested-upstream-versions.json
+pnpm update --latest --no-save --lockfile=false oxlint oxlint-tsgolint typescript
+pnpm run canary:upstream-toolchain -- --verify canary-artifacts/requested-upstream-versions.json --output canary-artifacts
 CANARY_ALLOW_PNPM_VERSION=true \
 CANARY_ALLOW_PINNED_PEER_MISMATCH=true \
 CANARY_OUTPUT_DIR=canary-artifacts \
@@ -106,10 +105,10 @@ The shared harness invokes the supported `oxlint` executable directly and checks
 Ten fresh subprocesses are measured after two warm-ups with one Oxlint thread.
 The root benchmark on the measured host reported:
 
-| Scenario | Median | p95 |
-| --- | ---: | ---: |
-| Syntax-only, one file | 114.87 ms | 125.64 ms |
-| Type-aware, one file | 247.51 ms | 315.36 ms |
+| Scenario                                   |    Median |       p95 |
+| ------------------------------------------ | --------: | --------: |
+| Syntax-only, one file                      | 114.87 ms | 125.64 ms |
+| Type-aware, one file                       | 247.51 ms | 315.36 ms |
 | Type-aware, representative 12-file project | 248.77 ms | 265.78 ms |
 
 Run `pnpm benchmark` to reproduce. These values are observations, not latency
