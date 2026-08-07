@@ -377,7 +377,7 @@ export function checkpointReports(output: string, reports: readonly ProjectRepor
   rmSync(temporaryScorecard, { force: true });
 }
 
-function parseArguments(): { corpusRoot: string; output: string; prepare: boolean } {
+function parseArguments(): { corpusRoot: string; output: string; prepare: boolean; project?: string } {
   const args = process.argv.slice(2);
   const option = (name: string) => {
     const index = args.indexOf(name);
@@ -386,7 +386,7 @@ function parseArguments(): { corpusRoot: string; output: string; prepare: boolea
     if (value === undefined || value.startsWith("--")) throw new Error(`${name} requires a path`);
     return value;
   };
-  return { corpusRoot: resolve(option("--corpus-root") ?? defaultCorpusRoot), output: resolve(option("--output") ?? resolve(defaultCorpusRoot, "report")), prepare: args.includes("--prepare") };
+  return { corpusRoot: resolve(option("--corpus-root") ?? defaultCorpusRoot), output: resolve(option("--output") ?? resolve(defaultCorpusRoot, "report")), prepare: args.includes("--prepare"), project: option("--project") };
 }
 
 if (import.meta.main) {
@@ -404,8 +404,10 @@ if (import.meta.main) {
     checkpointReports(options.output, reports, provenance, environment);
     process.exit(1);
   }
+  const selectedProjects = options.project === undefined ? corpusProjects : corpusProjects.filter((project) => project.id === options.project);
+  if (selectedProjects.length === 0) throw new Error(`Unknown corpus project: ${options.project}`);
   const reports: ProjectReport[] = [];
-  for (const project of corpusProjects) {
+  for (const project of selectedProjects) {
     try {
       reports.push(runProject(project, options.prepare ? ensureCheckout(project, options.corpusRoot) : verifiedCheckout(project, options.corpusRoot), predecessorRoot));
     } catch (error) {
