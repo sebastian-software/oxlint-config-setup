@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  chmodSync,
   cpSync,
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -86,18 +88,55 @@ function installFixture(packageManager: PackageManager, cwd: string): void {
   assertSuccess(run(packageManager, args, cwd));
 }
 
+function initializeFixtureGit(cwd: string): void {
+  assertSuccess(run("git", ["init", "--quiet"], cwd));
+}
+
 function runQuality(packageManager: PackageManager, cwd: string): RunResult {
   return run(packageManager, ["run", "quality"], cwd);
 }
 
 function verifyPreCommit(packageManager: PackageManager, cwd: string): void {
-  assertSuccess(run("git", ["init", "--quiet"], cwd));
-  assertSuccess(run("git", ["add", "src/example.ts"], cwd));
-  const args =
-    packageManager === "npm"
-      ? ["exec", "--", "lint-staged"]
-      : ["exec", "lint-staged"];
-  assertSuccess(run(packageManager, args, cwd));
+  assertSuccess(run("git", ["config", "user.email", "fixture@example.test"], cwd));
+  assertSuccess(run("git", ["config", "user.name", "Companion Fixture"], cwd));
+  assert.equal(
+    run("git", ["config", "--get", "core.hooksPath"], cwd).output.trim(),
+    ".husky/_",
+    `${packageManager} install must enable Husky's installed hooks path`,
+  );
+
+  const hookPath = resolve(cwd, ".husky/pre-commit");
+  assert.equal(
+    readFileSync(hookPath, "utf8"),
+    "#!/usr/bin/env sh\nnpx --no lint-staged\n",
+    `${packageManager} fixture must keep the distributed pre-commit hook content`,
+  );
+  assert.notEqual(
+    statSync(hookPath).mode & 0o111,
+    0,
+    `${packageManager} fixture must keep the distributed pre-commit hook executable`,
+  );
+
+  writeFileSync(
+    resolve(cwd, "src/commit-proof.ts"),
+    "export const commitProof = true;\n",
+  );
+  assertSuccess(run("git", ["add", "src/commit-proof.ts"], cwd));
+  assertSuccess(
+    run("git", ["commit", "--quiet", "-m", "Verify companion hook"], cwd),
+  );
+
+  writeFileSync(hookPath, "#!/usr/bin/env sh\nthis-is-not-a-command\n");
+  chmodSync(hookPath, 0o755);
+  writeFileSync(
+    resolve(cwd, "src/commit-proof.ts"),
+    "export const commitProof = false;\n",
+  );
+  assertSuccess(run("git", ["add", "src/commit-proof.ts"], cwd));
+  assertFailure(
+    run("git", ["commit", "--quiet", "-m", "Reject malformed companion hook"], cwd),
+    `${packageManager} malformed distributed pre-commit hook`,
+  );
 }
 
 function verifyFailures(packageManager: PackageManager, cwd: string): void {
@@ -191,6 +230,7 @@ try {
   for (const packageManager of packageManagers) {
     console.log(`Checking clean ${packageManager} companion fixture...`);
     const fixture = copyFixture(packageManager);
+    initializeFixtureGit(fixture);
     installFixture(packageManager, fixture);
     assertSuccess(runQuality(packageManager, fixture));
     verifyPreCommit(packageManager, fixture);

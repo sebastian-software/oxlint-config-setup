@@ -75,7 +75,9 @@ pnpm exec lint-staged
 `.github/workflows/quality.yml` runs the same frozen pnpm installation and
 `pnpm run quality` in pull requests and on `main`. Keep CI on the full command;
 the pre-commit hook is intentionally a fast staged-file check, not a replacement
-for repository-wide validation.
+for repository-wide validation. The repository clean-fixture verifier proves
+both npm and pnpm install the executable hook, run it through a real Git commit,
+and reject a malformed distributed hook.
 
 ## Evidence
 
