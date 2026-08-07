@@ -37,6 +37,12 @@ versions, two-run benchmark comparison, native effective category/rule surface,
 and a Markdown diff for review. A native surface change is a snapshot failure,
 not an automatic support update.
 
+The canary supplies each clean consumer with the overlaid peer tarballs. Its npm
+consumer suppresses peer resolution only for that intentional pinned-versus-
+upstream mismatch; the package verifier still asserts the published exact peer
+contract. This keeps a known peer-range boundary from masquerading as a runtime
+or packaging compatibility regression.
+
 Performance compares two fresh upstream measurements with a pinned baseline on
 the same runner, using the existing one-thread warm-up and sample protocol. A
 regression must exceed 25% in both measurements to fail; a one-off exceedance
@@ -61,6 +67,7 @@ pnpm install --lockfile=false \
   --config.overrides.oxlint-tsgolint=latest \
   --config.overrides.typescript=latest
 CANARY_ALLOW_PNPM_VERSION=true \
+CANARY_ALLOW_PINNED_PEER_MISMATCH=true \
 CANARY_OUTPUT_DIR=canary-artifacts \
 CANARY_PERFORMANCE_BASELINE=canary-artifacts/pinned-benchmark.json \
 pnpm run canary:upstream
