@@ -44,10 +44,12 @@ jobs:
           pnpm run benchmark > canary-artifacts/pinned-benchmark.json
       - name: Install the latest upstream compatibility trio
         run: |
-          if ! pnpm install --lockfile=false --config.overrides.oxlint=latest --config.overrides.oxlint-tsgolint=latest --config.overrides.typescript=latest; then
+          pnpm run canary:upstream-toolchain -- --record canary-artifacts/requested-upstream-versions.json
+          if ! pnpm update --latest --no-save --lockfile=false oxlint oxlint-tsgolint typescript; then
             echo "::error title=Upstream install failure::The latest Oxlint, oxlint-tsgolint, and TypeScript trio could not be resolved."
             exit 1
           fi
+          pnpm run canary:upstream-toolchain -- --verify canary-artifacts/requested-upstream-versions.json --output canary-artifacts
       - name: Run the native compatibility canary
         env:
           CANARY_ALLOW_PNPM_VERSION: "true"
@@ -110,7 +112,10 @@ jobs:
       - name: Run isolated JavaScript-plugin fixtures
         if: steps.profiles.outputs.present == 'true'
         run: |
-          pnpm install --lockfile=false --config.overrides.oxlint=latest --config.overrides.oxlint-tsgolint=latest --config.overrides.typescript=latest
+          mkdir -p canary-artifacts
+          pnpm run canary:upstream-toolchain -- --record canary-artifacts/requested-upstream-versions.json
+          pnpm update --latest --no-save --lockfile=false oxlint oxlint-tsgolint typescript
+          pnpm run canary:upstream-toolchain -- --verify canary-artifacts/requested-upstream-versions.json --output canary-artifacts
           CANARY_EXPERIMENTAL_ONLY=true pnpm run test:harness
       - name: Report absent JavaScript-plugin profiles
         if: steps.profiles.outputs.present != 'true'
