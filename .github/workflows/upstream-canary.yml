@@ -109,6 +109,9 @@ jobs:
           node-version: 24.11.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
+      - name: Install pinned experimental workspace dependencies
+        if: steps.profiles.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
       - name: Run isolated JavaScript-plugin fixtures
         if: steps.profiles.outputs.present == 'true'
         run: |
