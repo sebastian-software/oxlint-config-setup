@@ -126,7 +126,7 @@ const generated = new Map<string, string>([
       ),
       null,
       2,
-    )}\n`,
+      )}\n`,
   ],
 ]);
 

@@ -61,6 +61,45 @@ explicitly classified as AI-only. It never activates a level-controlled rule
 from recommended or strict when that level is not selected, and it never weakens
 an active rule.
 
+## Compose mixed repositories
+
+Keep the simple prebuilt loader for a project with one context. A mixed
+repository can instead select a prebuilt type-aware root and append native
+file-scoped fragments:
+
+```ts
+import { getComposedOxlintConfig } from "oxlint-config-setup";
+
+export default getComposedOxlintConfig({
+  ai: true,
+  scopes: [
+    "react",
+    { scope: "node", files: ["packages/api/**/*.{ts,mts}"] },
+    "vitest",
+    "scripts",
+    "config",
+    "declarations",
+  ],
+  overrides: [
+    {
+      files: ["packages/web/**/*.test.tsx"],
+      rules: { "react/jsx-key": "off" },
+    },
+  ],
+});
+```
+
+`react` and `node` add their native rules only to their matching files. Vitest
+and Jest runner rules use canonical test patterns, while scripts, configuration
+files, and TypeScript declarations receive their own narrow fragments. The
+composition loader keeps `options.typeAware` on the root object. It unions
+required plugins into consumer overrides, appends consumer overrides last, and
+leaves Oxlint to merge later `rules`, `env`, and `globals` entries for matching
+files. `getOxlintConfig()` and every JSON export remain unchanged.
+
+Playwright/E2E and Storybook patterns are documented as deferred; this release
+does not claim a runner or Storybook policy before a native profile is accepted.
+
 ## Shipped surfaces
 
 | Need                                   | TypeScript package export                    | Public JSON subpath                          | Stability                                 |
@@ -75,6 +114,7 @@ an active rule.
 | Vitest                                 | `getVitestOxlintConfig()`                    | `oxlint-config-setup/json/vitest`            | Stable                                    |
 | Jest                                   | `getJestOxlintConfig()`                      | `oxlint-config-setup/json/jest`              | Stable                                    |
 | React Compiler diagnostics             | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler`    | Experimental warning                      |
+| Mixed repository file scopes            | `getComposedOxlintConfig()`                  | —                                            | Stable TypeScript-only composition API    |
 
 The recommended permutations use unprefixed public JSON subpaths such as
 `react-node`, `react-ai`, `node-ai`, and `react-node-ai`. Essential and strict

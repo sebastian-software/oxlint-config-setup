@@ -1,0 +1,149 @@
+import assert from "node:assert/strict";
+
+import type { OxlintConfig, OxlintOverride } from "oxlint";
+
+import {
+  CANONICAL_SCOPE_GLOBS,
+  DEFERRED_SCOPE_GLOBS,
+  SCOPED_CONFIGS,
+  composeScopedOxlintConfig,
+} from "../src/composition.js";
+import { composeProfiles } from "../src/profiles.js";
+import {
+  addRule,
+  disableRule,
+  setRuleSeverity,
+} from "../src/rule-helpers.js";
+
+const root: OxlintConfig = {
+  env: { browser: true },
+  globals: { window: "readonly" },
+  options: { typeAware: true },
+  plugins: ["typescript", "import"],
+  rules: {
+    "eslint/no-warning-comments": "warn",
+    "typescript/ban-ts-comment": "error",
+    "typescript/no-floating-promises": "error",
+  },
+};
+const sources = {
+  react: {
+    plugins: ["typescript", "import", "react", "jsx-a11y"],
+    rules: { "react/jsx-key": "error" },
+  },
+  node: {
+    plugins: ["typescript", "import", "node"],
+    rules: { "node/no-exports-assign": "error" },
+  },
+  vitest: composeProfiles(["vitest"]),
+  jest: composeProfiles(["jest"]),
+} satisfies Record<string, OxlintConfig>;
+const consumerOverride: OxlintOverride = {
+  files: ["**/*.test.tsx"],
+  env: { browser: true },
+  globals: { customTestGlobal: "readonly" },
+  plugins: ["jest"],
+  rules: { "react/jsx-key": "off" },
+};
+
+const config = composeScopedOxlintConfig(
+  root,
+  sources,
+  ["react", "vitest", "scripts", "declarations"],
+  [consumerOverride],
+);
+
+assert.equal(config.options?.typeAware, true, "type-aware stays at the root");
+assert.deepEqual(config.plugins, [
+  "typescript",
+  "import",
+  "react",
+  "jsx-a11y",
+  "vitest",
+  "node",
+]);
+assert.deepEqual(
+  config.overrides?.map((override) => override.files),
+  [
+    CANONICAL_SCOPE_GLOBS.react,
+    CANONICAL_SCOPE_GLOBS.vitest,
+    CANONICAL_SCOPE_GLOBS.scripts,
+    CANONICAL_SCOPE_GLOBS.declarations,
+    consumerOverride.files,
+  ],
+);
+assert.deepEqual(config.overrides?.[1]?.env, { vitest: true });
+assert.equal(
+  config.overrides?.[1]?.rules?.["eslint/no-warning-comments"],
+  "off",
+  "the test-only relaxation stays in the Vitest scope",
+);
+assert.equal(
+  config.overrides?.[2]?.rules?.["node/no-exports-assign"],
+  "error",
+  "script files receive Node context rules without making Node global",
+);
+assert.equal(
+  config.overrides?.[3]?.rules?.["typescript/ban-ts-comment"],
+  "off",
+  "declaration files receive their narrow relaxation",
+);
+assert.deepEqual(config.overrides?.[4]?.plugins, [...config.plugins, "jest"]);
+assert.equal(config.plugins?.includes("jest"), false);
+assert.deepEqual(config.overrides?.[4]?.env, consumerOverride.env);
+assert.deepEqual(config.overrides?.[4]?.globals, consumerOverride.globals);
+assert.equal(config.overrides?.[4]?.rules?.["react/jsx-key"], "off");
+
+setRuleSeverity(config, "vitest/no-focused-tests", "warn", { scope: "vitest" });
+assert.equal(config.overrides?.[1]?.rules?.["vitest/no-focused-tests"], "warn");
+assert.equal(config.rules?.["vitest/no-focused-tests"], undefined);
+addRule(config, "vitest/require-top-level-describe", "error", undefined, {
+  scope: "vitest",
+});
+assert.equal(
+  config.overrides?.[1]?.rules?.["vitest/require-top-level-describe"],
+  "error",
+);
+disableRule(config, "node/no-exports-assign", { scope: "scripts" });
+assert.equal(config.overrides?.[2]?.rules?.["node/no-exports-assign"], "off");
+assert.throws(
+  () => disableRule(config, "eslint/no-debugger", { scope: "unknown" as never }),
+  /Unsupported Oxlint config scope: unknown/u,
+);
+assert.throws(
+  () => disableRule(config, "eslint/no-debugger", { scope: "jest" }),
+  /does not contain scope: jest/u,
+);
+assert.throws(
+  () => composeScopedOxlintConfig(root, sources, ["unknown" as never]),
+  /Unsupported Oxlint config scope: unknown/u,
+);
+assert.throws(
+  () => composeScopedOxlintConfig(root, sources, ["vitest", "vitest"]),
+  /selected twice/u,
+);
+assert.throws(
+  () => composeScopedOxlintConfig(root, sources, ["vitest", "jest"]),
+  /cannot be selected together/u,
+);
+assert.throws(
+  () =>
+    composeScopedOxlintConfig(root, sources, undefined, [
+      { files: ["**/*.ts"], plugins: "vitest" } as never,
+    ]),
+  /plugins must be an array of strings/u,
+);
+assert.deepEqual(
+  SCOPED_CONFIGS,
+  ["react", "node", "vitest", "jest", "scripts", "config", "declarations"],
+);
+assert.deepEqual(DEFERRED_SCOPE_GLOBS.e2e, [
+  "**/*.{e2e,playwright}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+  "**/{e2e,playwright}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+]);
+assert.deepEqual(DEFERRED_SCOPE_GLOBS.stories, [
+  "**/*.stories.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+  "**/{stories,storybook}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+]);
+
+console.log("Scoped composition, merge semantics, and helper targets verified.");

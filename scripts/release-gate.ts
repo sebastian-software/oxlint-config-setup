@@ -103,6 +103,7 @@ for (const helper of [
 }
 for (const surface of [
   "getOxlintConfig",
+  "getComposedOxlintConfig",
   "getSyntaxOnlyOxlintConfig",
   "getVitestOxlintConfig",
   "getJestOxlintConfig",

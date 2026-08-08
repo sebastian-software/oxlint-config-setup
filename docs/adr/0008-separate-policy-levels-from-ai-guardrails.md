@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-06
-- **Last updated:** 2026-08-06
+- **Last updated:** 2026-08-07
 - **Deciders:** Sebastian Software maintainers
 - **Supersedes:** [ADR 0007](0007-add-essential-and-standard-config-levels.md)
 
@@ -76,6 +76,29 @@ generator emits all 24 combinations of three levels with React, Node.js, and AI.
 Existing unprefixed JSON names select Recommended; Essential and Strict
 artifacts use their level prefix.
 
+Mixed repositories use a separate TypeScript-only composition boundary rather
+than adding file classes to that matrix. `getComposedOxlintConfig()` selects the
+same prebuilt core root, appends explicitly ordered Oxlint file overrides, and
+keeps `options.typeAware` on the root. React and Node context deltas are scoped
+to selected file globs; Vitest and Jest add native runner rules only to canonical
+test patterns. Scripts, config files, and declaration files have narrow native
+fragments. Package-created scope identities let public rule helpers target one
+override and reject unknown or unselected scopes.
+
+Composition has explicit merge semantics. The root plugin array is the ordered
+union of the root and selected fragment plugins. A consumer override is appended
+after package fragments and its plugin list is unioned with that required set,
+because Oxlint otherwise replaces base plugins for an override. Rule maps,
+environments, and globals remain separate Oxlint entries, so later matching
+consumer overrides have Oxlint's normal precedence without destructive package
+merging. Root loaders and all public JSON exports retain their existing complete
+artifact behavior.
+
+The canonical E2E/Playwright and Storybook globs are documented but deliberately
+have no profile yet. Testing Library, Playwright, and Storybook must extend this
+override model after their native policy and fixture evidence are accepted; they
+do not create separate APIs.
+
 Syntax-only TypeScript remains a narrower named configuration without
 type-aware category expansion. Vitest, Jest, and the experimental React Compiler
 remain separate named configurations with their existing stability boundaries.
@@ -148,14 +171,23 @@ cannot widen the selected policy level.
 - An upstream category reassignment can change level membership during a
   reviewed dependency upgrade.
 - Each additional selector still multiplies the artifact matrix.
+- Composition is a TypeScript configuration path and is not represented by a
+  standalone JSON export.
+- Scoped helper identities apply only to package-created overrides on the
+  returned object; user-authored overrides remain unscoped Oxlint data.
 
 ## Validation and review triggers
 
 Tests verify the category-to-level mapping, nested active rule sets, disabled
 `nursery`, explicit published rule maps, project-context deltas, AI
-constraints, deterministic builds, and clean-consumer execution. The behavioral
-harness covers curated ledger entries and AI option changes. Generated
-effective-config snapshots and homepage data expose exact rule membership.
+constraints, deterministic builds, and clean-consumer execution. Composition
+tests cover canonical scope globs, consumer plugin union, rule/environment/global
+override behavior, and scoped helper errors. The behavioral harness runs matching
+and nonmatching composition fixtures through Oxlint diagnostics for React + Vitest
+overlap, Node scripts and configuration files, declaration-only relaxations,
+retained consumer plugins, and consumer-override precedence. Generated
+effective-config snapshots and
+homepage data expose root artifact rule membership.
 
 Review this decision when Oxlint changes its category model, stable categories
 produce unacceptable noise, AI-only entries become a policy dumping ground,

@@ -52,6 +52,53 @@ import {
 - `getExperimentalReactCompilerOxlintConfig()` includes stable React and JSX
   accessibility rules plus the compiler diagnostic as a warning.
 
+## Compose a mixed repository
+
+Use `getComposedOxlintConfig()` when React, Node.js, or a runner applies only to
+some files. It starts from the same prebuilt core root as `getOxlintConfig()`;
+it does not create another JSON artifact matrix.
+
+```ts
+import { getComposedOxlintConfig } from "oxlint-config-setup";
+
+export default getComposedOxlintConfig({
+  scopes: [
+    "react",
+    { scope: "node", files: ["packages/api/**/*.{ts,mts}"] },
+    "vitest",
+    "scripts",
+    "config",
+    "declarations",
+  ],
+  overrides: [
+    {
+      files: ["packages/web/**/*.test.tsx"],
+      rules: { "react/jsx-key": "off" },
+    },
+  ],
+});
+```
+
+The canonical `react` pattern is `**/*.{jsx,tsx}`. `node` uses explicit Node
+module extensions by default, so provide `files` for ordinary `.ts` source in a
+Node package. Vitest and Jest use `*.test`/`*.spec` names and `__tests__` or
+`__mocks__` directories across supported JavaScript and TypeScript extensions.
+Select one runner scope: Vitest and Jest intentionally reject a combined
+selection because their runner rules overlap.
+Scripts, configuration files, and declarations use conventional directory,
+`*.config.*`, and `*.d.*` patterns respectively.
+
+Fragments append in a stable order and consumer overrides append after them. A
+consumer override's plugins are unioned with the root and selected fragment
+plugins because Oxlint otherwise treats an override `plugins` array as a
+replacement. Rules, environments, and globals retain Oxlint's normal
+last-matching-override semantics. The root remains type-aware; no scope can
+move `options.typeAware` into a file override.
+
+Playwright/E2E (`*.e2e.*`, `*.playwright.*`, `e2e/`, and `playwright/`) and
+Storybook (`*.stories.*`, `stories/`, and `storybook/`) patterns are recorded
+for a future profile, but no such profile ships in this release.
+
 ## Install and run
 
 Use Node.js `24.11.0` or later, then install the tested linting trio:
@@ -74,10 +121,11 @@ positional options. Arrays, scalars, and `null` replace their current value.
 The helpers update explicit root and existing file-override entries, while
 `addRule` writes to the root configuration.
 
-The former ESLint `{ scope }` argument is intentionally absent because the
-Oxlint artifacts do not contain named override blocks. Projects may add normal
-Oxlint file overrides and the helpers will update a rule wherever it already
-appears.
+Unscoped helper calls update the root and every explicit override occurrence.
+Composed configurations also accept a final `{ scope }` argument, for example
+`disableRule(config, "vitest/no-focused-tests", { scope: "vitest" })`.
+Package-created scope identities are stable for that configuration object; an
+unknown or unselected scope throws instead of silently doing nothing.
 
 ## Use a public JSON artifact
 
