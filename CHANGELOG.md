@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/sebastian-software/oxlint-config-setup/compare/oxlint-config-setup-v0.1.1...oxlint-config-setup-v0.2.0) (2026-08-08)
+
+
+### Features
+
+* add file-scoped config composition ([#50](https://github.com/sebastian-software/oxlint-config-setup/issues/50)) ([7c54596](https://github.com/sebastian-software/oxlint-config-setup/commit/7c5459635be6e7a20f29dc1ef80cff294db92058))
+
 ## [0.1.1](https://github.com/sebastian-software/oxlint-config-setup/compare/oxlint-config-setup-v0.1.0...oxlint-config-setup-v0.1.1) (2026-08-07)
 
 
