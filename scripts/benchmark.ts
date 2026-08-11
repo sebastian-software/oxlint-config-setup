@@ -60,6 +60,11 @@ const scenarios: Scenario[] = [
     config: "dist/standalone/default.json",
     input: "spikes/config-packaging/fixtures/performance-project/src",
   },
+  {
+    name: "React preset representative fixture",
+    config: "dist/standalone/react.json",
+    input: "fixtures/rules/react-preset/valid.tsx",
+  },
 ];
 
 const results = Object.fromEntries(

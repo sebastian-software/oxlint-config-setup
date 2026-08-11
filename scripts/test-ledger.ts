@@ -111,6 +111,37 @@ assert.throws(
     ]),
   /cannot enter as an error/u,
 );
+const rulesOfHooks = ruleLedger.find(
+  (entry) => entry.id === "react/rules-of-hooks",
+);
+assert(rulesOfHooks);
+assert.throws(
+  () =>
+    validateRuleLedger([
+      rulesOfHooks,
+      {
+        ...rulesOfHooks,
+        id: "react-hooks/rules-of-hooks",
+        profile: "ai",
+        executionPath: "javascript-plugin",
+        defectClass: "JavaScript-plugin duplicate of native hook ownership",
+        activation: { kind: "ai" },
+      },
+    ]),
+  /Duplicate ownership/u,
+  "a JavaScript React implementation cannot coexist with its native owner",
+);
+assert.throws(
+  () =>
+    validateRuleLedger([
+      {
+        ...rulesOfHooks,
+        executionPath: "javascript-plugin",
+      },
+    ]),
+  /Stable React profile entry.*native Oxlint/u,
+  "stable React profiles must keep native ownership",
+);
 
 assert.deepEqual(orderedProfiles(["react", "core", "imports", "core"]), [
   "core",

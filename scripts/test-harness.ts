@@ -42,6 +42,50 @@ function diagnosticCodes(config: string, files: readonly string[]): Set<string> 
   );
 }
 
+function assertFixtureDiagnostics(
+  config: string,
+  fixture: string,
+  expected: readonly string[],
+  description: string,
+): void {
+  const diagnostics = parseOxlintJson(runOxlint(config, [fixture])).diagnostics;
+  const codes = new Set(
+    diagnostics.map((diagnostic) => normalizeDiagnosticCode(diagnostic.code)),
+  );
+  for (const code of expected) {
+    assert(
+      codes.has(code),
+      `${description} must report ${code} for ${fixture}; received ${[...codes].toSorted().join(", ")}`,
+    );
+  }
+}
+
+function artifact(name: string) {
+  const artifact = allConfigArtifacts().find(
+    (candidate) => candidate.publicName === name,
+  );
+  assert(artifact, `missing generated ${name} configuration artifact`);
+  return artifact;
+}
+
+function nativeRuleConfig(name: string, ruleIds: readonly string[]): unknown {
+  const config = artifact(name).config;
+  return {
+    ...config,
+    rules: Object.fromEntries(
+      ruleIds.map((ruleId) => {
+        const setting = config.rules?.[ruleId];
+        assert.notEqual(
+          setting,
+          undefined,
+          `${name} must materialize ${ruleId} before its behavior is tested`,
+        );
+        return [ruleId, setting];
+      }),
+    ),
+  };
+}
+
 const profileCases: Array<{
   ai?: true;
   level?: "strict";
@@ -228,6 +272,96 @@ try {
           normalizeDiagnosticCode(diagnostic.code) === "eslint/valid-typeof",
       ),
       "AI must tighten the already active valid-typeof rule options",
+    );
+
+    const reactFixtureRoot = "fixtures/rules/react-preset";
+    const stableReactRuleIds = [
+      "react/rules-of-hooks",
+      "react/exhaustive-deps",
+      "react/jsx-key",
+      "react/no-array-index-key",
+      "react/jsx-no-duplicate-props",
+      "react/no-unknown-property",
+      "jsx-a11y/anchor-is-valid",
+      "react/jsx-no-target-blank",
+      "jsx-a11y/alt-text",
+      "jsx-a11y/click-events-have-key-events",
+      "react/jsx-no-constructed-context-values",
+      "react/no-unstable-nested-components",
+      "react/only-export-components",
+    ];
+    const stableReactConfig = writeConfig(
+      "stable-react-behavior",
+      nativeRuleConfig("strict-react", stableReactRuleIds),
+    );
+    assert.deepEqual(
+      parseOxlintJson(
+        runOxlint(stableReactConfig, [`${reactFixtureRoot}/valid.tsx`]),
+      ).diagnostics,
+      [],
+      "the representative stable React fixture must remain clean",
+    );
+    assertFixtureDiagnostics(
+      stableReactConfig,
+      `${reactFixtureRoot}/invalid.tsx`,
+      stableReactRuleIds,
+      "the stable native React preset",
+    );
+
+    const aiReactConfig = writeConfig(
+      "ai-react-behavior",
+      nativeRuleConfig("react-ai", [
+        "react/jsx-no-constructed-context-values",
+        "react/no-unstable-nested-components",
+      ]),
+    );
+    assertFixtureDiagnostics(
+      aiReactConfig,
+      `${reactFixtureRoot}/invalid.tsx`,
+      [
+        "react/jsx-no-constructed-context-values",
+        "react/no-unstable-nested-components",
+      ],
+      "the AI overlay's inherited native React allocation checks",
+    );
+
+    const defaultReactConfig = writeConfig(
+      "default-react-compiler-boundary",
+      nativeRuleConfig("strict-react", ["react/rules-of-hooks"]),
+    );
+    assert.equal(
+      artifact("strict-react").config.rules?.["react/react-compiler"],
+      undefined,
+      "the stable React artifact must not materialize React Compiler diagnostics",
+    );
+    const defaultCompilerDiagnostics = parseOxlintJson(
+      runOxlint(defaultReactConfig, [
+        "fixtures/rules/react-compiler/invalid.tsx",
+      ]),
+    ).diagnostics;
+    assert(
+      defaultCompilerDiagnostics.every(
+        (diagnostic) =>
+          normalizeDiagnosticCode(diagnostic.code) !== "react/react-compiler",
+      ),
+      "the React selector must not silently enable React Compiler diagnostics",
+    );
+    const experimentalCompilerConfig = writeConfig(
+      "experimental-react-compiler-boundary",
+      composeProfiles(["react-compiler"], { surface: "experimental" }),
+    );
+    const experimentalCompilerDiagnostics = parseOxlintJson(
+      runOxlint(experimentalCompilerConfig, [
+        "fixtures/rules/react-compiler/invalid.tsx",
+      ]),
+    ).diagnostics;
+    assert(
+      experimentalCompilerDiagnostics.some(
+        (diagnostic) =>
+          normalizeDiagnosticCode(diagnostic.code) === "react/react-compiler" &&
+          diagnostic.severity === "warning",
+      ),
+      "the named experimental React Compiler profile must report its warning",
     );
 
     const syntaxConfig = writeConfig(

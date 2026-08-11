@@ -55,6 +55,38 @@ export default getOxlintConfig({
 });
 ```
 
+## React coverage and boundaries
+
+The stable React selector is native Oxlint only. Its repository-owned behavior
+suite covers Rules of Hooks, effect dependencies, list keys, duplicate JSX
+properties, invalid DOM properties, unsafe links, high-signal accessibility,
+React Refresh export boundaries, and representative allocation checks. The
+native React rules own those defect classes; a JavaScript React or
+`react-hooks` plugin cannot enter a stable configuration, and the ledger rejects
+an overlapping native and JavaScript owner.
+
+| Defect class | Product decision |
+| --- | --- |
+| Hook order and effect dependencies | Stable native React diagnostics |
+| Missing or index list keys; duplicate JSX and invalid DOM properties | Stable native React diagnostics |
+| Unsafe links; missing text alternatives; pointer-only actions | Stable native React and JSX accessibility diagnostics |
+| React Refresh export boundaries | Stable native diagnostic at the strict level |
+| Constructed context values and unstable nested components | Stable native performance diagnostics; AI mode inherits them without adding React rules |
+| State updates during render or effects; unnecessary effects | Documented non-goal pending adequate native evidence |
+| Leaked listeners, timers, intervals, and observers | Documented non-goal pending adequate native evidence |
+| React Compiler diagnostics | Warning-only named experimental configuration |
+
+The suite deliberately does not claim diagnostics for state updates during
+render or effects, unnecessary effects, or leaked event listeners, timers, and
+observers. The pinned native surface does not provide adequate evidence for
+those behaviors. Keep their lifecycle ownership in review or adopt a separate
+tool; they are not silently covered by the React selector.
+
+AI mode does not add a JavaScript React plugin or change the React ownership
+model. It executes the same native allocation and performance diagnostics as
+the selected React policy level. `react/react-compiler` remains a separate,
+warning-only experimental configuration and is never selected by `react: true`.
+
 ## AI is independent
 
 `ai: true` does not select a stricter level or enable another category. It tightens already-active rules and adds rules explicitly classified as AI-only. See [AI mode](/guide/ai-mode) for the guardrails.
