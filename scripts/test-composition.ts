@@ -37,6 +37,9 @@ const sources = {
   },
   vitest: composeProfiles(["vitest"]),
   jest: composeProfiles(["jest"]),
+  testingLibrary: composeProfiles(["testing-library"], {
+    surface: "experimental",
+  }),
 } satisfies Record<string, OxlintConfig>;
 const consumerOverride: OxlintOverride = {
   files: ["**/*.test.tsx"],
@@ -127,6 +130,36 @@ assert.throws(
   /cannot be selected together/u,
 );
 assert.throws(
+  () => composeScopedOxlintConfig(root, sources, ["experimental-testing-library"]),
+  /requires exactly one/u,
+);
+assert.throws(
+  () =>
+    composeScopedOxlintConfig(root, sources, [
+      "vitest",
+      "jest",
+      "experimental-testing-library",
+    ]),
+  /cannot be selected together/u,
+);
+const testingLibraryConfig = composeScopedOxlintConfig(root, sources, [
+  "vitest",
+  "experimental-testing-library",
+]);
+const testingLibraryOverride = testingLibraryConfig.overrides?.at(-1);
+assert.deepEqual(
+  testingLibraryOverride?.files,
+  CANONICAL_SCOPE_GLOBS["experimental-testing-library"],
+);
+assert.deepEqual(testingLibraryOverride?.jsPlugins, [
+  "eslint-plugin-testing-library",
+]);
+assert.equal(
+  testingLibraryConfig.jsPlugins,
+  undefined,
+  "the experimental JavaScript plugin stays out of the root configuration",
+);
+assert.throws(
   () =>
     composeScopedOxlintConfig(root, sources, undefined, [
       { files: ["**/*.ts"], plugins: "vitest" } as never,
@@ -135,7 +168,16 @@ assert.throws(
 );
 assert.deepEqual(
   SCOPED_CONFIGS,
-  ["react", "node", "vitest", "jest", "scripts", "config", "declarations"],
+  [
+    "react",
+    "node",
+    "vitest",
+    "jest",
+    "experimental-testing-library",
+    "scripts",
+    "config",
+    "declarations",
+  ],
 );
 assert.deepEqual(DEFERRED_SCOPE_GLOBS.e2e, [
   "**/*.{e2e,playwright}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",

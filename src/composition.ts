@@ -5,6 +5,7 @@ export const SCOPED_CONFIGS = [
   "node",
   "vitest",
   "jest",
+  "experimental-testing-library",
   "scripts",
   "config",
   "declarations",
@@ -22,6 +23,10 @@ export const CANONICAL_SCOPE_GLOBS = {
   jest: [
     "**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
     "**/{__tests__,__mocks__}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+  ],
+  "experimental-testing-library": [
+    "**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+    "**/__tests__/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
   ],
   scripts: ["**/{bin,scripts}/**/*.{js,cjs,mjs,ts,cts,mts}"],
   config: [
@@ -53,6 +58,7 @@ export interface ScopedConfigSources {
   jest: OxlintConfig;
   node: OxlintConfig;
   react: OxlintConfig;
+  testingLibrary: OxlintConfig;
   vitest: OxlintConfig;
 }
 
@@ -75,6 +81,10 @@ function cloneConfig(config: OxlintConfig): OxlintConfig {
     env: config.env === undefined ? undefined : { ...config.env },
     globals: config.globals === undefined ? undefined : { ...config.globals },
     plugins: config.plugins === undefined ? undefined : [...config.plugins],
+    jsPlugins:
+      config.jsPlugins === undefined || config.jsPlugins === null
+        ? config.jsPlugins
+        : [...config.jsPlugins],
     rules: cloneRules(config.rules),
     overrides: config.overrides?.map((override) => ({
       ...override,
@@ -83,6 +93,10 @@ function cloneConfig(config: OxlintConfig): OxlintConfig {
         override.globals === undefined ? undefined : { ...override.globals },
       plugins:
         override.plugins === undefined ? undefined : [...override.plugins],
+      jsPlugins:
+        override.jsPlugins === undefined || override.jsPlugins === null
+          ? override.jsPlugins
+          : [...override.jsPlugins],
       rules: cloneRules(override.rules),
     })),
   };
@@ -156,6 +170,16 @@ function normalizeScopes(
       "Vitest and Jest scopes cannot be selected together because their runner rules overlap",
     );
   }
+  if (normalized.some((selection) => selection.scope === "experimental-testing-library")) {
+    const runnerCount = normalized.filter(
+      (selection) => selection.scope === "vitest" || selection.scope === "jest",
+    ).length;
+    if (runnerCount !== 1) {
+      throw new TypeError(
+        "The experimental Testing Library scope requires exactly one of the Vitest or Jest scopes",
+      );
+    }
+  }
   return normalized.toSorted(
     (left, right) =>
       SCOPED_CONFIGS.indexOf(left.scope) - SCOPED_CONFIGS.indexOf(right.scope),
@@ -184,6 +208,8 @@ function scopeRules(
         ...sources.jest.rules,
         "eslint/no-warning-comments": "off",
       };
+    case "experimental-testing-library":
+      return { ...sources.testingLibrary.rules };
     case "declarations":
       return {
         "typescript/ban-ts-comment": "off",
@@ -221,6 +247,8 @@ function scopePlugins(
       return uniquePlugins(sources.vitest.plugins);
     case "jest":
       return uniquePlugins(sources.jest.plugins);
+    case "experimental-testing-library":
+      return [];
     case "declarations":
       return [];
   }
@@ -230,10 +258,12 @@ function taggedOverride(
   scope: ScopedConfig,
   files: readonly string[],
   rules: DummyRuleMap,
+  jsPlugins: OxlintOverride["jsPlugins"],
 ): OxlintOverride {
   const override: OxlintOverride = {
     files: [...files],
     ...(scopeEnv(scope) === undefined ? {} : { env: scopeEnv(scope) }),
+    ...(jsPlugins === undefined ? {} : { jsPlugins }),
     rules,
   };
   scopeOverrides.set(override, scope);
@@ -296,6 +326,9 @@ export function composeScopedOxlintConfig(
       selection.scope,
       selection.files,
       scopeRules(selection.scope, root, sources),
+      selection.scope === "experimental-testing-library"
+        ? sources.testingLibrary.jsPlugins
+        : undefined,
     ),
   );
   config.overrides = [

@@ -114,6 +114,9 @@ export function getComposedOxlintConfig(
       node: getOxlintConfig({ ...rootOptions, node: true }),
       vitest: composeProfiles(["vitest"]),
       jest: composeProfiles(["jest"]),
+      testingLibrary: composeProfiles(["testing-library"], {
+        surface: "experimental",
+      }),
     },
     options.scopes,
     options.overrides,

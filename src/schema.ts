@@ -10,6 +10,7 @@ export const PROFILE_ORDER = [
   "node",
   "vitest",
   "jest",
+  "testing-library",
   "ai",
   "react-compiler",
 ] as const;
@@ -86,6 +87,7 @@ const LEVELS = new Set<string>(CONFIG_LEVELS);
 const NAMED_PROFILES = new Set<RuleProfile>([
   "vitest",
   "jest",
+  "testing-library",
   "react-compiler",
 ]);
 const SEVERITY_RANK: Record<RuleSeverity, number> = {

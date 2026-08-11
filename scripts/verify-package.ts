@@ -47,6 +47,7 @@ interface PackageManifest {
   optionalDependencies?: Record<string, string>;
   packageManager?: string;
   peerDependencies?: Record<string, string>;
+  peerDependenciesMeta?: Record<string, { optional?: boolean }>;
   publishConfig?: Record<string, unknown>;
   scripts?: Record<string, string>;
   sideEffects?: boolean;
@@ -77,7 +78,7 @@ interface PublicPackageApi {
     ai?: boolean;
     level?: ConfigLevel;
     overrides?: readonly OxlintOverride[];
-    scopes?: readonly ("react" | "node" | "vitest" | "jest" | "scripts" | "config" | "declarations" | { files?: readonly string[]; scope: "react" | "node" | "vitest" | "jest" | "scripts" | "config" | "declarations" })[];
+    scopes?: readonly ("react" | "node" | "vitest" | "jest" | "experimental-testing-library" | "scripts" | "config" | "declarations" | { files?: readonly string[]; scope: "react" | "node" | "vitest" | "jest" | "experimental-testing-library" | "scripts" | "config" | "declarations" })[];
   }): OxlintConfig;
   getJestOxlintConfig(): OxlintConfig;
   getOxlintConfig(options?: ConfigOptions): OxlintConfig;
@@ -289,6 +290,8 @@ assert.deepEqual(manifest.publishConfig, {
 assert.deepEqual(manifest.dependencies, undefined);
 assert.deepEqual(manifest.optionalDependencies, undefined);
 assert.deepEqual(manifest.peerDependencies, {
+  eslint: "9.39.1",
+  "eslint-plugin-testing-library": "7.16.2",
   oxlint: "1.77.0",
   "oxlint-tsgolint": "7.0.2001",
 });
@@ -327,6 +330,10 @@ for (const lifecycle of ["install", "postinstall", "prepare"]) {
   assert.equal(manifest.scripts?.[lifecycle], undefined);
 }
 
+const experimentalJavaScriptPluginDependencies = new Set([
+  "eslint",
+  "eslint-plugin-testing-library",
+]);
 for (const field of [
   "dependencies",
   "devDependencies",
@@ -334,16 +341,21 @@ for (const field of [
   "peerDependencies",
 ] as const) {
   for (const dependency of Object.keys(manifest[field] ?? {})) {
-    assert.equal(
-      dependency.includes("eslint"),
-      false,
-      `the package must not depend on ESLint (${field}.${dependency})`,
+    if (!dependency.includes("eslint")) continue;
+    assert(
+      experimentalJavaScriptPluginDependencies.has(dependency) &&
+        (field === "devDependencies" || field === "peerDependencies"),
+      `only optional experimental Testing Library peers may use ESLint (${field}.${dependency})`,
     );
   }
 }
-assert.doesNotMatch(
+assert.deepEqual(manifest.peerDependenciesMeta, {
+  eslint: { optional: true },
+  "eslint-plugin-testing-library": { optional: true },
+});
+assert.match(
   readFileSync(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8"),
-  /(?:^|\/)eslint(?:@|:|\/)/mu,
+  /eslint-plugin-testing-library@7\.16\.2/u,
 );
 assert.equal(run("git", ["ls-files", "--", "dist/**"]).trim(), "");
 assert(
@@ -508,6 +520,14 @@ assert.equal(composed.options?.typeAware, true);
 assert(composed.plugins?.includes("vitest"));
 assert(composed.plugins?.includes("node"));
 assert.deepEqual(composed.overrides?.at(-1)?.plugins, composed.plugins);
+const experimentalTestingLibrary = publicApi.getComposedOxlintConfig({
+  scopes: ["vitest", "experimental-testing-library"],
+});
+assert.equal(experimentalTestingLibrary.jsPlugins, undefined);
+assert.deepEqual(
+  experimentalTestingLibrary.overrides?.at(-1)?.jsPlugins,
+  ["eslint-plugin-testing-library"],
+);
 assert.equal(
   activeRuleCount(publicApi.getOxlintConfig({ level: "essential" })),
   113,
@@ -781,7 +801,7 @@ try {
       'const level: ConfigLevel = "essential";',
       'const severity: RuleSeverity = "warn";',
       "const options = { level, react: true, ai: true } satisfies ConfigOptions;",
-      'const scope: ScopedConfig = "vitest";',
+      'const scope: ScopedConfig = "experimental-testing-library";',
       'const composedOptions = { scopes: [scope] } satisfies ComposedConfigOptions;',
       "void getVitestOxlintConfig();",
       "const config = getOxlintConfig(options);",

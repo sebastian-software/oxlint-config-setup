@@ -127,6 +127,10 @@ assert.throws(
   /cannot silently enter a stable configuration/u,
 );
 assert.throws(
+  () => composeProfiles(["testing-library"]),
+  /cannot silently enter a stable configuration/u,
+);
+assert.throws(
   () => composeProfiles(["vitest", "jest"]),
   /Conflicting rule ownership/u,
 );
@@ -377,7 +381,18 @@ const schema = JSON.parse(
   definitions: { DummyRuleMap: { properties: Record<string, unknown> } };
 };
 const supportedRules = schema.definitions.DummyRuleMap.properties;
+const javascriptPluginEntries = ruleLedger.filter(
+  (entry) => entry.executionPath === "javascript-plugin",
+);
+assert(
+  javascriptPluginEntries.length > 0 &&
+    javascriptPluginEntries.every(
+      (entry) => entry.id.startsWith("testing-library/") && !(entry.id in supportedRules),
+    ),
+  "JavaScript-plugin rules must not duplicate a native pinned Oxlint rule owner",
+);
 for (const entry of ruleLedger) {
+  if (entry.executionPath === "javascript-plugin") continue;
   const schemaId = entry.id.startsWith("eslint/")
     ? entry.id.slice("eslint/".length)
     : entry.id;

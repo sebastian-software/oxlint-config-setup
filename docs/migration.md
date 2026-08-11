@@ -19,7 +19,7 @@ approved.
 | Vitest                         | Oxlint         | Materialized strict native categories plus curated runner checks        | Vitest and Jest are separate full configs                                                 |
 | Jest                           | Oxlint         | Materialized strict native categories plus curated runner checks        | Vitest and Jest are separate full configs                                                 |
 | Regular expressions            | Deferred       | No JavaScript plugin; the package gate rejects plugin dependencies      | Revisit only with an approved isolated runtime plus fixture, fixer-safety, and performance evidence |
-| Testing Library                | Research       | No JavaScript plugin                                                    | Requires conformant API, crash, and performance evidence                                  |
+| Testing Library                | Experimental   | Warning-only `experimental-testing-library` scope with one runner       | Oxlint's JavaScript-plugin API is alpha; pinned ESLint and plugin peers are required     |
 | Playwright                     | Research       | No JavaScript plugin                                                    | Requires conformant API, crash, and performance evidence                                  |
 | Storybook                      | Deferred       | No JavaScript plugin; Storybook rules require file-scoped composition   | Deferred until Issue #32 proves story-only extension and framework/parser isolation       |
 | SonarJS                        | Deferred       | No JavaScript plugin; two branch-body candidates have no demonstrated native equivalent | Revisit only with an approved isolated runtime plus per-path native-overlap, fixer-safety, fixture, and performance evidence |
@@ -40,13 +40,32 @@ The current preset makes two distinct claims:
 
 - Oxlint's pinned stable categories provide the broad native baseline and are
   materialized into explicit, snapshot-tested artifacts; and
-- all 27 curated ledger entries have repository-owned rationale, activation
+- all 42 curated ledger entries have repository-owned rationale, activation
   boundaries, and executable valid/invalid evidence.
 
 No raw parity percentage is a release gate. A curated rule or exception enters
 only when its defect class, execution path, stability, conflicts, fixture, and
 review trigger are recorded in the ledger. An Oxlint upgrade must separately
 review every generated category diff.
+
+## Experimental Testing Library boundary
+
+The Testing Library scope is intentionally a narrow, file-scoped opt-in. Select
+`"experimental-testing-library"` with exactly one of `"vitest"` or `"jest"`;
+the canonical test globs do not apply its JavaScript plugin to application
+source. It records warning-level async events, async queries/utilities,
+synchronous-await misuse, `waitFor` behavior, DOM/container access, lifecycle
+rendering, unnecessary `act`, presence/disappearance queries, `findBy`, and
+`screen` guidance. The shared harness verifies diagnostic identity, severity,
+location, fix idempotence, plugin crash, and timeout behavior, and rejects a
+native rule owner for any Testing Library JavaScript-plugin identifier.
+
+The predecessor's `no-debugging-utils` rule is omitted because committed debug
+output is better owned by project logging policy, while
+`render-result-naming-convention` is omitted because a local variable naming
+style has lower correctness value than the query and async defects in this
+pilot. `no-dom-import` and framework-specific rules remain out of scope until a
+separate profile can demonstrate their framework and resolver behavior.
 
 ## Turnkey companion stack
 

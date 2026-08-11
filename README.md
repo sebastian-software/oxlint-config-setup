@@ -76,6 +76,7 @@ export default getComposedOxlintConfig({
     "react",
     { scope: "node", files: ["packages/api/**/*.{ts,mts}"] },
     "vitest",
+    "experimental-testing-library",
     "scripts",
     "config",
     "declarations",
@@ -92,10 +93,23 @@ export default getComposedOxlintConfig({
 `react` and `node` add their native rules only to their matching files. Vitest
 and Jest runner rules use canonical test patterns, while scripts, configuration
 files, and TypeScript declarations receive their own narrow fragments. The
-composition loader keeps `options.typeAware` on the root object. It unions
-required plugins into consumer overrides, appends consumer overrides last, and
-leaves Oxlint to merge later `rules`, `env`, and `globals` entries for matching
-files. `getOxlintConfig()` and every JSON export remain unchanged.
+`"experimental-testing-library"` scope is a warning-only JavaScript-plugin
+alpha surface: pair it with exactly one of `"vitest"` or `"jest"`, and install
+its pinned optional peers before using it:
+
+```sh
+pnpm add -D eslint@9.39.1 eslint-plugin-testing-library@7.16.2
+```
+
+Oxlint's JavaScript plugin API is alpha and cannot use type-aware linting, so
+this scope is intentionally not a JSON export or a stable default. It covers
+async/query correctness, `waitFor`, node access, lifecycle render, `act`,
+presence/disappearance, `findBy`, and `screen` guidance only in matching test
+files. The composition loader keeps `options.typeAware` on the root object. It
+unions required native plugins into consumer overrides, appends consumer
+overrides last, and leaves Oxlint to merge later `rules`, `env`, and `globals`
+entries for matching files. `getOxlintConfig()` and every JSON export remain
+unchanged.
 
 Playwright/E2E and Storybook patterns are documented as deferred; this release
 does not claim a runner or Storybook policy before a native profile is accepted.
@@ -114,6 +128,7 @@ does not claim a runner or Storybook policy before a native profile is accepted.
 | Vitest                                 | `getVitestOxlintConfig()`                    | `oxlint-config-setup/json/vitest`            | Stable                                    |
 | Jest                                   | `getJestOxlintConfig()`                      | `oxlint-config-setup/json/jest`              | Stable                                    |
 | React Compiler diagnostics             | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler`    | Experimental warning                      |
+| Testing Library test files              | `getComposedOxlintConfig({ scopes: ["vitest", "experimental-testing-library"] })` | — | Experimental JS-plugin alpha warning fragment |
 | Mixed repository file scopes            | `getComposedOxlintConfig()`                  | —                                            | Stable TypeScript-only composition API    |
 
 The recommended permutations use unprefixed public JSON subpaths such as
@@ -199,12 +214,12 @@ surface: the fully selected React + Node + AI configurations contain 170, 233,
 and 594 active rules respectively. The generated homepage inventory and
 effective-config snapshots are the authority for exact membership.
 
-The package also owns 27 curated ledger entries across core, imports,
-TypeScript, React, accessibility, Node.js, Vitest, Jest, AI, and experimental
-compiler concerns. Those entries document project-specific additions,
-exclusions, conflicts, options, and activation boundaries with valid and invalid
-fixtures. Type-aware fixtures execute `oxlint-tsgolint`, including a TypeScript
-project-reference case.
+The package also owns 42 curated ledger entries across core, imports,
+TypeScript, React, accessibility, Node.js, Vitest, Jest, Testing Library, AI,
+and experimental compiler concerns. Those entries document project-specific
+additions, exclusions, conflicts, options, and activation boundaries with valid
+and invalid fixtures. Type-aware fixtures execute `oxlint-tsgolint`, including
+a TypeScript project-reference case.
 
 Category-owned rules rely on Oxlint's native classification and documentation;
 they do not pretend to have one repository fixture per identifier. Every
@@ -214,12 +229,15 @@ customization helpers can target the effective output.
 
 The earlier migration study mapped about 85.3% of predecessor source-rule
 identifiers as discovery evidence. The new Strict surface approaches that
-predecessor's scale using stable native Oxlint rules, while `nursery`,
-JavaScript plugins, and non-source concerns remain excluded.
+predecessor's scale using stable native Oxlint rules, while `nursery` and
+non-source concerns remain excluded. The only JavaScript-plugin surface is the
+explicitly experimental Testing Library test-file scope.
 
-No ESLint runtime, migration helper, JavaScript React plugin, or `react-hooks`
-JavaScript plugin is loaded by the package. Formatting, Markdown/MDX, spelling,
-and package metadata remain companion-tool concerns.
+No migration helper, JavaScript React plugin, or `react-hooks` JavaScript plugin
+is loaded by the package. The optional ESLint and Testing Library plugin peers
+load only when the explicitly experimental test-file scope is selected.
+Formatting, Markdown/MDX, spelling, and package metadata remain companion-tool
+concerns.
 
 ## Release verification
 

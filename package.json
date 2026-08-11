@@ -103,11 +103,23 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {
+    "eslint": "9.39.1",
+    "eslint-plugin-testing-library": "7.16.2",
     "oxlint": "1.77.0",
     "oxlint-tsgolint": "7.0.2001"
   },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    },
+    "eslint-plugin-testing-library": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/node": "24.13.3",
+    "eslint": "9.39.1",
+    "eslint-plugin-testing-library": "7.16.2",
     "oxlint": "1.77.0",
     "oxlint-tsgolint": "7.0.2001",
     "tsdown": "0.22.14",
