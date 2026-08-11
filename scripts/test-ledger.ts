@@ -72,6 +72,24 @@ assert.throws(
   /requires fixtures/u,
   "adding a ledger rule without its behavioral fixture must fail",
 );
+const testingLibraryEntry = ruleLedger.find(
+  (entry) => entry.id === "testing-library/await-async-events",
+);
+assert(testingLibraryEntry, "the Testing Library fixer contract fixture must exist");
+assert.throws(
+  () =>
+    validateRuleLedger([
+      {
+        ...testingLibraryEntry,
+        fixtures: testingLibraryEntry.fixtures.map((fixture) => {
+          const { fix: _fix, ...withoutFix } = fixture;
+          return withoutFix;
+        }),
+      },
+    ]),
+  /requires a fix expectation/u,
+  "JavaScript-plugin fixtures must declare whether --fix rewrites them",
+);
 assert.doesNotThrow(() => assertGeneratedContent("example.md", "same", "same"));
 assert.throws(
   () => assertGeneratedContent("example.md", "stale", "generated"),

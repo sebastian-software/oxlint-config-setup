@@ -46,6 +46,7 @@ export interface RuleFixture {
     line: number;
     column: number;
   };
+  fix?: "fixed" | "unchanged";
 }
 
 export interface RuleSource {
@@ -329,6 +330,23 @@ export function validateRuleLedger(value: unknown): readonly RuleLedgerEntry[] {
       ) {
         throw new TypeError(
           `Rule ledger entry ${index} fixture ${fixtureIndex} requires an integer diagnostic location`,
+        );
+      }
+      if (
+        entry.executionPath === "javascript-plugin" &&
+        fixtureValue.fix !== "fixed" &&
+        fixtureValue.fix !== "unchanged"
+      ) {
+        throw new TypeError(
+          `Rule ledger entry ${index} JavaScript-plugin fixture ${fixtureIndex} requires a fix expectation`,
+        );
+      }
+      if (
+        entry.executionPath !== "javascript-plugin" &&
+        fixtureValue.fix !== undefined
+      ) {
+        throw new TypeError(
+          `Rule ledger entry ${index} fixture ${fixtureIndex} can only define a fix expectation for a JavaScript plugin`,
         );
       }
     }

@@ -80,8 +80,6 @@ const profileCases: Array<{
 const experimentalOnly = process.env.CANARY_EXPERIMENTAL_ONLY === "true";
 const nativeOnly = process.env.CANARY_NATIVE_ONLY === "true";
 const skipSnapshots = process.env.CANARY_SKIP_SNAPSHOTS === "true";
-let fixedJavaScriptPluginFixtureCount = 0;
-
 function isJavaScriptPluginCase(
   testCase: (typeof profileCases)[number],
 ): boolean {
@@ -181,6 +179,11 @@ try {
     if (isJavaScriptPluginCase(testCase)) {
       for (const entry of entries) {
         for (const fixture of entry.fixtures) {
+          assert.notEqual(
+            fixture.fix,
+            undefined,
+            `${entry.id} must declare whether its JavaScript-plugin fixture is fixable`,
+          );
           const fixedDirectory = resolve(
             temporaryRoot,
             "fixes",
@@ -190,42 +193,76 @@ try {
           const fixedFile = resolve(fixedDirectory, "invalid.ts");
           copyFileSync(resolve(repositoryRoot, fixture.invalid), fixedFile);
           const before = readFileSync(fixedFile, "utf8");
-          const fixed = runOxlintFix(configPath, fixedFile);
-          assert.notEqual(
-            fixed.kind,
-            "configuration",
-            `${entry.id} --fix must load the JavaScript plugin configuration`,
-          );
-          assert.notEqual(
-            fixed.kind,
-            "timeout",
-            `${entry.id} --fix must finish within the shared timeout`,
-          );
-          assert.notEqual(
-            fixed.kind,
-            "crash",
-            `${entry.id} --fix must not crash Oxlint`,
-          );
+          const firstFix = parseOxlintJson(runOxlintFix(configPath, fixedFile));
           const after = readFileSync(fixedFile, "utf8");
-          if (after !== before) {
-            fixedJavaScriptPluginFixtureCount += 1;
-            runOxlintFix(configPath, fixedFile);
+          const postFix = parseOxlintJson(runOxlint(configPath, [fixedFile]));
+          const postFixCodes = new Set(
+            postFix.diagnostics.map((diagnostic) =>
+              normalizeDiagnosticCode(diagnostic.code),
+            ),
+          );
+          const secondFix = parseOxlintJson(runOxlintFix(configPath, fixedFile));
+          const afterSecondFix = readFileSync(fixedFile, "utf8");
+
+          if (fixture.fix === "fixed") {
+            assert.notEqual(
+              after,
+              before,
+              `${entry.id} --fix must rewrite its fixable fixture`,
+            );
+            assert.deepEqual(
+              firstFix.diagnostics,
+              [],
+              `${entry.id} --fix must leave no diagnostics after its first rewrite`,
+            );
+            assert.deepEqual(
+              postFix.diagnostics,
+              [],
+              `${entry.id} rewritten fixture must re-lint without original or new diagnostics`,
+            );
+            assert.deepEqual(
+              secondFix.diagnostics,
+              [],
+              `${entry.id} second --fix must succeed without diagnostics`,
+            );
             assert.equal(
-              readFileSync(fixedFile, "utf8"),
+              afterSecondFix,
               after,
               `${entry.id} --fix must be idempotent`,
+            );
+          } else {
+            assert.equal(
+              after,
+              before,
+              `${entry.id} --fix must not mutate its non-fixable fixture`,
+            );
+            assert(
+              firstFix.diagnostics.some(
+                (diagnostic) =>
+                  normalizeDiagnosticCode(diagnostic.code) === entry.id,
+              ),
+              `${entry.id} --fix must retain its original non-fixable diagnostic`,
+            );
+            assert(
+              postFixCodes.has(entry.id),
+              `${entry.id} must remain reported after its non-fixable --fix run`,
+            );
+            assert(
+              secondFix.diagnostics.some(
+                (diagnostic) =>
+                  normalizeDiagnosticCode(diagnostic.code) === entry.id,
+              ),
+              `${entry.id} second --fix must preserve its non-fixable diagnostic`,
+            );
+            assert.equal(
+              afterSecondFix,
+              before,
+              `${entry.id} second --fix must not mutate its non-fixable fixture`,
             );
           }
         }
       }
     }
-  }
-
-  if (selectedProfileCases.some(isJavaScriptPluginCase)) {
-    assert(
-      fixedJavaScriptPluginFixtureCount > 0,
-      "the experimental Testing Library profile must exercise at least one JavaScript-plugin fix",
-    );
   }
 
   if (!experimentalOnly) {
