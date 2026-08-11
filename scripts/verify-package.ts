@@ -47,7 +47,6 @@ interface PackageManifest {
   optionalDependencies?: Record<string, string>;
   packageManager?: string;
   peerDependencies?: Record<string, string>;
-  peerDependenciesMeta?: Record<string, { optional?: boolean }>;
   publishConfig?: Record<string, unknown>;
   scripts?: Record<string, string>;
   sideEffects?: boolean;
@@ -290,8 +289,6 @@ assert.deepEqual(manifest.publishConfig, {
 assert.deepEqual(manifest.dependencies, undefined);
 assert.deepEqual(manifest.optionalDependencies, undefined);
 assert.deepEqual(manifest.peerDependencies, {
-  eslint: "9.39.1",
-  "eslint-plugin-testing-library": "7.16.2",
   oxlint: "1.77.0",
   "oxlint-tsgolint": "7.0.2001",
 });
@@ -330,7 +327,7 @@ for (const lifecycle of ["install", "postinstall", "prepare"]) {
   assert.equal(manifest.scripts?.[lifecycle], undefined);
 }
 
-const experimentalJavaScriptPluginDependencies = new Set([
+const experimentalJavaScriptPluginDevDependencies = new Set([
   "eslint",
   "eslint-plugin-testing-library",
 ]);
@@ -343,16 +340,12 @@ for (const field of [
   for (const dependency of Object.keys(manifest[field] ?? {})) {
     if (!dependency.includes("eslint")) continue;
     assert(
-      experimentalJavaScriptPluginDependencies.has(dependency) &&
-        (field === "devDependencies" || field === "peerDependencies"),
-      `only optional experimental Testing Library peers may use ESLint (${field}.${dependency})`,
+      experimentalJavaScriptPluginDevDependencies.has(dependency) &&
+        field === "devDependencies",
+      `only experimental Testing Library development dependencies may use ESLint (${field}.${dependency})`,
     );
   }
 }
-assert.deepEqual(manifest.peerDependenciesMeta, {
-  eslint: { optional: true },
-  "eslint-plugin-testing-library": { optional: true },
-});
 assert.match(
   readFileSync(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8"),
   /eslint-plugin-testing-library@7\.16\.2/u,

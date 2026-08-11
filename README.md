@@ -95,7 +95,7 @@ and Jest runner rules use canonical test patterns, while scripts, configuration
 files, and TypeScript declarations receive their own narrow fragments. The
 `"experimental-testing-library"` scope is a warning-only JavaScript-plugin
 alpha surface: pair it with exactly one of `"vitest"` or `"jest"`, and install
-its pinned optional peers before using it:
+the JavaScript-plugin runtime in the consuming project before using it:
 
 ```sh
 pnpm add -D eslint@9.39.1 eslint-plugin-testing-library@7.16.2
@@ -234,10 +234,9 @@ non-source concerns remain excluded. The only JavaScript-plugin surface is the
 explicitly experimental Testing Library test-file scope.
 
 No migration helper, JavaScript React plugin, or `react-hooks` JavaScript plugin
-is loaded by the package. The optional ESLint and Testing Library plugin peers
-load only when the explicitly experimental test-file scope is selected.
-Formatting, Markdown/MDX, spelling, and package metadata remain companion-tool
-concerns.
+is loaded by the package. The experimental scope resolves its JavaScript-plugin
+runtime from the consuming project only when selected. Formatting, Markdown/MDX,
+spelling, and package metadata remain companion-tool concerns.
 
 ## Release verification
 

@@ -13,8 +13,6 @@ const manifest = JSON.parse(read("package.json")) as {
   publishConfig?: Record<string, unknown>;
 };
 assert.deepEqual(manifest.peerDependencies, {
-  eslint: "9.39.1",
-  "eslint-plugin-testing-library": "7.16.2",
   oxlint: "1.77.0",
   "oxlint-tsgolint": "7.0.2001",
 });
