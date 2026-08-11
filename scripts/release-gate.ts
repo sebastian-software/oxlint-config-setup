@@ -1,11 +1,42 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { parseDocument } from "yaml";
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
 
 function read(relativePath: string): string {
   return readFileSync(resolve(repositoryRoot, relativePath), "utf8");
+}
+
+type YamlRecord = Record<string, unknown>;
+
+function asRecord(value: unknown, description: string): YamlRecord {
+  assert.ok(
+    typeof value === "object" && value !== null && !Array.isArray(value),
+    `${description} must be a YAML mapping`,
+  );
+  return value as YamlRecord;
+}
+
+function asArray(value: unknown, description: string): unknown[] {
+  assert.ok(Array.isArray(value), `${description} must be a YAML sequence`);
+  return value;
+}
+
+function asString(value: unknown, description: string): string {
+  assert.equal(typeof value, "string", `${description} must be a string`);
+  return value as string;
+}
+
+function readWorkflow(relativePath: string): YamlRecord {
+  const document = parseDocument(read(relativePath), { uniqueKeys: true });
+  assert.equal(
+    document.errors.length,
+    0,
+    `${relativePath} must be valid YAML: ${document.errors.map(String).join("; ")}`,
+  );
+  return asRecord(document.toJS(), relativePath);
 }
 
 const manifest = JSON.parse(read("package.json")) as {
@@ -167,18 +198,104 @@ assert.match(publishWorkflow, /timeout-minutes: 15/u);
 assert.match(publishWorkflow, /tsx scripts\/verify-published-package\.ts/u);
 assert.match(publishWorkflow, /npm publish --access public --provenance/u);
 assert.match(publishWorkflow, /already exists in npm; preserving the immutable/u);
-assert.match(publishWorkflow, /secrets\.RELEASE_PLEASE_TOKEN/u);
 
-const packageWorkflow = read(".github/workflows/package.yml");
-assert.match(packageWorkflow, /name: Required/u);
-assert.match(packageWorkflow, /if: \$\{\{ always\(\) \}\}/u);
-for (const prerequisite of ["verify", "consumer", "docs"]) {
-  assert.match(packageWorkflow, new RegExp(`- ${prerequisite}`, "u"));
-  assert.match(
-    packageWorkflow,
-    new RegExp(`needs\\.${prerequisite}\\.result`, "u"),
+const releasePleaseAction =
+  "googleapis/release-please-action@0dfd8538845b8e92600d271a895a5372865d4062";
+const publishJobs = asRecord(
+  readWorkflow(".github/workflows/publish.yml").jobs,
+  "publish workflow jobs",
+);
+const releasePleaseJob = asRecord(
+  publishJobs["release-please"],
+  "publish workflow release-please job",
+);
+const releasePleaseSteps = asArray(
+  releasePleaseJob.steps,
+  "publish workflow release-please job steps",
+);
+const releasePleaseStepsByAction = releasePleaseSteps.filter((step) => {
+  const stepRecord = asRecord(step, "publish workflow release-please step");
+  return stepRecord.uses === releasePleaseAction;
+});
+assert.equal(
+  releasePleaseStepsByAction.length,
+  1,
+  "publish workflow must have exactly one pinned Release Please action step",
+);
+const releasePleaseInputs = asRecord(
+  asRecord(
+    releasePleaseStepsByAction[0],
+    "pinned Release Please action step",
+  ).with,
+  "pinned Release Please action inputs",
+);
+assert.equal(
+  releasePleaseInputs.token,
+  "${{ secrets.RELEASE_PLEASE_TOKEN }}",
+  "pinned Release Please action must use only the dedicated release token",
+);
+
+const packageJobs = asRecord(
+  readWorkflow(".github/workflows/package.yml").jobs,
+  "Package workflow jobs",
+);
+const requiredPackageJob = asRecord(
+  packageJobs.required,
+  "Package required job",
+);
+assert.equal(requiredPackageJob.name, "Required");
+assert.equal(requiredPackageJob.if, "${{ always() }}");
+const requiredPackageNeeds = asArray(
+  requiredPackageJob.needs,
+  "Package required job needs",
+).map((need, index) => asString(need, `Package required job needs[${index}]`));
+const blockingPackageJobs = Object.keys(packageJobs)
+  .filter((jobName) => jobName !== "required")
+  .sort();
+assert.deepEqual(
+  [...requiredPackageNeeds].sort(),
+  blockingPackageJobs,
+  "Package required job must wait for every blocking Package job",
+);
+
+const requiredPackageSteps = asArray(
+  requiredPackageJob.steps,
+  "Package required job steps",
+);
+assert.equal(requiredPackageSteps.length, 1);
+const requiredPackageGate = asRecord(
+  requiredPackageSteps[0],
+  "Package required job gate step",
+);
+const requiredPackageGateEnvironment = asRecord(
+  requiredPackageGate.env,
+  "Package required job gate environment",
+);
+const requiredPackageGateRun = asString(
+  requiredPackageGate.run,
+  "Package required job gate script",
+);
+const expectedResultVariables = requiredPackageNeeds.map(
+  (jobName) => `${jobName.toUpperCase()}_RESULT`,
+);
+for (const [index, jobName] of requiredPackageNeeds.entries()) {
+  const resultVariable = expectedResultVariables[index];
+  assert.equal(
+    requiredPackageGateEnvironment[resultVariable],
+    `\${{ needs.${jobName}.result }}`,
+    `Package required job must read ${jobName}'s result`,
   );
 }
+assert.ok(
+  requiredPackageGateRun.includes(
+    `for result_name in ${expectedResultVariables.join(" ")}; do`,
+  ),
+  "Package required job must evaluate every blocking job result",
+);
+assert.ok(
+  requiredPackageGateRun.includes('if [ "$result" != "success" ]; then'),
+  "Package required job must fail for a non-success result",
+);
 
 const releaseAutomation = read("docs/release-automation.md");
 for (const requiredText of [
