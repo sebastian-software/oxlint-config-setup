@@ -42,20 +42,31 @@ function diagnosticCodes(config: string, files: readonly string[]): Set<string> 
   );
 }
 
+interface ExpectedFixtureDiagnostic {
+  code: string;
+  column: number;
+  line: number;
+}
+
 function assertFixtureDiagnostics(
   config: string,
   fixture: string,
-  expected: readonly string[],
+  expected: readonly ExpectedFixtureDiagnostic[],
   description: string,
 ): void {
   const diagnostics = parseOxlintJson(runOxlint(config, [fixture])).diagnostics;
-  const codes = new Set(
-    diagnostics.map((diagnostic) => normalizeDiagnosticCode(diagnostic.code)),
-  );
-  for (const code of expected) {
+  for (const { code, line, column } of expected) {
     assert(
-      codes.has(code),
-      `${description} must report ${code} for ${fixture}; received ${[...codes].toSorted().join(", ")}`,
+      diagnostics.some(
+        (diagnostic) =>
+          normalizeDiagnosticCode(diagnostic.code) === code &&
+          diagnostic.filename.endsWith(fixture) &&
+          diagnostic.labels.some(
+            (label) =>
+              label.span.line === line && label.span.column === column,
+          ),
+      ),
+      `${description} must report ${code} at ${fixture}:${line}:${column}`,
     );
   }
 }
@@ -275,24 +286,27 @@ try {
     );
 
     const reactFixtureRoot = "fixtures/rules/react-preset";
-    const stableReactRuleIds = [
-      "react/rules-of-hooks",
-      "react/exhaustive-deps",
-      "react/jsx-key",
-      "react/no-array-index-key",
-      "react/jsx-no-duplicate-props",
-      "react/no-unknown-property",
-      "jsx-a11y/anchor-is-valid",
-      "react/jsx-no-target-blank",
-      "jsx-a11y/alt-text",
-      "jsx-a11y/click-events-have-key-events",
-      "react/jsx-no-constructed-context-values",
-      "react/no-unstable-nested-components",
-      "react/only-export-components",
+    const stableReactDiagnostics = [
+      { code: "react/rules-of-hooks", line: 8, column: 5 },
+      { code: "react/exhaustive-deps", line: 15, column: 17 },
+      { code: "react/jsx-key", line: 23, column: 15 },
+      { code: "react/no-array-index-key", line: 24, column: 43 },
+      { code: "react/jsx-no-duplicate-props", line: 25, column: 12 },
+      { code: "react/no-unknown-property", line: 26, column: 12 },
+      { code: "jsx-a11y/anchor-is-valid", line: 27, column: 8 },
+      { code: "react/jsx-no-target-blank", line: 28, column: 44 },
+      { code: "jsx-a11y/alt-text", line: 29, column: 7 },
+      { code: "jsx-a11y/click-events-have-key-events", line: 30, column: 7 },
+      { code: "react/jsx-no-constructed-context-values", line: 36, column: 33 },
+      { code: "react/no-unstable-nested-components", line: 40, column: 3 },
+      { code: "react/only-export-components", line: 46, column: 14 },
     ];
     const stableReactConfig = writeConfig(
       "stable-react-behavior",
-      nativeRuleConfig("strict-react", stableReactRuleIds),
+      nativeRuleConfig(
+        "strict-react",
+        stableReactDiagnostics.map((diagnostic) => diagnostic.code),
+      ),
     );
     assert.deepEqual(
       parseOxlintJson(
@@ -304,7 +318,7 @@ try {
     assertFixtureDiagnostics(
       stableReactConfig,
       `${reactFixtureRoot}/invalid.tsx`,
-      stableReactRuleIds,
+      stableReactDiagnostics,
       "the stable native React preset",
     );
 
@@ -319,8 +333,16 @@ try {
       aiReactConfig,
       `${reactFixtureRoot}/invalid.tsx`,
       [
-        "react/jsx-no-constructed-context-values",
-        "react/no-unstable-nested-components",
+        {
+          code: "react/jsx-no-constructed-context-values",
+          line: 36,
+          column: 33,
+        },
+        {
+          code: "react/no-unstable-nested-components",
+          line: 40,
+          column: 3,
+        },
       ],
       "the AI overlay's inherited native React allocation checks",
     );

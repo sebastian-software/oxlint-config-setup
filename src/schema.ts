@@ -254,6 +254,7 @@ export function validateRuleLedger(value: unknown): readonly RuleLedgerEntry[] {
 
   const ids = new Map<string, number>();
   const ownership = new Map<string, number>();
+  const replacementOwnership = new Map<string, number>();
 
   for (const [index, candidate] of value.entries()) {
     if (candidate === null || typeof candidate !== "object") {
@@ -374,6 +375,16 @@ export function validateRuleLedger(value: unknown): readonly RuleLedgerEntry[] {
     }
     ownership.set(ownerKey, index);
 
+    for (const replacement of entry.replaces) {
+      const ownerIndex = replacementOwnership.get(replacement);
+      if (ownerIndex !== undefined && ownerIndex !== index) {
+        throw new TypeError(
+          `Duplicate ownership for replacement ${replacement} in entries ${ownerIndex} and ${index}`,
+        );
+      }
+      replacementOwnership.set(replacement, index);
+    }
+
     if (
       entry.executionPath === "native-experimental" &&
       entry.stability !== "experimental"
@@ -389,15 +400,12 @@ export function validateRuleLedger(value: unknown): readonly RuleLedgerEntry[] {
     }
   }
 
-  for (const [index, candidate] of value.entries()) {
-    const entry = candidate as RuleLedgerEntry;
-    for (const replacement of entry.replaces) {
-      const replacementIndex = ids.get(replacement);
-      if (replacementIndex !== undefined && replacementIndex !== index) {
-        throw new TypeError(
-          `Duplicate ownership for ${replacement} in entries ${replacementIndex} and ${index}`,
-        );
-      }
+  for (const [replacement, ownerIndex] of replacementOwnership) {
+    const replacementIndex = ids.get(replacement);
+    if (replacementIndex !== undefined && replacementIndex !== ownerIndex) {
+      throw new TypeError(
+        `Duplicate ownership for ${replacement} in entries ${replacementIndex} and ${ownerIndex}`,
+      );
     }
   }
 

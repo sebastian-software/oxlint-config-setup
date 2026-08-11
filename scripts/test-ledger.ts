@@ -134,6 +134,22 @@ assert.throws(
 assert.throws(
   () =>
     validateRuleLedger([
+      rulesOfHooks,
+      {
+        ...rulesOfHooks,
+        id: "@eslint-react/rules-of-hooks",
+        profile: "ai",
+        executionPath: "javascript-plugin",
+        defectClass: "JavaScript-plugin claim for native hook ownership",
+        activation: { kind: "ai" },
+      },
+    ]),
+  /Duplicate ownership for replacement react-hooks\/rules-of-hooks/u,
+  "distinct rules cannot claim the same predecessor replacement",
+);
+assert.throws(
+  () =>
+    validateRuleLedger([
       {
         ...rulesOfHooks,
         executionPath: "javascript-plugin",
