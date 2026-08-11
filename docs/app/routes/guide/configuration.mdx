@@ -88,8 +88,13 @@ Oxlint's normal later-override behavior.
 Select either the Vitest or Jest scope for one configuration. The loader rejects
 both together because their runner rules overlap.
 
+Testing Library rules apply automatically to the same canonical test files in
+the main TypeScript loaders and the Vitest/Jest loaders. They do not depend on a
+React option or a selected test runner, and the package supplies the required
+runtime.
+
 The composition API is TypeScript-only because it constructs file overrides at
-runtime. Public JSON exports remain complete root configurations. Playwright/E2E
+runtime. Public JSON exports remain core-only configurations. Playwright/E2E
 and Storybook patterns are reserved for future accepted native profiles.
 
 ## Defaults

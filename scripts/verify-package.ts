@@ -77,7 +77,7 @@ interface PublicPackageApi {
     ai?: boolean;
     level?: ConfigLevel;
     overrides?: readonly OxlintOverride[];
-    scopes?: readonly ("react" | "node" | "vitest" | "jest" | "experimental-testing-library" | "scripts" | "config" | "declarations" | { files?: readonly string[]; scope: "react" | "node" | "vitest" | "jest" | "experimental-testing-library" | "scripts" | "config" | "declarations" })[];
+    scopes?: readonly ("react" | "node" | "vitest" | "jest" | "scripts" | "config" | "declarations" | { files?: readonly string[]; scope: "react" | "node" | "vitest" | "jest" | "scripts" | "config" | "declarations" })[];
   }): OxlintConfig;
   getJestOxlintConfig(): OxlintConfig;
   getOxlintConfig(options?: ConfigOptions): OxlintConfig;
@@ -286,7 +286,10 @@ assert.deepEqual(manifest.publishConfig, {
   access: "public",
   provenance: true,
 });
-assert.deepEqual(manifest.dependencies, undefined);
+assert.deepEqual(manifest.dependencies, {
+  eslint: "9.39.1",
+  "eslint-plugin-testing-library": "7.16.2",
+});
 assert.deepEqual(manifest.optionalDependencies, undefined);
 assert.deepEqual(manifest.peerDependencies, {
   oxlint: "1.77.0",
@@ -327,29 +330,8 @@ for (const lifecycle of ["install", "postinstall", "prepare"]) {
   assert.equal(manifest.scripts?.[lifecycle], undefined);
 }
 
-const experimentalJavaScriptPluginDevDependencies = new Set([
-  "eslint",
-  "eslint-plugin-testing-library",
-]);
-for (const field of [
-  "dependencies",
-  "devDependencies",
-  "optionalDependencies",
-  "peerDependencies",
-] as const) {
-  for (const dependency of Object.keys(manifest[field] ?? {})) {
-    if (!dependency.includes("eslint")) continue;
-    assert(
-      experimentalJavaScriptPluginDevDependencies.has(dependency) &&
-        field === "devDependencies",
-      `only experimental Testing Library development dependencies may use ESLint (${field}.${dependency})`,
-    );
-  }
-}
-assert.match(
-  readFileSync(resolve(repositoryRoot, "pnpm-lock.yaml"), "utf8"),
-  /eslint-plugin-testing-library@7\.16\.2/u,
-);
+assert.equal(manifest.devDependencies?.eslint, undefined);
+assert.equal(manifest.devDependencies?.["eslint-plugin-testing-library"], undefined);
 assert.equal(run("git", ["ls-files", "--", "dist/**"]).trim(), "");
 assert(
   run("git", ["ls-files", "--", "scripts"])
@@ -453,11 +435,28 @@ for (const options of allConfigOptions()) {
     (artifact) => artifact.fileName === configFileName(options),
   );
   assert(expected);
-  assert.deepEqual(loaded, expected.config);
+  const testingLibraryOverride = loaded.overrides?.at(-1);
+  assert.deepEqual(testingLibraryOverride?.files, [
+    "**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+    "**/{__tests__,__mocks__}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+  ]);
+  assert.equal(testingLibraryOverride?.jsPlugins?.length, 1);
+  assert.equal(Object.keys(testingLibraryOverride?.rules ?? {}).length, 17);
+  const loadedCore = { ...loaded };
+  delete loadedCore.overrides;
+  assert.deepEqual(loadedCore, expected.config);
 }
 assert.equal(publicApi.getSyntaxOnlyOxlintConfig().options?.typeAware, false);
 assert(publicApi.getVitestOxlintConfig().plugins?.includes("vitest"));
 assert(publicApi.getJestOxlintConfig().plugins?.includes("jest"));
+for (const config of [
+  publicApi.getVitestOxlintConfig(),
+  publicApi.getJestOxlintConfig(),
+]) {
+  const plugin = config.overrides?.at(-1)?.jsPlugins?.at(-1);
+  assert(plugin !== undefined && typeof plugin !== "string");
+  assert.equal(plugin.name, "testing-library");
+}
 assert.equal(
   publicApi.getExperimentalReactCompilerOxlintConfig().rules?.[
     "react/react-compiler"
@@ -513,14 +512,6 @@ assert.equal(composed.options?.typeAware, true);
 assert(composed.plugins?.includes("vitest"));
 assert(composed.plugins?.includes("node"));
 assert.deepEqual(composed.overrides?.at(-1)?.plugins, composed.plugins);
-const experimentalTestingLibrary = publicApi.getComposedOxlintConfig({
-  scopes: ["vitest", "experimental-testing-library"],
-});
-assert.equal(experimentalTestingLibrary.jsPlugins, undefined);
-assert.deepEqual(
-  experimentalTestingLibrary.overrides?.at(-1)?.jsPlugins,
-  ["eslint-plugin-testing-library"],
-);
 assert.equal(
   activeRuleCount(publicApi.getOxlintConfig({ level: "essential" })),
   113,
@@ -708,6 +699,7 @@ try {
       'assert(getVitestOxlintConfig().plugins.includes("vitest"));',
       'assert(getJestOxlintConfig().plugins.includes("jest"));',
       'assert.equal(getExperimentalReactCompilerOxlintConfig().rules["react/react-compiler"], "warn");',
+      'assert.equal(getOxlintConfig().overrides.at(-1).jsPlugins.at(-1).name, "testing-library");',
       'const composed = getComposedOxlintConfig({ scopes: ["react", "vitest"], overrides: [{ files: ["**/*.test.tsx"], plugins: ["jsx-a11y"] }] });',
       'assert.equal(composed.options.typeAware, true);',
       'assert(composed.plugins.includes("vitest"));',
@@ -788,13 +780,40 @@ try {
   );
 
   writeFileSync(
+    resolve(consumerRoot, "TestingLibrary.test.js"),
+    'import { screen } from "@testing-library/dom";\nscreen.debug();\n',
+  );
+  writeFileSync(
+    resolve(consumerRoot, "TestingLibrarySource.js"),
+    'import { screen } from "@testing-library/dom";\nscreen.debug();\n',
+  );
+  assert.throws(
+    () =>
+      run(
+        consumerOxlint,
+        ["--config", "oxlint.config.ts", "--deny-warnings", "TestingLibrary.test.js"],
+        consumerRoot,
+      ),
+    (error: unknown) =>
+      error instanceof Error &&
+      /testing-library(?:\/|\()no-debugging-utils/u.test(
+        String((error as Error & { stdout?: string }).stdout),
+      ),
+  );
+  run(
+    consumerOxlint,
+    ["--config", "oxlint.config.ts", "--deny-warnings", "TestingLibrarySource.js"],
+    consumerRoot,
+  );
+
+  writeFileSync(
     resolve(consumerRoot, "consumer.ts"),
     [
     'import { getComposedOxlintConfig, getOxlintConfig, getVitestOxlintConfig, setRuleSeverity, type ComposedConfigOptions, type ConfigLevel, type ConfigOptions, type RuleSeverity, type ScopedConfig } from "oxlint-config-setup";',
       'const level: ConfigLevel = "essential";',
       'const severity: RuleSeverity = "warn";',
       "const options = { level, react: true, ai: true } satisfies ConfigOptions;",
-      'const scope: ScopedConfig = "experimental-testing-library";',
+      'const scope: ScopedConfig = "vitest";',
       'const composedOptions = { scopes: [scope] } satisfies ComposedConfigOptions;',
       "void getVitestOxlintConfig();",
       "const config = getOxlintConfig(options);",
@@ -838,6 +857,19 @@ try {
     ],
     pnpmConsumerRoot,
   );
+  writeFileSync(
+    resolve(pnpmConsumerRoot, "consumer.mjs"),
+    [
+      'import assert from "node:assert/strict";',
+      'import { statSync } from "node:fs";',
+      'import { getOxlintConfig } from "oxlint-config-setup";',
+      'const plugin = getOxlintConfig().overrides.at(-1).jsPlugins.at(-1);',
+      'assert.equal(plugin.name, "testing-library");',
+      'assert(statSync(plugin.specifier).isFile());',
+      "",
+    ].join("\n"),
+  );
+  run("node", ["consumer.mjs"], pnpmConsumerRoot);
   copyFileSync(
     resolve(
       pnpmConsumerRoot,

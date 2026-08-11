@@ -145,16 +145,6 @@ function pluginsForRules(
   return [...plugins];
 }
 
-function jsPluginsForRules(
-  entries: readonly RuleLedgerEntry[],
-): NonNullable<OxlintConfig["jsPlugins"]> | undefined {
-  return entries.some(
-    (entry) => entry.executionPath === "javascript-plugin",
-  )
-    ? ["eslint-plugin-testing-library"]
-    : undefined;
-}
-
 export function orderedProfiles(
   profiles: readonly RuleProfile[],
 ): RuleProfile[] {
@@ -247,9 +237,6 @@ export function composeProfiles(
       normalizedProfiles,
       policyCategories,
     ),
-    ...(jsPluginsForRules(selectedRules) === undefined
-      ? {}
-      : { jsPlugins: jsPluginsForRules(selectedRules) }),
     rules,
   };
   if (options.ai === true) applyAiOverrides(config, selectedRules);

@@ -88,6 +88,10 @@ selection because their runner rules overlap.
 Scripts, configuration files, and declarations use conventional directory,
 `*.config.*`, and `*.d.*` patterns respectively.
 
+The main TypeScript loaders and the Vitest/Jest loaders automatically apply
+Testing Library rules to the same canonical test files. This is independent of
+React and the selected test runner; the package supplies the required runtime.
+
 Fragments append in a stable order and consumer overrides append after them. A
 consumer override's plugins are unioned with the root and selected fragment
 plugins because Oxlint otherwise treats an override `plugins` array as a
@@ -129,7 +133,9 @@ unknown or unselected scope throws instead of silently doing nothing.
 
 ## Use a public JSON artifact
 
-Every TypeScript loader has a public JSON equivalent. For the default:
+Every core and named artifact has a public JSON equivalent. These static files
+do not include the TypeScript loaders' automatic Testing Library override. For
+the default:
 
 ```sh
 node --input-type=module -e \

@@ -51,7 +51,7 @@ function renderCatalog(): string {
     "",
     "> This file is generated from `src/ledger.ts`. Run `pnpm generate` after ledger changes.",
     "",
-    `The curated v0.1 ledger contains **${ruleLedger.length} reviewed additions, overrides, and exceptions** with repository-owned fixtures. The broad baseline is materialized from the pinned Oxlint categories and snapshot-tested; experimental entries remain isolated from stable configurable artifacts.`,
+    `The curated v0.1 ledger contains **${ruleLedger.length} reviewed additions, overrides, and exceptions** with repository-owned fixtures. The broad baseline is materialized from the pinned Oxlint categories and snapshot-tested; the single experimental rule remains isolated from every configurable artifact.`,
     "",
     "| Rule | Defect class | Profile | Activation | AI behavior | Path | Severity | Stability | Rationale | Fixtures | Replaces | Conflicts | Review trigger |",
     "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
@@ -72,7 +72,7 @@ function renderCatalog(): string {
     "",
     "## Stability boundary",
     "",
-    "`react/react-compiler` is emitted only by the explicitly named experimental artifact and begins as a warning. Testing Library rules are JavaScript-plugin warnings in the explicitly named `experimental-testing-library` file scope and never enter a stable default. Playwright remains a research item; Storybook, SonarJS, and regular-expression plugin domains are Deferred with explicit re-entry gates in the migration guide.",
+    "`react/react-compiler` is emitted only by the explicitly named experimental artifact and begins as a warning. Testing Library is a package-owned file-scoped integration rather than a ledger profile; its local evidence covers activation, isolation, runtime resolution, and one clean-consumer diagnostic while upstream owns per-rule semantics. Playwright remains a research item; Storybook, SonarJS, and regular-expression plugin domains are Deferred with explicit re-entry gates in the migration guide.",
     "",
   );
   return lines.join("\n");

@@ -38,9 +38,6 @@ export function createCompositionFixtureConfig(
       node: materialized({ ...baseOptions, node: true }, NODE_SOURCE),
       vitest: composeProfiles(["vitest"]),
       jest: composeProfiles(["jest"]),
-      testingLibrary: composeProfiles(["testing-library"], {
-        surface: "experimental",
-      }),
     },
     scopes,
     consumerOverrides,

@@ -13,6 +13,7 @@ import {
   type ConfigOptions,
 } from "./options.js";
 import { composeProfiles } from "./profiles.js";
+import { withTestingLibrary } from "./testing-library.js";
 
 export type { ConfigLevel, ConfigOptions } from "./options.js";
 export {
@@ -78,9 +79,13 @@ function loadConfigArtifact(
   return config as OxlintConfig;
 }
 
-export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
+function loadRootConfig(options: ConfigOptions): OxlintConfig {
   const normalized = normalizeConfigOptions(options);
   return loadConfigArtifact(configFileName(normalized), true);
+}
+
+export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
+  return withTestingLibrary(loadRootConfig(options));
 }
 
 /**
@@ -106,17 +111,14 @@ export function getComposedOxlintConfig(
     level: options.level,
     ai: options.ai,
   });
-  const root = getOxlintConfig(rootOptions);
+  const root = withTestingLibrary(loadRootConfig(rootOptions));
   return composeScopedOxlintConfig(
     root,
     {
-      react: getOxlintConfig({ ...rootOptions, react: true }),
-      node: getOxlintConfig({ ...rootOptions, node: true }),
+      react: loadRootConfig({ ...rootOptions, react: true }),
+      node: loadRootConfig({ ...rootOptions, node: true }),
       vitest: composeProfiles(["vitest"]),
       jest: composeProfiles(["jest"]),
-      testingLibrary: composeProfiles(["testing-library"], {
-        surface: "experimental",
-      }),
     },
     options.scopes,
     options.overrides,
@@ -132,11 +134,11 @@ export function getSyntaxOnlyOxlintConfig(): OxlintConfig {
 }
 
 export function getVitestOxlintConfig(): OxlintConfig {
-  return getNamedConfig("vitest");
+  return withTestingLibrary(getNamedConfig("vitest"));
 }
 
 export function getJestOxlintConfig(): OxlintConfig {
-  return getNamedConfig("jest");
+  return withTestingLibrary(getNamedConfig("jest"));
 }
 
 export function getExperimentalReactCompilerOxlintConfig(): OxlintConfig {

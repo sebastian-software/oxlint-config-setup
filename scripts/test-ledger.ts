@@ -72,24 +72,6 @@ assert.throws(
   /requires fixtures/u,
   "adding a ledger rule without its behavioral fixture must fail",
 );
-const testingLibraryEntry = ruleLedger.find(
-  (entry) => entry.id === "testing-library/await-async-events",
-);
-assert(testingLibraryEntry, "the Testing Library fixer contract fixture must exist");
-assert.throws(
-  () =>
-    validateRuleLedger([
-      {
-        ...testingLibraryEntry,
-        fixtures: testingLibraryEntry.fixtures.map((fixture) => {
-          const { fix: _fix, ...withoutFix } = fixture;
-          return withoutFix;
-        }),
-      },
-    ]),
-  /requires a fix expectation/u,
-  "JavaScript-plugin fixtures must declare whether --fix rewrites them",
-);
 assert.doesNotThrow(() => assertGeneratedContent("example.md", "same", "same"));
 assert.throws(
   () => assertGeneratedContent("example.md", "stale", "generated"),
@@ -142,10 +124,6 @@ assert.deepEqual(
 );
 assert.throws(
   () => composeProfiles(["core", "react-compiler"]),
-  /cannot silently enter a stable configuration/u,
-);
-assert.throws(
-  () => composeProfiles(["testing-library"]),
   /cannot silently enter a stable configuration/u,
 );
 assert.throws(
@@ -399,18 +377,7 @@ const schema = JSON.parse(
   definitions: { DummyRuleMap: { properties: Record<string, unknown> } };
 };
 const supportedRules = schema.definitions.DummyRuleMap.properties;
-const javascriptPluginEntries = ruleLedger.filter(
-  (entry) => entry.executionPath === "javascript-plugin",
-);
-assert(
-  javascriptPluginEntries.length > 0 &&
-    javascriptPluginEntries.every(
-      (entry) => entry.id.startsWith("testing-library/") && !(entry.id in supportedRules),
-    ),
-  "JavaScript-plugin rules must not duplicate a native pinned Oxlint rule owner",
-);
 for (const entry of ruleLedger) {
-  if (entry.executionPath === "javascript-plugin") continue;
   const schemaId = entry.id.startsWith("eslint/")
     ? entry.id.slice("eslint/".length)
     : entry.id;

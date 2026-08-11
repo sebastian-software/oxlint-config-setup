@@ -47,7 +47,7 @@ export default getOxlintConfig({
 });
 ```
 
-The loader selects one of 24 complete JSON artifacts. It does not compose plugin presets or resolve a rule graph at runtime.
+The loader selects one of 24 complete core artifacts, then adds the package-owned Testing Library override. It does not resolve a runtime rule graph.
 
 ## Run Oxlint directly
 
@@ -55,7 +55,7 @@ The loader selects one of 24 complete JSON artifacts. It does not compose plugin
 pnpm oxlint .
 ```
 
-Add the same command to `package.json` and CI. No ESLint runtime or migration helper is part of the supported lint path.
+Add the same command to `package.json` and CI. Oxlint remains the only lint process; the TypeScript loader resolves the package-owned Testing Library compatibility plugin for test files.
 
 ## Choose your next guide
 

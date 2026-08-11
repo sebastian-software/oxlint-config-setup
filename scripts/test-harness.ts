@@ -1,12 +1,6 @@
 import assert from "node:assert/strict";
-import {
-  copyFileSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import type { OxlintOverride } from "oxlint";
@@ -24,9 +18,7 @@ import {
 
 const repositoryRoot = resolve(import.meta.dirname, "..");
 const oxlint = resolve(repositoryRoot, "node_modules/.bin/oxlint");
-// JavaScript plugins resolve from the config location, so temporary configs must
-// remain below the repository root to find this workspace's node_modules.
-const temporaryRoot = mkdtempSync(resolve(repositoryRoot, ".oxlint-harness-"));
+const temporaryRoot = mkdtempSync(resolve(tmpdir(), "oxlint-harness-"));
 
 function writeConfig(name: string, value: unknown): string {
   const path = resolve(temporaryRoot, `${name}.json`);
@@ -38,14 +30,6 @@ function runOxlint(config: string, files: readonly string[]) {
   return runProcess(
     oxlint,
     ["--config", config, "--format", "json", ...files],
-    { cwd: repositoryRoot },
-  );
-}
-
-function runOxlintFix(config: string, file: string) {
-  return runProcess(
-    oxlint,
-    ["--config", config, "--fix", "--format", "json", file],
     { cwd: repositoryRoot },
   );
 }
@@ -73,13 +57,13 @@ const profileCases: Array<{
   { level: "strict", profile: "node" },
   { profile: "vitest" },
   { profile: "jest" },
-  { profile: "testing-library", surface: "experimental" },
   { ai: true, profile: "ai" },
   { profile: "react-compiler", surface: "experimental" },
 ];
 const experimentalOnly = process.env.CANARY_EXPERIMENTAL_ONLY === "true";
 const nativeOnly = process.env.CANARY_NATIVE_ONLY === "true";
 const skipSnapshots = process.env.CANARY_SKIP_SNAPSHOTS === "true";
+
 function isJavaScriptPluginCase(
   testCase: (typeof profileCases)[number],
 ): boolean {
@@ -175,94 +159,6 @@ try {
       [],
       `${testCase.profile} valid fixtures must be clean`,
     );
-
-    if (isJavaScriptPluginCase(testCase)) {
-      for (const entry of entries) {
-        for (const fixture of entry.fixtures) {
-          assert.notEqual(
-            fixture.fix,
-            undefined,
-            `${entry.id} must declare whether its JavaScript-plugin fixture is fixable`,
-          );
-          const fixedDirectory = resolve(
-            temporaryRoot,
-            "fixes",
-            entry.id.replaceAll("/", "-"),
-          );
-          mkdirSync(fixedDirectory, { recursive: true });
-          const fixedFile = resolve(fixedDirectory, "invalid.ts");
-          copyFileSync(resolve(repositoryRoot, fixture.invalid), fixedFile);
-          const before = readFileSync(fixedFile, "utf8");
-          const firstFix = parseOxlintJson(runOxlintFix(configPath, fixedFile));
-          const after = readFileSync(fixedFile, "utf8");
-          const postFix = parseOxlintJson(runOxlint(configPath, [fixedFile]));
-          const postFixCodes = new Set(
-            postFix.diagnostics.map((diagnostic) =>
-              normalizeDiagnosticCode(diagnostic.code),
-            ),
-          );
-          const secondFix = parseOxlintJson(runOxlintFix(configPath, fixedFile));
-          const afterSecondFix = readFileSync(fixedFile, "utf8");
-
-          if (fixture.fix === "fixed") {
-            assert.notEqual(
-              after,
-              before,
-              `${entry.id} --fix must rewrite its fixable fixture`,
-            );
-            assert.deepEqual(
-              firstFix.diagnostics,
-              [],
-              `${entry.id} --fix must leave no diagnostics after its first rewrite`,
-            );
-            assert.deepEqual(
-              postFix.diagnostics,
-              [],
-              `${entry.id} rewritten fixture must re-lint without original or new diagnostics`,
-            );
-            assert.deepEqual(
-              secondFix.diagnostics,
-              [],
-              `${entry.id} second --fix must succeed without diagnostics`,
-            );
-            assert.equal(
-              afterSecondFix,
-              after,
-              `${entry.id} --fix must be idempotent`,
-            );
-          } else {
-            assert.equal(
-              after,
-              before,
-              `${entry.id} --fix must not mutate its non-fixable fixture`,
-            );
-            assert(
-              firstFix.diagnostics.some(
-                (diagnostic) =>
-                  normalizeDiagnosticCode(diagnostic.code) === entry.id,
-              ),
-              `${entry.id} --fix must retain its original non-fixable diagnostic`,
-            );
-            assert(
-              postFixCodes.has(entry.id),
-              `${entry.id} must remain reported after its non-fixable --fix run`,
-            );
-            assert(
-              secondFix.diagnostics.some(
-                (diagnostic) =>
-                  normalizeDiagnosticCode(diagnostic.code) === entry.id,
-              ),
-              `${entry.id} second --fix must preserve its non-fixable diagnostic`,
-            );
-            assert.equal(
-              afterSecondFix,
-              before,
-              `${entry.id} second --fix must not mutate its non-fixable fixture`,
-            );
-          }
-        }
-      }
-    }
   }
 
   if (!experimentalOnly) {
@@ -412,25 +308,6 @@ try {
     assert(
       !vitestLeakCodes.has("vitest/no-focused-tests"),
       "Vitest rules must not leak from canonical test patterns into regular React files",
-    );
-
-    const testingLibraryConfig = writeConfig(
-      "composition-testing-library",
-      createCompositionFixtureConfig(["vitest", "experimental-testing-library"]),
-    );
-    const testingLibraryCodes = diagnosticCodes(testingLibraryConfig, [
-      "fixtures/composition/packages/web/src/TestingLibrary.test.ts",
-    ]);
-    assert(
-      testingLibraryCodes.has("testing-library/await-async-queries"),
-      "the experimental Testing Library scope must lint matching test files",
-    );
-    const testingLibraryLeakCodes = diagnosticCodes(testingLibraryConfig, [
-      "fixtures/composition/packages/web/src/TestingLibrarySource.ts",
-    ]);
-    assert(
-      !testingLibraryLeakCodes.has("testing-library/await-async-queries"),
-      "the experimental Testing Library scope must not lint non-test files",
     );
 
     const nodeScriptsConfig = writeConfig(

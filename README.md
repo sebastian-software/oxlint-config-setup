@@ -76,7 +76,6 @@ export default getComposedOxlintConfig({
     "react",
     { scope: "node", files: ["packages/api/**/*.{ts,mts}"] },
     "vitest",
-    "experimental-testing-library",
     "scripts",
     "config",
     "declarations",
@@ -93,25 +92,18 @@ export default getComposedOxlintConfig({
 `react` and `node` add their native rules only to their matching files. Vitest
 and Jest runner rules use canonical test patterns, while scripts, configuration
 files, and TypeScript declarations receive their own narrow fragments. The
-`"experimental-testing-library"` scope is a warning-only JavaScript-plugin
-alpha surface: pair it with exactly one of `"vitest"` or `"jest"`, and install
-the JavaScript-plugin runtime in the consuming project before using it:
+`getOxlintConfig()`, `getComposedOxlintConfig()`, and the Vitest/Jest loaders
+also add Testing Library rules automatically to the same canonical test-file
+patterns. The package owns and resolves that runtime; there is no feature flag,
+React coupling, runner requirement, or consumer dependency to configure.
 
-```sh
-pnpm add -D eslint@9.39.1 eslint-plugin-testing-library@7.16.2
-```
+The composition loader keeps `options.typeAware` on the root object. It unions
+required plugins into consumer overrides, appends consumer overrides last, and
+leaves Oxlint to merge later `rules`, `env`, and `globals` entries for matching
+files. Static JSON exports remain core-only because they cannot carry a
+package-relative JavaScript-plugin path.
 
-Oxlint's JavaScript plugin API is alpha and cannot use type-aware linting, so
-this scope is intentionally not a JSON export or a stable default. It covers
-async/query correctness, `waitFor`, node access, lifecycle render, `act`,
-presence/disappearance, `findBy`, and `screen` guidance only in matching test
-files. The composition loader keeps `options.typeAware` on the root object. It
-unions required native plugins into consumer overrides, appends consumer
-overrides last, and leaves Oxlint to merge later `rules`, `env`, and `globals`
-entries for matching files. `getOxlintConfig()` and every JSON export remain
-unchanged.
-
-Playwright/E2E and Storybook patterns are documented as deferred; this release
+Playwright/E2E and Storybook patterns are documented as deferred; this version
 does not claim a runner or Storybook policy before a native profile is accepted.
 
 ## Shipped surfaces
@@ -127,8 +119,8 @@ does not claim a runner or Storybook policy before a native profile is accepted.
 | TypeScript without a project graph     | `getSyntaxOnlyOxlintConfig()`                | `oxlint-config-setup/json/typescript-syntax` | Stable                                    |
 | Vitest                                 | `getVitestOxlintConfig()`                    | `oxlint-config-setup/json/vitest`            | Stable                                    |
 | Jest                                   | `getJestOxlintConfig()`                      | `oxlint-config-setup/json/jest`              | Stable                                    |
+| Testing Library test files             | Automatic in the main and test-runner loaders | —                                            | Stable file-scoped policy                 |
 | React Compiler diagnostics             | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler`    | Experimental warning                      |
-| Testing Library test files              | `getComposedOxlintConfig({ scopes: ["vitest", "experimental-testing-library"] })` | — | Experimental JS-plugin alpha warning fragment |
 | Mixed repository file scopes            | `getComposedOxlintConfig()`                  | —                                            | Stable TypeScript-only composition API    |
 
 The recommended permutations use unprefixed public JSON subpaths such as
@@ -194,8 +186,9 @@ prebuilt artifact or later calls.
 
 ## JSON consumption
 
-JSON artifacts contain the same complete objects as the TypeScript loaders. Copy
-one through its public package export, then run the supported Oxlint CLI directly:
+JSON artifacts contain the complete core objects behind the TypeScript loaders,
+without the automatic Testing Library override. Copy one through its public
+package export, then run the supported Oxlint CLI directly:
 
 ```sh
 node --input-type=module -e \
@@ -214,12 +207,12 @@ surface: the fully selected React + Node + AI configurations contain 170, 233,
 and 594 active rules respectively. The generated homepage inventory and
 effective-config snapshots are the authority for exact membership.
 
-The package also owns 42 curated ledger entries across core, imports,
-TypeScript, React, accessibility, Node.js, Vitest, Jest, Testing Library, AI,
-and experimental compiler concerns. Those entries document project-specific
-additions, exclusions, conflicts, options, and activation boundaries with valid
-and invalid fixtures. Type-aware fixtures execute `oxlint-tsgolint`, including
-a TypeScript project-reference case.
+The package also owns 27 curated ledger entries across core, imports,
+TypeScript, React, accessibility, Node.js, Vitest, Jest, AI, and experimental
+compiler concerns. Those entries document project-specific additions,
+exclusions, conflicts, options, and activation boundaries with valid and invalid
+fixtures. Type-aware fixtures execute `oxlint-tsgolint`, including a TypeScript
+project-reference case.
 
 Category-owned rules rely on Oxlint's native classification and documentation;
 they do not pretend to have one repository fixture per identifier. Every
@@ -229,14 +222,13 @@ customization helpers can target the effective output.
 
 The earlier migration study mapped about 85.3% of predecessor source-rule
 identifiers as discovery evidence. The new Strict surface approaches that
-predecessor's scale using stable native Oxlint rules, while `nursery` and
-non-source concerns remain excluded. The only JavaScript-plugin surface is the
-explicitly experimental Testing Library test-file scope.
+predecessor's scale using stable native Oxlint rules, while `nursery`,
+unselected JavaScript plugins, and non-source concerns remain excluded.
 
-No migration helper, JavaScript React plugin, or `react-hooks` JavaScript plugin
-is loaded by the package. The experimental scope resolves its JavaScript-plugin
-runtime from the consuming project only when selected. Formatting, Markdown/MDX,
-spelling, and package metadata remain companion-tool concerns.
+Oxlint remains the only lint process. The package includes the ESLint-compatible
+Testing Library plugin runtime for its automatic test-file override; it does not
+run ESLint or load JavaScript React and `react-hooks` plugins. Formatting,
+Markdown/MDX, spelling, and package metadata remain companion-tool concerns.
 
 ## Release verification
 
@@ -264,6 +256,8 @@ follow-up patch release, then verify that new version instead.
 | Oxlint                     | `1.77.0`        |
 | `oxlint-tsgolint`          | `7.0.2001`      |
 | TypeScript behavior target | `7.0.2`         |
+| Testing Library plugin     | `7.16.2`        |
+| ESLint compatibility API   | `9.39.1`        |
 | npm clean consumer         | major 10 or 11  |
 | pnpm clean consumer        | `11.20.0`       |
 | Repository build Node.js   | `>=24.11.0`     |
