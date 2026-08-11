@@ -14,7 +14,7 @@ function testingLibraryRules(react: boolean): DummyRuleMap {
   if (rules === undefined) {
     throw new Error(`Testing Library preset ${preset} does not define rules`);
   }
-  return { ...rules };
+  return structuredClone(rules);
 }
 
 function testingLibraryOverride(react: boolean): OxlintOverride {

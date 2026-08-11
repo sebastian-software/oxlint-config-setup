@@ -152,6 +152,10 @@ assert.deepEqual(DEFERRED_SCOPE_GLOBS.stories, [
 
 const automatic = withTestingLibrary(root, false);
 const domTestingLibraryOverride = automatic.overrides?.at(-1);
+const secondDomTestingLibraryOverride = withTestingLibrary(
+  root,
+  false,
+).overrides?.at(-1);
 assert.deepEqual(domTestingLibraryOverride?.files, TEST_FILE_GLOBS);
 assert.deepEqual(
   domTestingLibraryOverride?.jsPlugins?.map((plugin) =>
@@ -164,6 +168,16 @@ assert.deepEqual(
   domTestingLibraryOverride?.rules?.["testing-library/await-async-events"],
   ["error", { eventModule: "userEvent" }],
 );
+const firstAsyncEvents =
+  domTestingLibraryOverride?.rules?.["testing-library/await-async-events"];
+const secondAsyncEvents =
+  secondDomTestingLibraryOverride?.rules?.[
+    "testing-library/await-async-events"
+  ];
+assert(Array.isArray(firstAsyncEvents));
+assert(Array.isArray(secondAsyncEvents));
+assert.notEqual(firstAsyncEvents, secondAsyncEvents);
+assert.notEqual(firstAsyncEvents[1], secondAsyncEvents[1]);
 assert.equal(
   domTestingLibraryOverride?.rules?.["testing-library/no-dom-import"],
   undefined,
