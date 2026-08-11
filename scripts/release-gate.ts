@@ -105,8 +105,6 @@ for (const surface of [
   "getOxlintConfig",
   "getComposedOxlintConfig",
   "getSyntaxOnlyOxlintConfig",
-  "getVitestOxlintConfig",
-  "getJestOxlintConfig",
   "getExperimentalReactCompilerOxlintConfig",
 ]) {
   assert.match(readme, new RegExp(surface, "u"));

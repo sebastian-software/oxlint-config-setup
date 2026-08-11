@@ -34,23 +34,21 @@ at that level and may add explicitly AI-only guardrails. For example,
 `essential` plus AI does not activate recommended import policy or strict
 exhaustive-switch policy.
 
-Use a named full configuration when the project has a different execution
-contract:
+Two execution contracts remain separate named configurations:
 
 ```ts
 import {
   getExperimentalReactCompilerOxlintConfig,
-  getJestOxlintConfig,
   getSyntaxOnlyOxlintConfig,
-  getVitestOxlintConfig,
 } from "oxlint-config-setup";
 ```
 
 - `getSyntaxOnlyOxlintConfig()` omits the project graph and type-aware backend.
-- `getVitestOxlintConfig()` and `getJestOxlintConfig()` deliberately select one
-  test owner; they are not combined because their shared APIs overlap.
 - `getExperimentalReactCompilerOxlintConfig()` includes stable React and JSX
   accessibility rules plus the compiler diagnostic as a warning.
+
+Vitest and Jest are file-scoped policies selected through
+`getComposedOxlintConfig()`, not separate complete root configurations.
 
 ## Compose a mixed repository
 
@@ -82,20 +80,21 @@ export default getComposedOxlintConfig({
 The canonical `react` pattern is `**/*.{jsx,tsx}`. `node` uses explicit Node
 module extensions by default, so provide `files` for ordinary `.ts` source in a
 Node package. Vitest and Jest use `*.test.{ts,tsx}` and
-`__tests__/**/*.{ts,tsx}`. Playwright owns `*.spec.ts`. Storybook reserves
-`*.stories.{ts,tsx}` for a future profile.
+`__tests__/**/*.{ts,tsx}`. Playwright owns `*.spec.ts`, and Storybook owns
+`*.stories.{ts,tsx}`.
 Select one runner scope: Vitest and Jest intentionally reject a combined
 selection because their runner rules overlap.
 Scripts, configuration files, and declarations use conventional directory,
 `*.config.*`, and `*.d.*` patterns respectively.
 
-The main TypeScript loaders and the Vitest/Jest loaders automatically apply
-Testing Library rules to canonical `*.test.{ts,tsx}` and
+The TypeScript loaders automatically apply Testing Library rules to canonical
+`*.test.{ts,tsx}` and
 `__tests__/**/*.{ts,tsx}` files. They inherit the plugin's `flat/dom` preset by
 default and `flat/react` when React is selected. Those loaders also apply
-Playwright's `flat/recommended` preset to canonical `*.spec.ts` files. Both
-selections are independent of the test runner, and the package supplies the
-required runtimes.
+Playwright's `flat/recommended` preset to canonical `*.spec.ts` files and
+Storybook's `flat/recommended` story rules to `*.stories.{ts,tsx}` files. All
+three selections are independent of the test runner, and the package supplies
+the required runtimes.
 
 Fragments append in a stable order and consumer overrides append after them. A
 consumer override's plugins are unioned with the root and selected fragment
@@ -103,9 +102,6 @@ plugins because Oxlint otherwise treats an override `plugins` array as a
 replacement. Rules, environments, and globals retain Oxlint's normal
 last-matching-override semantics. The root remains type-aware; no scope can
 move `options.typeAware` into a file override.
-
-Storybook `*.stories.{ts,tsx}` files are reserved for a future profile, but no
-Storybook policy ships in this release.
 
 ## Install and run
 
@@ -137,9 +133,9 @@ unknown or unselected scope throws instead of silently doing nothing.
 
 ## Use a public JSON artifact
 
-Every core and named artifact has a public JSON equivalent. These static files
-do not include the TypeScript loaders' automatic Testing Library or Playwright
-overrides. For
+Every core and remaining named artifact has a public JSON equivalent. These
+static files do not include the TypeScript loaders' automatic Testing Library,
+Playwright, or Storybook overrides. For
 the default:
 
 ```sh
@@ -149,8 +145,7 @@ pnpm oxlint --config .oxlintrc.json .
 ```
 
 Replace `default` with `react`, `node`, `react-node`, `ai`, `react-ai`,
-`node-ai`, `react-node-ai`, `typescript-syntax`, `vitest`, `jest`, or
-`react-compiler`. Essential artifacts use `essential`, `essential-react`,
+`node-ai`, `react-node-ai`, `typescript-syntax`, or `react-compiler`. Essential artifacts use `essential`, `essential-react`,
 `essential-node`, `essential-react-node`, `essential-ai`,
 `essential-react-ai`, `essential-node-ai`, or `essential-react-node-ai`. The
 strict set uses the same suffixes with the `strict-` prefix. The

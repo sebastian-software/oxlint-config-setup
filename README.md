@@ -92,23 +92,21 @@ export default getComposedOxlintConfig({
 `react` and `node` add their native rules only to their matching files. Vitest
 and Jest runner rules use canonical test patterns, while scripts, configuration
 files, and TypeScript declarations receive their own narrow fragments. The
-`getOxlintConfig()`, `getComposedOxlintConfig()`, and the Vitest/Jest loaders
-also add Testing Library rules automatically to canonical test-file patterns.
+`getOxlintConfig()` and `getComposedOxlintConfig()` also add Testing Library
+rules automatically to canonical test-file patterns.
 They use `*.test.{ts,tsx}` and `__tests__/**/*.{ts,tsx}`, with the plugin's
 official `flat/dom` preset by default and `flat/react` whenever React is
-selected. Those loaders also add the official Playwright `flat/recommended`
-preset automatically to `*.spec.ts` files. Both package-owned runtimes are
-independent of runner selection; there is no separate feature flag or consumer
-dependency to configure.
+selected. Those loaders also add the official Playwright and Storybook
+`flat/recommended` presets automatically to `*.spec.ts` and
+`*.stories.{ts,tsx}` files. All three package-owned runtimes are independent of
+runner selection; there is no separate feature flag or consumer dependency to
+configure.
 
 The composition loader keeps `options.typeAware` on the root object. It unions
 required plugins into consumer overrides, appends consumer overrides last, and
 leaves Oxlint to merge later `rules`, `env`, and `globals` entries for matching
 files. Static JSON exports remain core-only because they cannot carry a
 package-relative JavaScript-plugin path.
-
-Storybook patterns remain deferred; this version does not claim a Storybook
-policy before a native profile is accepted.
 
 ## Shipped surfaces
 
@@ -121,10 +119,11 @@ policy before a native profile is accepted.
 | Node.js                                | `getOxlintConfig({ node: true })`            | `oxlint-config-setup/json/node`              | Stable                                    |
 | AI guardrail overlay                   | `getOxlintConfig({ ai: true })`              | `oxlint-config-setup/json/ai`                | Stable warning and active-rule tightening |
 | TypeScript without a project graph     | `getSyntaxOnlyOxlintConfig()`                | `oxlint-config-setup/json/typescript-syntax` | Stable                                    |
-| Vitest                                 | `getVitestOxlintConfig()`                    | `oxlint-config-setup/json/vitest`            | Stable                                    |
-| Jest                                   | `getJestOxlintConfig()`                      | `oxlint-config-setup/json/jest`              | Stable                                    |
-| Testing Library test files             | Automatic in the main and test-runner loaders | —                                            | Stable file-scoped policy                 |
-| Playwright spec files                  | Automatic in the main and test-runner loaders | —                                            | Stable file-scoped policy                 |
+| Vitest                                 | `getComposedOxlintConfig({ scopes: ["vitest"] })` | —                                      | Stable file-scoped policy                 |
+| Jest                                   | `getComposedOxlintConfig({ scopes: ["jest"] })` | —                                        | Stable file-scoped policy                 |
+| Testing Library test files             | Automatic in the TypeScript loaders          | —                                            | Stable file-scoped policy                 |
+| Playwright spec files                  | Automatic in the TypeScript loaders          | —                                            | Stable file-scoped policy                 |
+| Storybook story files                  | Automatic in the TypeScript loaders          | —                                            | Stable file-scoped policy                 |
 | React Compiler diagnostics             | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler`    | Experimental warning                      |
 | Mixed repository file scopes            | `getComposedOxlintConfig()`                  | —                                            | Stable TypeScript-only composition API    |
 
@@ -141,12 +140,12 @@ import { getSyntaxOnlyOxlintConfig } from "oxlint-config-setup";
 export default getSyntaxOnlyOxlintConfig();
 ```
 
-For Vitest (use the corresponding Jest export for Jest):
+For Vitest (use the `jest` scope for Jest):
 
 ```ts
-import { getVitestOxlintConfig } from "oxlint-config-setup";
+import { getComposedOxlintConfig } from "oxlint-config-setup";
 
-export default getVitestOxlintConfig();
+export default getComposedOxlintConfig({ scopes: ["vitest"] });
 ```
 
 The React Compiler export is intentionally separate from stable React defaults:
@@ -192,8 +191,8 @@ prebuilt artifact or later calls.
 ## JSON consumption
 
 JSON artifacts contain the complete core objects behind the TypeScript loaders,
-without the automatic Testing Library or Playwright overrides. Copy one through its public
-package export, then run the supported Oxlint CLI directly:
+without the automatic Testing Library, Playwright, or Storybook overrides. Copy
+one through its public package export, then run the supported Oxlint CLI directly:
 
 ```sh
 node --input-type=module -e \
@@ -231,9 +230,9 @@ predecessor's scale using stable native Oxlint rules, while `nursery`,
 unselected JavaScript plugins, and non-source concerns remain excluded.
 
 Oxlint remains the only lint process. The package includes ESLint-compatible
-Testing Library and Playwright plugin runtimes for automatic test-file and E2E
-overrides; it does not run ESLint or load JavaScript React and `react-hooks`
-plugins. Formatting,
+Testing Library, Playwright, and Storybook plugin runtimes for automatic
+test-file, E2E, and story overrides; it does not run ESLint or load JavaScript
+React and `react-hooks` plugins. Formatting,
 Markdown/MDX, spelling, and package metadata remain companion-tool concerns.
 
 ## Release verification

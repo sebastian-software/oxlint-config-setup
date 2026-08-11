@@ -14,14 +14,13 @@ for its role without selecting a public feature flag.
 | --- | --- | --- |
 | `**/*.test.{ts,tsx}`, `**/__tests__/**/*.{ts,tsx}` | Unit, integration, and Testing Library tests | Testing Library applies automatically. Selected Vitest or Jest scopes use the same patterns. |
 | `**/*.spec.ts` | Playwright tests | Playwright's package-owned `flat/recommended` preset applies automatically. |
-| `**/*.stories.{ts,tsx}` | Storybook stories | Reserved for a future Storybook policy; no Storybook plugin or rule set ships today. |
+| `**/*.stories.{ts,tsx}` | Storybook stories | Storybook's package-owned `flat/recommended` story rules apply automatically. |
 
 `*.spec.ts` is not a unit-test or Testing Library pattern, and `*.test.{ts,tsx}`
 is not a Playwright pattern. The package does not recognize `*.e2e.*`,
 `*.playwright.*`, or directory-based aliases as automatic compatibility-plugin
 inputs.
 
-These automatic overrides are available through `getOxlintConfig()`,
-`getComposedOxlintConfig()`, and the Vitest/Jest loaders. Public JSON exports
-remain core-only because copied JSON cannot retain package-relative
-JavaScript-plugin paths.
+These automatic overrides are available through `getOxlintConfig()` and
+`getComposedOxlintConfig()`. Public JSON exports remain core-only because copied
+JSON cannot retain package-relative JavaScript-plugin paths.

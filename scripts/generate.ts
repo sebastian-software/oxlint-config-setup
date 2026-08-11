@@ -20,6 +20,8 @@ function activationLabel(entry: (typeof ruleLedger)[number]): string {
       return "`ai`";
     case "named":
       return "`named`";
+    case "scoped":
+      return "`scoped`";
     case "level":
       return `\`${entry.activation.minimumLevel}\``;
   }
@@ -72,7 +74,7 @@ function renderCatalog(): string {
     "",
     "## Stability boundary",
     "",
-    "`react/react-compiler` is emitted only by the explicitly named experimental artifact and begins as a warning. Testing Library and Playwright are package-owned file-scoped integrations rather than ledger profiles; Testing Library inherits the upstream DOM or React preset and Playwright inherits flat/recommended, while local evidence covers selection, activation, isolation, runtime resolution, and a clean-consumer diagnostic. Storybook, SonarJS, and regular-expression plugin domains are Deferred with explicit re-entry gates in the migration guide.",
+    "`react/react-compiler` is emitted only by the explicitly named experimental artifact and begins as a warning. Testing Library, Playwright, and Storybook are package-owned file-scoped integrations rather than ledger profiles; Testing Library inherits the upstream DOM or React preset, while Playwright and Storybook inherit flat/recommended. Local evidence covers selection, activation, isolation, runtime resolution, and a clean-consumer diagnostic. SonarJS and regular-expression plugin domains are Deferred with explicit re-entry gates in the migration guide.",
     "",
   );
   return lines.join("\n");

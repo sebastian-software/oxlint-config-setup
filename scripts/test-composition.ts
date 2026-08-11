@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 
 import playwrightPlugin from "eslint-plugin-playwright";
+import storybookPlugin from "eslint-plugin-storybook";
 import type { OxlintConfig, OxlintOverride } from "oxlint";
 
 import {
   CANONICAL_SCOPE_GLOBS,
-  DEFERRED_SCOPE_GLOBS,
   SCOPED_CONFIGS,
   composeScopedOxlintConfig,
 } from "../src/composition.js";
@@ -23,6 +23,7 @@ import {
   PLAYWRIGHT_FILE_GLOBS,
   withPlaywright,
 } from "../src/playwright.js";
+import { STORY_FILE_GLOBS, withStorybook } from "../src/storybook.js";
 
 const root: OxlintConfig = {
   env: { browser: true },
@@ -151,7 +152,7 @@ assert.deepEqual(TEST_FILE_GLOBS, [
   "**/__tests__/**/*.{ts,tsx}",
 ]);
 assert.deepEqual(PLAYWRIGHT_FILE_GLOBS, ["**/*.spec.ts"]);
-assert.deepEqual(DEFERRED_SCOPE_GLOBS.stories, ["**/*.stories.{ts,tsx}"]);
+assert.deepEqual(STORY_FILE_GLOBS, ["**/*.stories.{ts,tsx}"]);
 assert.doesNotMatch(
   TEST_FILE_GLOBS.join("\n"),
   /\.spec/u,
@@ -163,9 +164,9 @@ assert.doesNotMatch(
   "Playwright patterns exclude unit-test files",
 );
 assert.doesNotMatch(
-  DEFERRED_SCOPE_GLOBS.stories.join("\n"),
+  STORY_FILE_GLOBS.join("\n"),
   /\.(?:test|spec)/u,
-  "Storybook's reservation is disjoint from shipped policies",
+  "Storybook patterns are disjoint from test-runner policies",
 );
 
 const automatic = withTestingLibrary(root, false);
@@ -275,6 +276,41 @@ const composedPlaywright = composeScopedOxlintConfig(
 );
 assert.equal(
   composedPlaywright.overrides?.at(-1)?.rules?.["playwright/no-focused-test"],
+  "off",
+);
+
+const automaticStorybook = withStorybook(root);
+const storybookOverride = automaticStorybook.overrides?.at(-1);
+const secondStorybookOverride = withStorybook(root).overrides?.at(-1);
+const storybookPreset = storybookPlugin.configs["flat/recommended"];
+assert(Array.isArray(storybookPreset));
+const storybookPresetRules = storybookPreset.find(
+  (entry) => entry.name === "storybook:recommended:stories-rules",
+)?.rules;
+assert.deepEqual(storybookOverride?.files, STORY_FILE_GLOBS);
+assert.deepEqual(
+  storybookOverride?.jsPlugins?.map((plugin) =>
+    typeof plugin === "string" ? plugin : plugin.name,
+  ),
+  ["storybook"],
+);
+assert.deepEqual(storybookOverride?.rules, storybookPresetRules);
+assert.equal(storybookOverride?.rules?.["storybook/default-exports"], "error");
+assert.notEqual(storybookOverride?.rules, secondStorybookOverride?.rules);
+
+const composedStorybook = composeScopedOxlintConfig(
+  withStorybook(withTestingLibrary(withPlaywright(root), false)),
+  sources,
+  undefined,
+  [
+    {
+      files: ["**/*.stories.ts"],
+      rules: { "storybook/default-exports": "off" },
+    },
+  ],
+);
+assert.equal(
+  composedStorybook.overrides?.at(-1)?.rules?.["storybook/default-exports"],
   "off",
 );
 

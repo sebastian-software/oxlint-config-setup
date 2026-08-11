@@ -12,11 +12,11 @@
 | KEEP | Mandatory type-aware policy | Every level artifact uses the pinned `oxlint-tsgolint` backend. |
 | KEEP | Native React boundary | Stable React loads native `react` and `jsx-a11y`; no JavaScript React or hooks plugin is present. |
 | KEEP | Deterministic package | Clean builds and two independently packed tarballs are byte-identical. |
-| ADJUST | Supplemental profiles | Syntax-only, Vitest, Jest, and React Compiler are named complete artifacts so the selector matrix does not expand. |
-| ADJUST | JSON delivery | Twenty-eight public `./json/*` exports provide stable copy targets while hashed internal files remain private. |
+| ADJUST | Supplemental profiles | Syntax-only and React Compiler remain named complete artifacts; Vitest and Jest are mutually exclusive file-scoped policies. |
+| ADJUST | JSON delivery | Twenty-six public `./json/*` exports provide stable copy targets while hashed internal files remain private. |
 | ADJUST | Consumer customization | Five in-place rule helpers provide severity, recursively merged options, disable, add, and diagnostic-isolation operations on Oxlint objects. |
 | ADJUST | Rule catalog | The former capability sketch is replaced by a generated 27-entry ledger catalog. |
-| ADJUST | JavaScript-plugin domains | Testing Library and Playwright are package-owned automatic file-scoped integrations; Storybook, SonarJS, and regex gaps remain deferred. |
+| ADJUST | JavaScript-plugin domains | Testing Library, Playwright, and Storybook are package-owned automatic file-scoped integrations; SonarJS and regex gaps remain deferred. |
 | DEFER | Stable React Compiler | Compiler diagnostics remain an isolated warning until upstream stability changes. |
 | KEEP | Automated publication | Release Please and npm Trusted Publishing publish released versions from `main`. |
 | DEFER | Expanded version ranges | New Oxlint, tsgolint, TypeScript, Node, or package-manager versions require a full matrix run. |

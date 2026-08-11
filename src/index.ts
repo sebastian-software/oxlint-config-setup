@@ -14,6 +14,7 @@ import {
 } from "./options.js";
 import { composeProfiles } from "./profiles.js";
 import { withPlaywright } from "./playwright.js";
+import { withStorybook } from "./storybook.js";
 import { withTestingLibrary } from "./testing-library.js";
 
 export type { ConfigLevel, ConfigOptions } from "./options.js";
@@ -87,9 +88,11 @@ function loadRootConfig(options: ConfigOptions): OxlintConfig {
 
 export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
   const normalized = normalizeConfigOptions(options);
-  return withTestingLibrary(
-    withPlaywright(loadRootConfig(normalized)),
-    normalized.react,
+  return withStorybook(
+    withTestingLibrary(
+      withPlaywright(loadRootConfig(normalized)),
+      normalized.react,
+    ),
   );
 }
 
@@ -123,9 +126,11 @@ export function getComposedOxlintConfig(
         ? selection === "react"
         : selection?.scope === "react",
     );
-  const root = withTestingLibrary(
-    withPlaywright(loadRootConfig(rootOptions)),
-    react,
+  const root = withStorybook(
+    withTestingLibrary(
+      withPlaywright(loadRootConfig(rootOptions)),
+      react,
+    ),
   );
   return composeScopedOxlintConfig(
     root,
@@ -146,14 +151,6 @@ function getNamedConfig(name: NamedArtifact, typeAware = true): OxlintConfig {
 
 export function getSyntaxOnlyOxlintConfig(): OxlintConfig {
   return getNamedConfig("typescript-syntax", false);
-}
-
-export function getVitestOxlintConfig(): OxlintConfig {
-  return withTestingLibrary(withPlaywright(getNamedConfig("vitest")), false);
-}
-
-export function getJestOxlintConfig(): OxlintConfig {
-  return withTestingLibrary(withPlaywright(getNamedConfig("jest")), false);
 }
 
 export function getExperimentalReactCompilerOxlintConfig(): OxlintConfig {

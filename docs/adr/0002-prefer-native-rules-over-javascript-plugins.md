@@ -29,14 +29,14 @@ JavaScript plugins are allowed only for valuable domains with no adequate native
 implementation. Every plugin-backed integration must be explicit in the
 architecture, removable, file-scoped, and backed by package-boundary evidence.
 
-Testing Library and Playwright are accepted exceptions. The main and Vitest/Jest
-TypeScript loaders apply Testing Library's official `flat/dom` preset
-automatically to canonical `*.test.{ts,tsx}` and `__tests__/**/*.{ts,tsx}`
-files, switching to `flat/react` when React is selected, and Playwright's
-`flat/recommended` preset to canonical `*.spec.ts` files. Both are independent
-of runner selection. The package owns each plugin runtime; static JSON artifacts
-remain native core configurations because a copied JSON file cannot retain
-package-relative plugin paths.
+Testing Library, Playwright, and Storybook are accepted exceptions. The
+type-aware TypeScript loaders apply their official presets automatically to
+disjoint canonical file conventions: Testing Library on `*.test.{ts,tsx}` and
+`__tests__/**/*.{ts,tsx}`, Playwright on `*.spec.ts`, and Storybook on
+`*.stories.{ts,tsx}`. Testing Library switches from `flat/dom` to `flat/react`
+when React is selected; the other integrations use `flat/recommended`. The
+package owns each plugin runtime; static JSON artifacts remain native core
+configurations because copied JSON cannot retain package-relative plugin paths.
 
 The standard React profile uses native Oxlint React rules. It does not load a
 JavaScript React plugin to chase parity with either React plugin ecosystem.

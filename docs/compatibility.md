@@ -97,7 +97,7 @@ The shared harness invokes the supported `oxlint` executable directly and checks
 - syntax-only TypeScript with no project graph;
 - type-aware TypeScript plus a referenced composite project;
 - React/JSX accessibility, CommonJS and ESM Node.js, Vitest, and Jest;
-- automatic Testing Library DOM/React selection and Playwright `*.spec.ts` activation, each with source-file isolation;
+- automatic Testing Library DOM/React selection, Playwright `*.spec.ts`, and Storybook `*.stories.{ts,tsx}` activation, each with source-file isolation;
 - framework-specific mismatch behavior;
 - experimental React Compiler isolation;
 - unsupported configuration, timeout, and crashed-process classification;

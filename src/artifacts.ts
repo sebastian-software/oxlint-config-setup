@@ -11,8 +11,6 @@ import { composeProfiles } from "./profiles.js";
 
 export const NAMED_ARTIFACTS = [
   "typescript-syntax",
-  "vitest",
-  "jest",
   "react-compiler",
 ] as const;
 
@@ -57,22 +55,6 @@ export function createNamedConfig(name: NamedArtifact): OxlintConfig {
       return composeProfiles(["core", "imports", "typescript-syntax"], {
         level: "strict",
       });
-    case "vitest":
-      return materializeConfig(
-        composeProfiles([...COMPLETE_PROFILES, "vitest"], {
-          level: "strict",
-          policyCategories: true,
-        }),
-        "fixtures/rules/vitest/valid.ts",
-      );
-    case "jest":
-      return materializeConfig(
-        composeProfiles([...COMPLETE_PROFILES, "jest"], {
-          level: "strict",
-          policyCategories: true,
-        }),
-        "fixtures/rules/jest/valid.ts",
-      );
     case "react-compiler":
       return materializeConfig(
         composeProfiles(

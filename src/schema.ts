@@ -36,7 +36,8 @@ export type RuleActivation =
       aiOverride?: AiRuleOverride;
     }
   | { kind: "ai" }
-  | { kind: "named" };
+  | { kind: "named" }
+  | { kind: "scoped" };
 
 export interface RuleFixture {
   valid: string;
@@ -83,11 +84,8 @@ const STABILITIES = new Set<string>([
   "experimental",
 ]);
 const LEVELS = new Set<string>(CONFIG_LEVELS);
-const NAMED_PROFILES = new Set<RuleProfile>([
-  "vitest",
-  "jest",
-  "react-compiler",
-]);
+const NAMED_PROFILES = new Set<RuleProfile>(["react-compiler"]);
+const SCOPED_PROFILES = new Set<RuleProfile>(["vitest", "jest"]);
 const STABLE_NATIVE_REACT_PROFILES = new Set<RuleProfile>([
   "react",
   "jsx-a11y",
@@ -131,7 +129,12 @@ function assertRuleActivation(
 
   const value = activation as Record<string, unknown>;
   const kind = value.kind;
-  if (kind !== "level" && kind !== "ai" && kind !== "named") {
+  if (
+    kind !== "level" &&
+    kind !== "ai" &&
+    kind !== "named" &&
+    kind !== "scoped"
+  ) {
     throw new TypeError(
       `Rule ledger entry ${index} has invalid activation kind: ${String(kind)}`,
     );
@@ -152,9 +155,28 @@ function assertRuleActivation(
     return;
   }
 
+  if (kind === "scoped") {
+    if (!SCOPED_PROFILES.has(profile)) {
+      throw new TypeError(
+        `Rule ledger entry ${index} uses scoped activation outside a scoped profile`,
+      );
+    }
+    if (Object.keys(value).some((key) => key !== "kind")) {
+      throw new TypeError(
+        `Rule ledger entry ${index} scoped activation cannot define level or AI fields`,
+      );
+    }
+    return;
+  }
+
   if (NAMED_PROFILES.has(profile)) {
     throw new TypeError(
       `Rule ledger entry ${index} in profile ${profile} requires named activation`,
+    );
+  }
+  if (SCOPED_PROFILES.has(profile)) {
+    throw new TypeError(
+      `Rule ledger entry ${index} in profile ${profile} requires scoped activation`,
     );
   }
 

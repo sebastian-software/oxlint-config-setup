@@ -48,6 +48,10 @@ assert.throws(
   /named activation outside a named profile/u,
 );
 assert.throws(
+  () => validateRuleLedger([mutatedEntry({ activation: { kind: "scoped" } })]),
+  /scoped activation outside a scoped profile/u,
+);
+assert.throws(
   () =>
     validateRuleLedger([
       mutatedEntry({

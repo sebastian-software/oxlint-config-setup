@@ -1,12 +1,12 @@
 ---
-title: Named Configurations
-description: Use complete syntax-only, Vitest, Jest, or experimental React Compiler configurations when the root selector is not the right contract.
+title: Special and Scoped Configurations
+description: Use complete syntax-only and experimental React Compiler configurations, or select file-scoped Vitest and Jest policy.
 order: 6
 ---
 
-# Named Configurations
+# Special and Scoped Configurations
 
-The 24 configurable artifacts cover the standard type-aware TypeScript path with optional React, Node.js, and AI concerns. Four complete named artifacts handle different execution contracts without expanding that selector matrix.
+The 24 configurable artifacts cover the standard type-aware TypeScript path with optional React, Node.js, and AI concerns. Two complete named artifacts handle syntax-only and experimental compiler execution contracts. Vitest and Jest are composed as file-scoped policy instead of complete root configurations.
 
 ## Syntax-only TypeScript
 
@@ -25,12 +25,12 @@ This is the only stable configuration that does not require the type-aware backe
 Select one test owner deliberately:
 
 ```ts
-import { getVitestOxlintConfig } from "oxlint-config-setup";
+import { getComposedOxlintConfig } from "oxlint-config-setup";
 
-export default getVitestOxlintConfig();
+export default getComposedOxlintConfig({ scopes: ["vitest"] });
 ```
 
-Use `getJestOxlintConfig()` for Jest. The two are not composed because their shared APIs overlap.
+Use the `jest` scope for Jest. Both scopes match `*.test.{ts,tsx}` and `__tests__/**/*.{ts,tsx}`. They cannot be selected together because their shared APIs overlap.
 
 ## React Compiler
 
@@ -46,9 +46,9 @@ The native compiler rule starts as a warning and the export remains explicitly e
 
 ## Public JSON equivalents
 
-Each named loader has a stable JSON subpath:
+Each complete named loader has a stable JSON subpath:
 
 - `oxlint-config-setup/json/typescript-syntax`
-- `oxlint-config-setup/json/vitest`
-- `oxlint-config-setup/json/jest`
 - `oxlint-config-setup/json/react-compiler`
+
+Vitest and Jest do not have static JSON equivalents because their policies are file-scoped fragments composed by the TypeScript loader.
