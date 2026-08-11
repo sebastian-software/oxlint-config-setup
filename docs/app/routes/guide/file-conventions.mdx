@@ -1,0 +1,27 @@
+---
+title: File Conventions
+description: Use the canonical test, Playwright, and Storybook file names that determine automatic file-scoped policy.
+order: 3
+---
+
+# File Conventions
+
+The TypeScript loaders apply file-scoped policy by filename convention. The
+three canonical patterns are disjoint, so a file receives the policy intended
+for its role without selecting a public feature flag.
+
+| Pattern | Ownership | Current behavior |
+| --- | --- | --- |
+| `**/*.test.{ts,tsx}`, `**/__tests__/**/*.{ts,tsx}` | Unit, integration, and Testing Library tests | Testing Library applies automatically. Selected Vitest or Jest scopes use the same patterns. |
+| `**/*.spec.ts` | Playwright tests | Playwright's package-owned `flat/recommended` preset applies automatically. |
+| `**/*.stories.{ts,tsx}` | Storybook stories | Reserved for a future Storybook policy; no Storybook plugin or rule set ships today. |
+
+`*.spec.ts` is not a unit-test or Testing Library pattern, and `*.test.{ts,tsx}`
+is not a Playwright pattern. The package does not recognize `*.e2e.*`,
+`*.playwright.*`, or directory-based aliases as automatic compatibility-plugin
+inputs.
+
+These automatic overrides are available through `getOxlintConfig()`,
+`getComposedOxlintConfig()`, and the Vitest/Jest loaders. Public JSON exports
+remain core-only because copied JSON cannot retain package-relative
+JavaScript-plugin paths.

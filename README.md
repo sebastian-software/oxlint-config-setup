@@ -94,12 +94,12 @@ and Jest runner rules use canonical test patterns, while scripts, configuration
 files, and TypeScript declarations receive their own narrow fragments. The
 `getOxlintConfig()`, `getComposedOxlintConfig()`, and the Vitest/Jest loaders
 also add Testing Library rules automatically to canonical test-file patterns.
-They use the plugin's official `flat/dom` preset by default and `flat/react`
-whenever React is selected. Those loaders also add the official Playwright
-`flat/recommended` preset automatically to `*.e2e.*`, `*.playwright.*`,
-`e2e/`, and `playwright/` files. Both package-owned runtimes are independent of
-runner selection; there is no separate feature flag or consumer dependency to
-configure.
+They use `*.test.{ts,tsx}` and `__tests__/**/*.{ts,tsx}`, with the plugin's
+official `flat/dom` preset by default and `flat/react` whenever React is
+selected. Those loaders also add the official Playwright `flat/recommended`
+preset automatically to `*.spec.ts` files. Both package-owned runtimes are
+independent of runner selection; there is no separate feature flag or consumer
+dependency to configure.
 
 The composition loader keeps `options.typeAware` on the root object. It unions
 required plugins into consumer overrides, appends consumer overrides last, and
@@ -124,7 +124,7 @@ policy before a native profile is accepted.
 | Vitest                                 | `getVitestOxlintConfig()`                    | `oxlint-config-setup/json/vitest`            | Stable                                    |
 | Jest                                   | `getJestOxlintConfig()`                      | `oxlint-config-setup/json/jest`              | Stable                                    |
 | Testing Library test files             | Automatic in the main and test-runner loaders | —                                            | Stable file-scoped policy                 |
-| Playwright E2E files                   | Automatic in the main and test-runner loaders | —                                            | Stable file-scoped policy                 |
+| Playwright spec files                  | Automatic in the main and test-runner loaders | —                                            | Stable file-scoped policy                 |
 | React Compiler diagnostics             | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler`    | Experimental warning                      |
 | Mixed repository file scopes            | `getComposedOxlintConfig()`                  | —                                            | Stable TypeScript-only composition API    |
 

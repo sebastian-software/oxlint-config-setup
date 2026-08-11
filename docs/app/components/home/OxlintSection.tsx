@@ -21,7 +21,7 @@ export function OxlintSection() {
             Oxlint remains the only lint process. Native rules cover JavaScript,
             TypeScript, imports, React, accessibility, Node.js, Vitest, and Jest;
             the package also resolves Testing Library and Playwright checks for
-            their canonical test and E2E files.
+            their canonical unit-test and Playwright spec files.
             Type-aware checks stay inside the same command through the pinned
             native backend.
           </p>

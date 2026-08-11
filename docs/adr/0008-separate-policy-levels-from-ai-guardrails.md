@@ -83,10 +83,10 @@ keeps `options.typeAware` on the root. React and Node context deltas are scoped
 to selected file globs; Vitest and Jest add native runner rules only to canonical
 test patterns. Scripts, config files, and declaration files have narrow native
 fragments. Testing Library is an automatic package-owned override on canonical
-test patterns and does not add a public scope or runner dependency. It inherits
-`flat/dom` from the plugin by default and `flat/react` when the configuration
-selects React. Playwright is an automatic package-owned override on canonical
-`*.e2e.*`, `*.playwright.*`, `e2e/`, and `playwright/` files; it inherits the
+`*.test.{ts,tsx}` and `__tests__/**/*.{ts,tsx}` patterns and does not add a
+public scope or runner dependency. It inherits `flat/dom` from the plugin by
+default and `flat/react` when the configuration selects React. Playwright is an
+automatic package-owned override on canonical `*.spec.ts` files; it inherits the
 plugin's `flat/recommended` preset without a public scope or runner dependency.
 Package-created scope identities let public rule helpers target one override and
 reject unknown or unselected scopes.
@@ -102,10 +102,10 @@ exports, then append the runtime-resolved Testing Library and Playwright
 overrides. Static JSON exports remain core-only because copied JSON cannot
 retain those package-relative plugin paths.
 
-Storybook globs are documented but deliberately have no profile yet. Testing
-Library and Playwright follow the automatic override model without separate
-public flags, with upstream-owned preset membership and package-boundary
-evidence rather than duplicated per-rule fixture suites.
+`*.stories.{ts,tsx}` is reserved as Storybook's file boundary but deliberately
+has no profile yet. Testing Library and Playwright follow the automatic override
+model without separate public flags, with upstream-owned preset membership and
+package-boundary evidence rather than duplicated per-rule fixture suites.
 
 Syntax-only TypeScript remains a narrower named configuration without
 type-aware category expansion. Vitest, Jest, and the experimental React Compiler

@@ -444,16 +444,15 @@ for (const options of allConfigOptions()) {
     ),
   );
   assert.deepEqual(playwrightOverride?.files, [
-    "**/*.{e2e,playwright}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-    "**/{e2e,playwright}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+    "**/*.spec.ts",
   ]);
   assert.equal(playwrightOverride?.jsPlugins?.length, 1);
   assert.equal(Object.keys(playwrightOverride?.rules ?? {}).length, 37);
   assert.equal(playwrightOverride?.rules?.["playwright/no-focused-test"], "error");
   assert.equal(playwrightOverride?.globals?.AbortController, "readonly");
   assert.deepEqual(testingLibraryOverride?.files, [
-    "**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-    "**/{__tests__,__mocks__}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+    "**/*.test.{ts,tsx}",
+    "**/__tests__/**/*.{ts,tsx}",
   ]);
   assert.equal(testingLibraryOverride?.jsPlugins?.length, 1);
   assert.equal(
@@ -887,18 +886,18 @@ try {
   );
 
   writeFileSync(
-    resolve(consumerRoot, "TestingLibrary.test.js"),
+    resolve(consumerRoot, "TestingLibrary.test.tsx"),
     'import { screen } from "@testing-library/dom";\nscreen.debug();\n',
   );
   writeFileSync(
-    resolve(consumerRoot, "TestingLibrarySource.js"),
+    resolve(consumerRoot, "TestingLibrary.spec.ts"),
     'import { screen } from "@testing-library/dom";\nscreen.debug();\n',
   );
   assert.throws(
     () =>
       run(
         consumerOxlint,
-        ["--config", "oxlint.config.ts", "--deny-warnings", "TestingLibrary.test.js"],
+        ["--config", "oxlint.config.ts", "--deny-warnings", "TestingLibrary.test.tsx"],
         consumerRoot,
       ),
     (error: unknown) =>
@@ -909,7 +908,7 @@ try {
   );
   run(
     consumerOxlint,
-    ["--config", "oxlint.config.ts", "--deny-warnings", "TestingLibrarySource.js"],
+    ["--config", "oxlint.config.ts", "--deny-warnings", "TestingLibrary.spec.ts"],
     consumerRoot,
   );
 
@@ -937,18 +936,18 @@ try {
   );
 
   writeFileSync(
-    resolve(consumerRoot, "Focused.e2e.js"),
+    resolve(consumerRoot, "Focused.spec.ts"),
     'test.only("focused", () => {});\n',
   );
   writeFileSync(
-    resolve(consumerRoot, "FocusedSource.js"),
+    resolve(consumerRoot, "Focused.test.ts"),
     'test.only("focused", () => {});\n',
   );
   assert.throws(
     () =>
       run(
         consumerOxlint,
-        ["--config", "oxlint.config.ts", "--deny-warnings", "Focused.e2e.js"],
+        ["--config", "oxlint.config.ts", "--deny-warnings", "Focused.spec.ts"],
         consumerRoot,
       ),
     (error: unknown) =>
@@ -959,7 +958,7 @@ try {
   );
   run(
     consumerOxlint,
-    ["--config", "oxlint.config.ts", "--deny-warnings", "FocusedSource.js"],
+    ["--config", "oxlint.config.ts", "--deny-warnings", "Focused.test.ts"],
     consumerRoot,
   );
 

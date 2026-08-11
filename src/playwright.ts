@@ -4,8 +4,7 @@ import playwrightPlugin from "eslint-plugin-playwright";
 import type { DummyRuleMap, OxlintConfig, OxlintOverride } from "oxlint";
 
 export const PLAYWRIGHT_FILE_GLOBS = [
-  "**/*.{e2e,playwright}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-  "**/{e2e,playwright}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+  "**/*.spec.ts",
 ] as const;
 
 function cloneGlobals(globals: unknown): OxlintOverride["globals"] {
@@ -62,7 +61,7 @@ function playwrightOverride(): OxlintOverride {
   };
 }
 
-/** Add the package-owned Playwright policy to canonical E2E files. */
+/** Add the package-owned Playwright policy to canonical spec files. */
 export function withPlaywright(config: OxlintConfig): OxlintConfig {
   return {
     ...config,

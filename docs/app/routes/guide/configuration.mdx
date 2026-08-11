@@ -111,8 +111,8 @@ export default getComposedOxlintConfig({
 ```
 
 `react`, `node`, `vitest`, `jest`, `scripts`, `config`, and `declarations` are
-available scopes. Test scopes only match canonical `*.test`/`*.spec` and
-`__tests__` or `__mocks__` patterns. Consumer overrides append after package
+available scopes. Test scopes only match canonical `*.test.{ts,tsx}` and
+`__tests__/**/*.{ts,tsx}` patterns. Consumer overrides append after package
 fragments; their plugin arrays are unioned with required plugins so an override
 cannot accidentally replace them. Rules, environments, and globals then follow
 Oxlint's normal later-override behavior.
@@ -120,18 +120,18 @@ Oxlint's normal later-override behavior.
 Select either the Vitest or Jest scope for one configuration. The loader rejects
 both together because their runner rules overlap.
 
-Testing Library rules apply automatically to the same canonical test files in
-the main TypeScript loaders and the Vitest/Jest loaders. The plugin's `flat/dom`
-preset is the default; selecting React switches the test-file override to
-`flat/react`. This does not depend on a selected test runner, and the package
-supplies the required runtime.
+Testing Library rules apply automatically to canonical `*.test.{ts,tsx}` and
+`__tests__/**/*.{ts,tsx}` files in the main TypeScript loaders and the
+Vitest/Jest loaders. The plugin's `flat/dom` preset is the default; selecting
+React switches the test-file override to `flat/react`. This does not depend on
+a selected test runner, and the package supplies the required runtime.
 
 The composition API is TypeScript-only because it constructs file overrides at
 runtime. The same loaders automatically apply Playwright's `flat/recommended`
-preset to `*.e2e.*`, `*.playwright.*`, `e2e/`, and `playwright/` files. This also
-has no runner dependency. Public JSON exports remain core-only configurations
-because copied JSON cannot retain package-relative plugin paths. Storybook
-patterns remain reserved for a future accepted profile.
+preset to `*.spec.ts` files. This also has no runner dependency. Public JSON
+exports remain core-only configurations because copied JSON cannot retain
+package-relative plugin paths. `*.stories.{ts,tsx}` files remain reserved for a
+future Storybook profile.
 
 ## Defaults
 

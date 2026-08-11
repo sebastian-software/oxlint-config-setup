@@ -146,10 +146,27 @@ assert.deepEqual(
   SCOPED_CONFIGS,
   ["react", "node", "vitest", "jest", "scripts", "config", "declarations"],
 );
-assert.deepEqual(DEFERRED_SCOPE_GLOBS.stories, [
-  "**/*.stories.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-  "**/{stories,storybook}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+assert.deepEqual(TEST_FILE_GLOBS, [
+  "**/*.test.{ts,tsx}",
+  "**/__tests__/**/*.{ts,tsx}",
 ]);
+assert.deepEqual(PLAYWRIGHT_FILE_GLOBS, ["**/*.spec.ts"]);
+assert.deepEqual(DEFERRED_SCOPE_GLOBS.stories, ["**/*.stories.{ts,tsx}"]);
+assert.doesNotMatch(
+  TEST_FILE_GLOBS.join("\n"),
+  /\.spec/u,
+  "unit-test patterns exclude Playwright spec files",
+);
+assert.doesNotMatch(
+  PLAYWRIGHT_FILE_GLOBS.join("\n"),
+  /\.test/u,
+  "Playwright patterns exclude unit-test files",
+);
+assert.doesNotMatch(
+  DEFERRED_SCOPE_GLOBS.stories.join("\n"),
+  /\.(?:test|spec)/u,
+  "Storybook's reservation is disjoint from shipped policies",
+);
 
 const automatic = withTestingLibrary(root, false);
 const domTestingLibraryOverride = automatic.overrides?.at(-1);
@@ -251,7 +268,7 @@ const composedPlaywright = composeScopedOxlintConfig(
   undefined,
   [
     {
-      files: ["**/*.e2e.ts"],
+      files: ["**/*.spec.ts"],
       rules: { "playwright/no-focused-test": "off" },
     },
   ],

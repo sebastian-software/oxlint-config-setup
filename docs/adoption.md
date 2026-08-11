@@ -81,20 +81,21 @@ export default getComposedOxlintConfig({
 
 The canonical `react` pattern is `**/*.{jsx,tsx}`. `node` uses explicit Node
 module extensions by default, so provide `files` for ordinary `.ts` source in a
-Node package. Vitest and Jest use `*.test`/`*.spec` names and `__tests__` or
-`__mocks__` directories across supported JavaScript and TypeScript extensions.
+Node package. Vitest and Jest use `*.test.{ts,tsx}` and
+`__tests__/**/*.{ts,tsx}`. Playwright owns `*.spec.ts`. Storybook reserves
+`*.stories.{ts,tsx}` for a future profile.
 Select one runner scope: Vitest and Jest intentionally reject a combined
 selection because their runner rules overlap.
 Scripts, configuration files, and declarations use conventional directory,
 `*.config.*`, and `*.d.*` patterns respectively.
 
 The main TypeScript loaders and the Vitest/Jest loaders automatically apply
-Testing Library rules to canonical test files. They inherit the plugin's
-`flat/dom` preset by default and `flat/react` when React is selected.
-Those loaders also apply Playwright's `flat/recommended` preset to canonical
-`*.e2e.*`, `*.playwright.*`, `e2e/`, and `playwright/` files. Both selections
-are independent of the test runner, and the package supplies the required
-runtimes.
+Testing Library rules to canonical `*.test.{ts,tsx}` and
+`__tests__/**/*.{ts,tsx}` files. They inherit the plugin's `flat/dom` preset by
+default and `flat/react` when React is selected. Those loaders also apply
+Playwright's `flat/recommended` preset to canonical `*.spec.ts` files. Both
+selections are independent of the test runner, and the package supplies the
+required runtimes.
 
 Fragments append in a stable order and consumer overrides append after them. A
 consumer override's plugins are unioned with the root and selected fragment
@@ -103,8 +104,8 @@ replacement. Rules, environments, and globals retain Oxlint's normal
 last-matching-override semantics. The root remains type-aware; no scope can
 move `options.typeAware` into a file override.
 
-Storybook (`*.stories.*`, `stories/`, and `storybook/`) patterns are recorded
-for a future profile, but no Storybook profile ships in this release.
+Storybook `*.stories.{ts,tsx}` files are reserved for a future profile, but no
+Storybook policy ships in this release.
 
 ## Install and run
 

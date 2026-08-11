@@ -1,7 +1,7 @@
 ---
 title: Architecture
 description: Understand the Oxlint-only runtime, prebuilt artifact selection, rule ledger, and validation boundaries.
-order: 6
+order: 7
 ---
 
 # Architecture
@@ -10,7 +10,7 @@ Oxlint Config Setup is a native Oxlint product, not an ESLint compatibility laye
 
 ## One runtime
 
-The standard command invokes Oxlint directly. JavaScript, TypeScript, imports, React, JSX accessibility, Node.js, Vitest, and Jest are covered through native Oxlint plugins. Package-owned Testing Library and Playwright compatibility plugins apply only to canonical test and E2E files. Type-aware TypeScript rules use the pinned `oxlint-tsgolint` backend through the same command.
+The standard command invokes Oxlint directly. JavaScript, TypeScript, imports, React, JSX accessibility, Node.js, Vitest, and Jest are covered through native Oxlint plugins. Package-owned Testing Library and Playwright compatibility plugins apply only to canonical `*.test.{ts,tsx}`/`__tests__/**/*.{ts,tsx}` and `*.spec.ts` files. Type-aware TypeScript rules use the pinned `oxlint-tsgolint` backend through the same command.
 
 ## Prebuilt configuration selection
 
