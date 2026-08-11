@@ -263,6 +263,7 @@ follow-up patch release, then verify that new version instead.
 | TypeScript behavior target | `7.0.2`         |
 | Testing Library plugin     | `7.16.2`        |
 | Playwright plugin          | `2.11.0`        |
+| Storybook plugin           | `0.12.0`        |
 | ESLint compatibility API   | `9.39.1`        |
 | npm clean consumer         | major 10 or 11  |
 | pnpm clean consumer        | `11.20.0`       |
