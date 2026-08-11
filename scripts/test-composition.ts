@@ -150,16 +150,39 @@ assert.deepEqual(DEFERRED_SCOPE_GLOBS.stories, [
   "**/{stories,storybook}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
 ]);
 
-const automatic = withTestingLibrary(root);
-const testingLibraryOverride = automatic.overrides?.at(-1);
-assert.deepEqual(testingLibraryOverride?.files, TEST_FILE_GLOBS);
+const automatic = withTestingLibrary(root, false);
+const domTestingLibraryOverride = automatic.overrides?.at(-1);
+assert.deepEqual(domTestingLibraryOverride?.files, TEST_FILE_GLOBS);
 assert.deepEqual(
-  testingLibraryOverride?.jsPlugins?.map((plugin) =>
+  domTestingLibraryOverride?.jsPlugins?.map((plugin) =>
     typeof plugin === "string" ? plugin : plugin.name,
   ),
   ["testing-library"],
 );
-assert.equal(Object.keys(testingLibraryOverride?.rules ?? {}).length, 17);
+assert.equal(Object.keys(domTestingLibraryOverride?.rules ?? {}).length, 15);
+assert.deepEqual(
+  domTestingLibraryOverride?.rules?.["testing-library/await-async-events"],
+  ["error", { eventModule: "userEvent" }],
+);
+assert.equal(
+  domTestingLibraryOverride?.rules?.["testing-library/no-dom-import"],
+  undefined,
+);
+
+const reactTestingLibraryOverride = withTestingLibrary(root, true).overrides?.at(
+  -1,
+);
+assert.equal(Object.keys(reactTestingLibraryOverride?.rules ?? {}).length, 22);
+assert.deepEqual(
+  reactTestingLibraryOverride?.rules?.["testing-library/no-dom-import"],
+  ["error", "react"],
+);
+assert.equal(
+  reactTestingLibraryOverride?.rules?.[
+    "testing-library/no-debugging-utils"
+  ],
+  "warn",
+);
 
 const composedAutomatic = composeScopedOxlintConfig(
   automatic,

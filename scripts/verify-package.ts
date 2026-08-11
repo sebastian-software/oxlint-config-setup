@@ -441,7 +441,18 @@ for (const options of allConfigOptions()) {
     "**/{__tests__,__mocks__}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
   ]);
   assert.equal(testingLibraryOverride?.jsPlugins?.length, 1);
-  assert.equal(Object.keys(testingLibraryOverride?.rules ?? {}).length, 17);
+  assert.equal(
+    Object.keys(testingLibraryOverride?.rules ?? {}).length,
+    options.react ? 22 : 15,
+  );
+  assert.deepEqual(
+    testingLibraryOverride?.rules?.["testing-library/await-async-events"],
+    ["error", { eventModule: "userEvent" }],
+  );
+  assert.deepEqual(
+    testingLibraryOverride?.rules?.["testing-library/no-dom-import"],
+    options.react ? ["error", "react"] : undefined,
+  );
   const loadedCore = { ...loaded };
   delete loadedCore.overrides;
   assert.deepEqual(loadedCore, expected.config);
@@ -453,10 +464,29 @@ for (const config of [
   publicApi.getVitestOxlintConfig(),
   publicApi.getJestOxlintConfig(),
 ]) {
-  const plugin = config.overrides?.at(-1)?.jsPlugins?.at(-1);
+  const testingLibraryOverride = config.overrides?.at(-1);
+  const plugin = testingLibraryOverride?.jsPlugins?.at(-1);
   assert(plugin !== undefined && typeof plugin !== "string");
   assert.equal(plugin.name, "testing-library");
+  assert.equal(Object.keys(testingLibraryOverride?.rules ?? {}).length, 15);
 }
+assert.equal(
+  Object.keys(
+    publicApi.getComposedOxlintConfig().overrides?.at(-1)?.rules ?? {},
+  ).length,
+  15,
+);
+assert.deepEqual(
+  publicApi
+    .getComposedOxlintConfig({ scopes: ["react"] })
+    .overrides?.find((override) =>
+      override.jsPlugins?.some(
+        (plugin) =>
+          typeof plugin !== "string" && plugin.name === "testing-library",
+      ),
+    )?.rules?.["testing-library/no-dom-import"],
+  ["error", "react"],
+);
 assert.equal(
   publicApi.getExperimentalReactCompilerOxlintConfig().rules?.[
     "react/react-compiler"
@@ -499,7 +529,11 @@ const strict = publicApi.getOxlintConfig({ level: "strict" });
 assert.equal(strict.rules?.["import/no-self-import"], "error");
 assert.equal(strict.rules?.["eslint/no-warning-comments"], "off");
 const composed = publicApi.getComposedOxlintConfig({
-  scopes: ["react", "vitest", "scripts"],
+  scopes: [
+    { scope: "react", files: ["packages/web/**/*.{jsx,tsx}"] },
+    "vitest",
+    "scripts",
+  ],
   overrides: [
     {
       files: ["**/*.test.tsx"],
@@ -511,6 +545,11 @@ const composed = publicApi.getComposedOxlintConfig({
 assert.equal(composed.options?.typeAware, true);
 assert(composed.plugins?.includes("vitest"));
 assert(composed.plugins?.includes("node"));
+assert.deepEqual(
+  composed.overrides?.find((override) => override.jsPlugins !== undefined)
+    ?.rules?.["testing-library/no-dom-import"],
+  ["error", "react"],
+);
 assert.deepEqual(composed.overrides?.at(-1)?.plugins, composed.plugins);
 assert.equal(
   activeRuleCount(publicApi.getOxlintConfig({ level: "essential" })),
@@ -700,9 +739,14 @@ try {
       'assert(getJestOxlintConfig().plugins.includes("jest"));',
       'assert.equal(getExperimentalReactCompilerOxlintConfig().rules["react/react-compiler"], "warn");',
       'assert.equal(getOxlintConfig().overrides.at(-1).jsPlugins.at(-1).name, "testing-library");',
+      "assert.equal(Object.keys(getOxlintConfig().overrides.at(-1).rules).length, 15);",
+      "assert.equal(Object.keys(getOxlintConfig({ react: true }).overrides.at(-1).rules).length, 22);",
+      'assert.deepEqual(getOxlintConfig({ react: true }).overrides.at(-1).rules["testing-library/no-dom-import"], ["error", "react"]);',
       'const composed = getComposedOxlintConfig({ scopes: ["react", "vitest"], overrides: [{ files: ["**/*.test.tsx"], plugins: ["jsx-a11y"] }] });',
       'assert.equal(composed.options.typeAware, true);',
       'assert(composed.plugins.includes("vitest"));',
+      'const composedTestingLibrary = composed.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "testing-library"));',
+      'assert.deepEqual(composedTestingLibrary.rules["testing-library/no-dom-import"], ["error", "react"]);',
       'assert.deepEqual(composed.overrides.at(-1).plugins, composed.plugins);',
       "const customized = getOxlintConfig({ ai: true });",
       'setRuleSeverity(customized, "eslint/no-warning-comments", "error");',
@@ -865,6 +909,7 @@ try {
       'const plugin = getOxlintConfig().overrides.at(-1).jsPlugins.at(-1);',
       'assert.equal(plugin.name, "testing-library");',
       'assert(statSync(plugin.specifier).isFile());',
+      "assert.equal(Object.keys(getOxlintConfig().overrides.at(-1).rules).length, 15);",
       "",
     ].join("\n"),
   );

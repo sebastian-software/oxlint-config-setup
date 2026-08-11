@@ -85,7 +85,8 @@ function loadRootConfig(options: ConfigOptions): OxlintConfig {
 }
 
 export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
-  return withTestingLibrary(loadRootConfig(options));
+  const normalized = normalizeConfigOptions(options);
+  return withTestingLibrary(loadRootConfig(normalized), normalized.react);
 }
 
 /**
@@ -111,7 +112,14 @@ export function getComposedOxlintConfig(
     level: options.level,
     ai: options.ai,
   });
-  const root = withTestingLibrary(loadRootConfig(rootOptions));
+  const react =
+    Array.isArray(options.scopes) &&
+    options.scopes.some((selection) =>
+      typeof selection === "string"
+        ? selection === "react"
+        : selection?.scope === "react",
+    );
+  const root = withTestingLibrary(loadRootConfig(rootOptions), react);
   return composeScopedOxlintConfig(
     root,
     {
@@ -134,11 +142,11 @@ export function getSyntaxOnlyOxlintConfig(): OxlintConfig {
 }
 
 export function getVitestOxlintConfig(): OxlintConfig {
-  return withTestingLibrary(getNamedConfig("vitest"));
+  return withTestingLibrary(getNamedConfig("vitest"), false);
 }
 
 export function getJestOxlintConfig(): OxlintConfig {
-  return withTestingLibrary(getNamedConfig("jest"));
+  return withTestingLibrary(getNamedConfig("jest"), false);
 }
 
 export function getExperimentalReactCompilerOxlintConfig(): OxlintConfig {

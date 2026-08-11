@@ -52,9 +52,10 @@ is recorded as a warning so ordinary runner noise does not fail the canary.
 
 The scheduled native-upgrade job remains focused on Oxlint's native surface.
 The pinned package gate separately exercises the automatic Testing Library
-override from a clean consumer. Updating its runtime versions requires the same
-clean-consumer boundary check; per-rule semantics remain owned by the upstream
-plugin's test suite.
+override and its DOM/React preset selection from a clean consumer. Updating its
+runtime versions requires the same clean-consumer boundary check; preset
+membership and per-rule semantics remain owned by the upstream plugin's test
+suite.
 
 When Renovate or another dependency update PR is ready for review, link its
 updated-toolchain change to a successful canary run. To reproduce a run locally
@@ -95,7 +96,7 @@ The shared harness invokes the supported `oxlint` executable directly and checks
 - syntax-only TypeScript with no project graph;
 - type-aware TypeScript plus a referenced composite project;
 - React/JSX accessibility, CommonJS and ESM Node.js, Vitest, and Jest;
-- automatic Testing Library activation for a test file and isolation from a source file;
+- automatic Testing Library DOM/React preset selection, test-file activation, and source-file isolation;
 - framework-specific mismatch behavior;
 - experimental React Compiler isolation;
 - unsupported configuration, timeout, and crashed-process classification;

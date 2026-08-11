@@ -84,6 +84,8 @@ to selected file globs; Vitest and Jest add native runner rules only to canonica
 test patterns. Scripts, config files, and declaration files have narrow native
 fragments. Testing Library is an automatic package-owned override on the same
 canonical test patterns and does not add a public scope or runner dependency.
+It inherits `flat/dom` from the plugin by default and `flat/react` when the
+configuration selects React.
 Package-created scope identities let public rule helpers target one override and
 reject unknown or unselected scopes.
 
@@ -101,7 +103,8 @@ plugin path.
 The canonical E2E/Playwright and Storybook globs are documented but deliberately
 have no profile yet. If accepted, Playwright and Storybook extend this override
 model without separate public flags. Testing Library already follows this model
-with package-boundary evidence rather than a duplicated per-rule fixture suite.
+with upstream-owned preset membership and package-boundary evidence rather than
+a duplicated per-rule fixture suite.
 
 Syntax-only TypeScript remains a narrower named configuration without
 type-aware category expansion. Vitest, Jest, and the experimental React Compiler

@@ -94,8 +94,10 @@ and Jest runner rules use canonical test patterns, while scripts, configuration
 files, and TypeScript declarations receive their own narrow fragments. The
 `getOxlintConfig()`, `getComposedOxlintConfig()`, and the Vitest/Jest loaders
 also add Testing Library rules automatically to the same canonical test-file
-patterns. The package owns and resolves that runtime; there is no feature flag,
-React coupling, runner requirement, or consumer dependency to configure.
+patterns. They use the plugin's official `flat/dom` preset by default and
+`flat/react` whenever React is selected. The package owns and resolves that
+runtime; there is no separate feature flag, runner requirement, or consumer
+dependency to configure.
 
 The composition loader keeps `options.typeAware` on the root object. It unions
 required plugins into consumer overrides, appends consumer overrides last, and
@@ -226,8 +228,9 @@ predecessor's scale using stable native Oxlint rules, while `nursery`,
 unselected JavaScript plugins, and non-source concerns remain excluded.
 
 Oxlint remains the only lint process. The package includes the ESLint-compatible
-Testing Library plugin runtime for its automatic test-file override; it does not
-run ESLint or load JavaScript React and `react-hooks` plugins. Formatting,
+Testing Library plugin runtime and inherits its DOM or React flat preset for the
+automatic test-file override; it does not run ESLint or load JavaScript React
+and `react-hooks` plugins. Formatting,
 Markdown/MDX, spelling, and package metadata remain companion-tool concerns.
 
 ## Release verification

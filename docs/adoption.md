@@ -89,8 +89,10 @@ Scripts, configuration files, and declarations use conventional directory,
 `*.config.*`, and `*.d.*` patterns respectively.
 
 The main TypeScript loaders and the Vitest/Jest loaders automatically apply
-Testing Library rules to the same canonical test files. This is independent of
-React and the selected test runner; the package supplies the required runtime.
+Testing Library rules to the same canonical test files. They inherit the
+plugin's `flat/dom` preset by default and `flat/react` when React is selected.
+The selection is independent of the test runner, and the package supplies the
+required runtime.
 
 Fragments append in a stable order and consumer overrides append after them. A
 consumer override's plugins are unioned with the root and selected fragment
