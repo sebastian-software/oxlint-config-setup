@@ -89,10 +89,12 @@ Scripts, configuration files, and declarations use conventional directory,
 `*.config.*`, and `*.d.*` patterns respectively.
 
 The main TypeScript loaders and the Vitest/Jest loaders automatically apply
-Testing Library rules to the same canonical test files. They inherit the
-plugin's `flat/dom` preset by default and `flat/react` when React is selected.
-The selection is independent of the test runner, and the package supplies the
-required runtime.
+Testing Library rules to canonical test files. They inherit the plugin's
+`flat/dom` preset by default and `flat/react` when React is selected.
+Those loaders also apply Playwright's `flat/recommended` preset to canonical
+`*.e2e.*`, `*.playwright.*`, `e2e/`, and `playwright/` files. Both selections
+are independent of the test runner, and the package supplies the required
+runtimes.
 
 Fragments append in a stable order and consumer overrides append after them. A
 consumer override's plugins are unioned with the root and selected fragment
@@ -101,9 +103,8 @@ replacement. Rules, environments, and globals retain Oxlint's normal
 last-matching-override semantics. The root remains type-aware; no scope can
 move `options.typeAware` into a file override.
 
-Playwright/E2E (`*.e2e.*`, `*.playwright.*`, `e2e/`, and `playwright/`) and
 Storybook (`*.stories.*`, `stories/`, and `storybook/`) patterns are recorded
-for a future profile, but no such profile ships in this release.
+for a future profile, but no Storybook profile ships in this release.
 
 ## Install and run
 
@@ -136,7 +137,8 @@ unknown or unselected scope throws instead of silently doing nothing.
 ## Use a public JSON artifact
 
 Every core and named artifact has a public JSON equivalent. These static files
-do not include the TypeScript loaders' automatic Testing Library override. For
+do not include the TypeScript loaders' automatic Testing Library or Playwright
+overrides. For
 the default:
 
 ```sh

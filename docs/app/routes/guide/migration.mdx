@@ -17,7 +17,13 @@ Treat migration as a behavior change, not a package-name replacement.
 
 ## What intentionally does not migrate
 
-The package does not preserve every historical plugin identity. Stable native Oxlint rules take ownership where they cover the same defect. Testing Library is the exception: the main and test-runner loaders apply its package-owned plugin automatically to test files, using the plugin's DOM preset by default and its React preset when React is selected. Playwright, Storybook, SonarJS, and regular-expression gaps remain explicit.
+The package does not preserve every historical plugin identity. Stable native
+Oxlint rules take ownership where they cover the same defect. Testing Library
+and Playwright are exceptions: the main and test-runner loaders apply their
+package-owned plugins automatically to canonical test and E2E files. Testing
+Library uses its DOM preset by default and React preset when React is selected;
+Playwright uses its recommended preset. Storybook, SonarJS, and
+regular-expression gaps remain explicit.
 
 ## Start smaller when needed
 

@@ -16,7 +16,7 @@
 | ADJUST | JSON delivery | Twenty-eight public `./json/*` exports provide stable copy targets while hashed internal files remain private. |
 | ADJUST | Consumer customization | Five in-place rule helpers provide severity, recursively merged options, disable, add, and diagnostic-isolation operations on Oxlint objects. |
 | ADJUST | Rule catalog | The former capability sketch is replaced by a generated 27-entry ledger catalog. |
-| DEFER | JavaScript-plugin domains | Testing Library, Playwright, Storybook, SonarJS, and regex gaps remain research. |
+| ADJUST | JavaScript-plugin domains | Testing Library and Playwright are package-owned automatic file-scoped integrations; Storybook, SonarJS, and regex gaps remain deferred. |
 | DEFER | Stable React Compiler | Compiler diagnostics remain an isolated warning until upstream stability changes. |
 | KEEP | Automated publication | Release Please and npm Trusted Publishing publish released versions from `main`. |
 | DEFER | Expanded version ranges | New Oxlint, tsgolint, TypeScript, Node, or package-manager versions require a full matrix run. |

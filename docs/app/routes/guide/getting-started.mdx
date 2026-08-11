@@ -47,7 +47,8 @@ export default getOxlintConfig({
 });
 ```
 
-The loader selects one of 24 complete core artifacts, then adds the package-owned Testing Library override from the plugin's DOM or React flat preset.
+The loader selects one of 24 complete core artifacts, then adds package-owned
+Testing Library and Playwright overrides from their official flat presets.
 
 ## Run Oxlint directly
 
@@ -55,7 +56,9 @@ The loader selects one of 24 complete core artifacts, then adds the package-owne
 pnpm oxlint .
 ```
 
-Add the same command to `package.json` and CI. Oxlint remains the only lint process; the TypeScript loader resolves the package-owned Testing Library compatibility plugin for test files.
+Add the same command to `package.json` and CI. Oxlint remains the only lint
+process; the TypeScript loader resolves package-owned Testing Library and
+Playwright compatibility plugins for their canonical files.
 
 ## Choose your next guide
 

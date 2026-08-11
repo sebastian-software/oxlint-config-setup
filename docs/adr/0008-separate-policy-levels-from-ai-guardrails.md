@@ -82,10 +82,12 @@ same prebuilt core root, appends explicitly ordered Oxlint file overrides, and
 keeps `options.typeAware` on the root. React and Node context deltas are scoped
 to selected file globs; Vitest and Jest add native runner rules only to canonical
 test patterns. Scripts, config files, and declaration files have narrow native
-fragments. Testing Library is an automatic package-owned override on the same
-canonical test patterns and does not add a public scope or runner dependency.
-It inherits `flat/dom` from the plugin by default and `flat/react` when the
-configuration selects React.
+fragments. Testing Library is an automatic package-owned override on canonical
+test patterns and does not add a public scope or runner dependency. It inherits
+`flat/dom` from the plugin by default and `flat/react` when the configuration
+selects React. Playwright is an automatic package-owned override on canonical
+`*.e2e.*`, `*.playwright.*`, `e2e/`, and `playwright/` files; it inherits the
+plugin's `flat/recommended` preset without a public scope or runner dependency.
 Package-created scope identities let public rule helpers target one override and
 reject unknown or unselected scopes.
 
@@ -96,15 +98,14 @@ because Oxlint otherwise replaces base plugins for an override. Rule maps,
 environments, and globals remain separate Oxlint entries, so later matching
 consumer overrides have Oxlint's normal precedence without destructive package
 merging. Root loaders select the same complete core artifacts as the public JSON
-exports, then append the runtime-resolved Testing Library override. Static JSON
-exports remain core-only because copied JSON cannot retain that package-relative
-plugin path.
+exports, then append the runtime-resolved Testing Library and Playwright
+overrides. Static JSON exports remain core-only because copied JSON cannot
+retain those package-relative plugin paths.
 
-The canonical E2E/Playwright and Storybook globs are documented but deliberately
-have no profile yet. If accepted, Playwright and Storybook extend this override
-model without separate public flags. Testing Library already follows this model
-with upstream-owned preset membership and package-boundary evidence rather than
-a duplicated per-rule fixture suite.
+Storybook globs are documented but deliberately have no profile yet. Testing
+Library and Playwright follow the automatic override model without separate
+public flags, with upstream-owned preset membership and package-boundary
+evidence rather than duplicated per-rule fixture suites.
 
 Syntax-only TypeScript remains a narrower named configuration without
 type-aware category expansion. Vitest, Jest, and the experimental React Compiler

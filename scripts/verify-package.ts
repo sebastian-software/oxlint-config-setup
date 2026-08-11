@@ -288,6 +288,7 @@ assert.deepEqual(manifest.publishConfig, {
 });
 assert.deepEqual(manifest.dependencies, {
   eslint: "9.39.1",
+  "eslint-plugin-playwright": "2.11.0",
   "eslint-plugin-testing-library": "7.16.2",
 });
 assert.deepEqual(manifest.optionalDependencies, undefined);
@@ -332,6 +333,7 @@ for (const lifecycle of ["install", "postinstall", "prepare"]) {
 
 assert.equal(manifest.devDependencies?.eslint, undefined);
 assert.equal(manifest.devDependencies?.["eslint-plugin-testing-library"], undefined);
+assert.equal(manifest.devDependencies?.["eslint-plugin-playwright"], undefined);
 assert.equal(run("git", ["ls-files", "--", "dist/**"]).trim(), "");
 assert(
   run("git", ["ls-files", "--", "scripts"])
@@ -436,6 +438,19 @@ for (const options of allConfigOptions()) {
   );
   assert(expected);
   const testingLibraryOverride = loaded.overrides?.at(-1);
+  const playwrightOverride = loaded.overrides?.find((override) =>
+    override.jsPlugins?.some(
+      (plugin) => typeof plugin !== "string" && plugin.name === "playwright",
+    ),
+  );
+  assert.deepEqual(playwrightOverride?.files, [
+    "**/*.{e2e,playwright}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+    "**/{e2e,playwright}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+  ]);
+  assert.equal(playwrightOverride?.jsPlugins?.length, 1);
+  assert.equal(Object.keys(playwrightOverride?.rules ?? {}).length, 37);
+  assert.equal(playwrightOverride?.rules?.["playwright/no-focused-test"], "error");
+  assert.equal(playwrightOverride?.globals?.AbortController, "readonly");
   assert.deepEqual(testingLibraryOverride?.files, [
     "**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
     "**/{__tests__,__mocks__}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
@@ -469,6 +484,14 @@ for (const config of [
   assert(plugin !== undefined && typeof plugin !== "string");
   assert.equal(plugin.name, "testing-library");
   assert.equal(Object.keys(testingLibraryOverride?.rules ?? {}).length, 15);
+  assert.equal(
+    config.overrides?.find((override) =>
+      override.jsPlugins?.some(
+        (entry) => typeof entry !== "string" && entry.name === "playwright",
+      ),
+    )?.rules?.["playwright/no-focused-test"],
+    "error",
+  );
 }
 assert.equal(
   Object.keys(
@@ -487,6 +510,31 @@ assert.deepEqual(
     )?.rules?.["testing-library/no-dom-import"],
   ["error", "react"],
 );
+assert.equal(
+  publicApi
+    .getComposedOxlintConfig()
+    .overrides?.find((override) =>
+      override.jsPlugins?.some(
+        (plugin) => typeof plugin !== "string" && plugin.name === "playwright",
+      ),
+    )?.rules?.["playwright/no-focused-test"],
+  "error",
+);
+const firstPlaywrightRules = publicApi
+  .getOxlintConfig()
+  .overrides?.find((override) =>
+    override.jsPlugins?.some(
+      (plugin) => typeof plugin !== "string" && plugin.name === "playwright",
+    ),
+  )?.rules;
+const secondPlaywrightRules = publicApi
+  .getOxlintConfig()
+  .overrides?.find((override) =>
+    override.jsPlugins?.some(
+      (plugin) => typeof plugin !== "string" && plugin.name === "playwright",
+    ),
+  )?.rules;
+assert.notEqual(firstPlaywrightRules, secondPlaywrightRules);
 assert.equal(
   publicApi.getExperimentalReactCompilerOxlintConfig().rules?.[
     "react/react-compiler"
@@ -546,9 +594,21 @@ assert.equal(composed.options?.typeAware, true);
 assert(composed.plugins?.includes("vitest"));
 assert(composed.plugins?.includes("node"));
 assert.deepEqual(
-  composed.overrides?.find((override) => override.jsPlugins !== undefined)
+  composed.overrides?.find((override) =>
+    override.jsPlugins?.some(
+      (plugin) => typeof plugin !== "string" && plugin.name === "testing-library",
+    ),
+  )
     ?.rules?.["testing-library/no-dom-import"],
   ["error", "react"],
+);
+assert.equal(
+  composed.overrides?.find((override) =>
+    override.jsPlugins?.some(
+      (plugin) => typeof plugin !== "string" && plugin.name === "playwright",
+    ),
+  )?.rules?.["playwright/no-focused-test"],
+  "error",
 );
 assert.deepEqual(composed.overrides?.at(-1)?.plugins, composed.plugins);
 assert.equal(
@@ -739,6 +799,9 @@ try {
       'assert(getJestOxlintConfig().plugins.includes("jest"));',
       'assert.equal(getExperimentalReactCompilerOxlintConfig().rules["react/react-compiler"], "warn");',
       'assert.equal(getOxlintConfig().overrides.at(-1).jsPlugins.at(-1).name, "testing-library");',
+      'const playwright = getOxlintConfig().overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "playwright"));',
+      'assert.equal(playwright.jsPlugins.at(-1).name, "playwright");',
+      'assert.equal(playwright.rules["playwright/no-focused-test"], "error");',
       "assert.equal(Object.keys(getOxlintConfig().overrides.at(-1).rules).length, 15);",
       "assert.equal(Object.keys(getOxlintConfig({ react: true }).overrides.at(-1).rules).length, 22);",
       'assert.deepEqual(getOxlintConfig({ react: true }).overrides.at(-1).rules["testing-library/no-dom-import"], ["error", "react"]);',
@@ -873,6 +936,33 @@ try {
     consumerRoot,
   );
 
+  writeFileSync(
+    resolve(consumerRoot, "Focused.e2e.js"),
+    'test.only("focused", () => {});\n',
+  );
+  writeFileSync(
+    resolve(consumerRoot, "FocusedSource.js"),
+    'test.only("focused", () => {});\n',
+  );
+  assert.throws(
+    () =>
+      run(
+        consumerOxlint,
+        ["--config", "oxlint.config.ts", "--deny-warnings", "Focused.e2e.js"],
+        consumerRoot,
+      ),
+    (error: unknown) =>
+      error instanceof Error &&
+      /playwright(?:\/|\()no-focused-test/u.test(
+        String((error as Error & { stdout?: string }).stdout),
+      ),
+  );
+  run(
+    consumerOxlint,
+    ["--config", "oxlint.config.ts", "--deny-warnings", "FocusedSource.js"],
+    consumerRoot,
+  );
+
   const installedRoot = resolve(
     consumerRoot,
     "node_modules/oxlint-config-setup",
@@ -908,6 +998,9 @@ try {
       'import { getOxlintConfig } from "oxlint-config-setup";',
       'const plugin = getOxlintConfig().overrides.at(-1).jsPlugins.at(-1);',
       'assert.equal(plugin.name, "testing-library");',
+      'const playwright = getOxlintConfig().overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "playwright"));',
+      'assert.equal(playwright.jsPlugins.at(-1).name, "playwright");',
+      'assert(statSync(playwright.jsPlugins.at(-1).specifier).isFile());',
       'assert(statSync(plugin.specifier).isFile());',
       "assert.equal(Object.keys(getOxlintConfig().overrides.at(-1).rules).length, 15);",
       "",

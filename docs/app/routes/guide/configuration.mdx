@@ -127,8 +127,11 @@ preset is the default; selecting React switches the test-file override to
 supplies the required runtime.
 
 The composition API is TypeScript-only because it constructs file overrides at
-runtime. Public JSON exports remain core-only configurations. Playwright/E2E
-and Storybook patterns are reserved for future accepted native profiles.
+runtime. The same loaders automatically apply Playwright's `flat/recommended`
+preset to `*.e2e.*`, `*.playwright.*`, `e2e/`, and `playwright/` files. This also
+has no runner dependency. Public JSON exports remain core-only configurations
+because copied JSON cannot retain package-relative plugin paths. Storybook
+patterns remain reserved for a future accepted profile.
 
 ## Defaults
 
