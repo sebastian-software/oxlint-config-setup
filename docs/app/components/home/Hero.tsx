@@ -45,8 +45,8 @@ export function Hero() {
             title="oxlint.config.ts"
           />
           <p>
-            This selects one of 24 complete JSON artifacts. No runtime preset
-            graph. No ESLint compatibility layer.
+            This starts with one of 24 complete core artifacts, then adds the
+            package-owned test-file override. No runtime rule graph.
           </p>
         </div>
       </div>

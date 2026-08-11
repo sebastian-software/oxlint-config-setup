@@ -102,6 +102,10 @@
     "test:rule-helpers": "tsx scripts/test-rule-helpers.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "eslint": "9.39.1",
+    "eslint-plugin-testing-library": "7.16.2"
+  },
   "peerDependencies": {
     "oxlint": "1.77.0",
     "oxlint-tsgolint": "7.0.2001"

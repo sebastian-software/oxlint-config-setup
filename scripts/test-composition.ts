@@ -14,6 +14,10 @@ import {
   disableRule,
   setRuleSeverity,
 } from "../src/rule-helpers.js";
+import {
+  TEST_FILE_GLOBS,
+  withTestingLibrary,
+} from "../src/testing-library.js";
 
 const root: OxlintConfig = {
   env: { browser: true },
@@ -145,5 +149,79 @@ assert.deepEqual(DEFERRED_SCOPE_GLOBS.stories, [
   "**/*.stories.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
   "**/{stories,storybook}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
 ]);
+
+const automatic = withTestingLibrary(root, false);
+const domTestingLibraryOverride = automatic.overrides?.at(-1);
+const secondDomTestingLibraryOverride = withTestingLibrary(
+  root,
+  false,
+).overrides?.at(-1);
+assert.deepEqual(domTestingLibraryOverride?.files, TEST_FILE_GLOBS);
+assert.deepEqual(
+  domTestingLibraryOverride?.jsPlugins?.map((plugin) =>
+    typeof plugin === "string" ? plugin : plugin.name,
+  ),
+  ["testing-library"],
+);
+assert.equal(Object.keys(domTestingLibraryOverride?.rules ?? {}).length, 15);
+assert.deepEqual(
+  domTestingLibraryOverride?.rules?.["testing-library/await-async-events"],
+  ["error", { eventModule: "userEvent" }],
+);
+const firstAsyncEvents =
+  domTestingLibraryOverride?.rules?.["testing-library/await-async-events"];
+const secondAsyncEvents =
+  secondDomTestingLibraryOverride?.rules?.[
+    "testing-library/await-async-events"
+  ];
+assert(Array.isArray(firstAsyncEvents));
+assert(Array.isArray(secondAsyncEvents));
+assert.notEqual(firstAsyncEvents, secondAsyncEvents);
+assert.notEqual(firstAsyncEvents[1], secondAsyncEvents[1]);
+assert.equal(
+  domTestingLibraryOverride?.rules?.["testing-library/no-dom-import"],
+  undefined,
+);
+
+const reactTestingLibraryOverride = withTestingLibrary(root, true).overrides?.at(
+  -1,
+);
+assert.equal(Object.keys(reactTestingLibraryOverride?.rules ?? {}).length, 22);
+assert.deepEqual(
+  reactTestingLibraryOverride?.rules?.["testing-library/no-dom-import"],
+  ["error", "react"],
+);
+assert.equal(
+  reactTestingLibraryOverride?.rules?.[
+    "testing-library/no-debugging-utils"
+  ],
+  "warn",
+);
+
+const composedAutomatic = composeScopedOxlintConfig(
+  automatic,
+  sources,
+  undefined,
+  [
+    {
+      files: ["**/*.test.ts"],
+      rules: { "testing-library/no-node-access": "off" },
+    },
+  ],
+);
+assert.equal(
+  composedAutomatic.overrides?.at(-1)?.rules?.[
+    "testing-library/no-node-access"
+  ],
+  "off",
+);
+assert.equal(
+  composedAutomatic.overrides?.filter((override) =>
+    override.jsPlugins?.some(
+      (plugin) => typeof plugin !== "string" && plugin.name === "testing-library",
+    ),
+  ).length,
+  1,
+);
 
 console.log("Scoped composition, merge semantics, and helper targets verified.");

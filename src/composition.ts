@@ -1,5 +1,7 @@
 import type { DummyRuleMap, OxlintConfig, OxlintOverride } from "oxlint";
 
+import { TEST_FILE_GLOBS } from "./testing-library.js";
+
 export const SCOPED_CONFIGS = [
   "react",
   "node",
@@ -16,12 +18,10 @@ export const CANONICAL_SCOPE_GLOBS = {
   react: ["**/*.{jsx,tsx}"],
   node: ["**/*.{cjs,cts,mjs,mts}"],
   vitest: [
-    "**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-    "**/{__tests__,__mocks__}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+    ...TEST_FILE_GLOBS,
   ],
   jest: [
-    "**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-    "**/{__tests__,__mocks__}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+    ...TEST_FILE_GLOBS,
   ],
   scripts: ["**/{bin,scripts}/**/*.{js,cjs,mjs,ts,cts,mts}"],
   config: [
@@ -81,6 +81,12 @@ function cloneConfig(config: OxlintConfig): OxlintConfig {
       env: override.env === undefined ? undefined : { ...override.env },
       globals:
         override.globals === undefined ? undefined : { ...override.globals },
+      jsPlugins:
+        override.jsPlugins === undefined || override.jsPlugins === null
+          ? override.jsPlugins
+          : override.jsPlugins.map((plugin) =>
+              typeof plugin === "string" ? plugin : { ...plugin },
+            ),
       plugins:
         override.plugins === undefined ? undefined : [...override.plugins],
       rules: cloneRules(override.rules),

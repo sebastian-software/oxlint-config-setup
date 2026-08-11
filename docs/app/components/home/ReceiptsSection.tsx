@@ -4,7 +4,7 @@ import { REPOSITORY_URL } from "./configuratorData.js";
 
 const RECEIPTS = [
   {
-    detail: "complete configurable JSON artifacts",
+    detail: "complete configurable core artifacts",
     href: `${REPOSITORY_URL}/blob/main/package.json`,
     value: "24",
   },

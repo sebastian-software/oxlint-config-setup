@@ -18,10 +18,11 @@ export function OxlintSection() {
             Oxlint is not the fast lane. It is the road.
           </h2>
           <p className="hp-section-lead">
-            There is no ESLint runtime hiding behind the preset. Native Oxlint
-            rules cover JavaScript, TypeScript, imports, React, accessibility,
-            Node.js, Vitest, and Jest. Type-aware TypeScript checks stay inside
-            the same command through the pinned native backend.
+            Oxlint remains the only lint process. Native rules cover JavaScript,
+            TypeScript, imports, React, accessibility, Node.js, Vitest, and Jest;
+            the package also resolves Testing Library checks for test files.
+            Type-aware checks stay inside the same command through the pinned
+            native backend.
           </p>
           <p className="hp-section-close">
             One configuration model. One diagnostic stream. One place to update.

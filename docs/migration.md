@@ -18,9 +18,9 @@ approved.
 | Node.js                        | Oxlint         | Native Node.js categories when `node: true` plus curated module hazards | The preset does not impose a universal ESM/CommonJS style at lower levels                 |
 | Vitest                         | Oxlint         | Materialized strict native categories plus curated runner checks        | Vitest and Jest are separate full configs                                                 |
 | Jest                           | Oxlint         | Materialized strict native categories plus curated runner checks        | Vitest and Jest are separate full configs                                                 |
-| Regular expressions            | Deferred       | No JavaScript plugin; the package gate rejects plugin dependencies      | Revisit only with an approved isolated runtime plus fixture, fixer-safety, and performance evidence |
-| Testing Library                | Research       | No JavaScript plugin                                                    | Requires conformant API, crash, and performance evidence                                  |
-| Playwright                     | Research       | No JavaScript plugin                                                    | Requires conformant API, crash, and performance evidence                                  |
+| Regular expressions            | Deferred       | No regular-expression plugin is enabled                                | Revisit only with an approved isolated runtime and integration evidence                   |
+| Testing Library                | Oxlint         | Package-owned JavaScript plugin, automatic on canonical test files      | Inherits the plugin's DOM preset, or its React preset when React is selected               |
+| Playwright                     | Research       | No JavaScript plugin                                                    | If accepted, use an automatic E2E-file override with a package-owned runtime               |
 | Storybook                      | Deferred       | No JavaScript plugin; Storybook rules require file-scoped composition   | Deferred until Issue #32 proves story-only extension and framework/parser isolation       |
 | SonarJS                        | Deferred       | No JavaScript plugin; two branch-body candidates have no demonstrated native equivalent | Revisit only with an approved isolated runtime plus per-path native-overlap, fixer-safety, fixture, and performance evidence |
 | Sorting and formatting         | Companion tool | Biome via `quality:format` and `biome.json`                             | Layout is outside the linter budget                                                       |
@@ -47,6 +47,11 @@ No raw parity percentage is a release gate. A curated rule or exception enters
 only when its defect class, execution path, stability, conflicts, fixture, and
 review trigger are recorded in the ledger. An Oxlint upgrade must separately
 review every generated category diff.
+
+Package-owned JavaScript-plugin integrations use a narrower evidence model: the
+package verifies activation, file isolation, runtime resolution, and a real
+diagnostic from a clean consumer. The upstream plugin suite owns individual rule
+semantics, so those rules are not duplicated as local ledger fixtures.
 
 ## Turnkey companion stack
 

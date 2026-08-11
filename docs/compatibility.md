@@ -11,6 +11,8 @@
 | Oxlint            | `1.77.0`                        |
 | `oxlint-tsgolint` | `7.0.2001`                      |
 | TypeScript target | `7.0.2`                         |
+| Testing Library   | `7.16.2`                        |
+| ESLint API        | `9.39.1`                        |
 | pnpm              | `11.20.0`                       |
 | npm consumer      | major 10 or 11                  |
 | Consumer Node.js  | `24.11.0`, `26.0.0`, current 26 |
@@ -48,11 +50,12 @@ the same runner, using the existing one-thread warm-up and sample protocol. A
 regression must exceed 25% in both measurements to fail; a one-off exceedance
 is recorded as a warning so ordinary runner noise does not fail the canary.
 
-JavaScript-plugin profiles remain out of the native job. The isolated job
-detects a `javascript-plugin` ledger entry and runs only its profile fixtures
-against the latest toolchain; when none exists it records that native results
-are authoritative. This prevents an experimental plugin crash or diagnostic
-change from obscuring native regressions.
+The scheduled native-upgrade job remains focused on Oxlint's native surface.
+The pinned package gate separately exercises the automatic Testing Library
+override and its DOM/React preset selection from a clean consumer. Updating its
+runtime versions requires the same clean-consumer boundary check; preset
+membership and per-rule semantics remain owned by the upstream plugin's test
+suite.
 
 When Renovate or another dependency update PR is ready for review, link its
 updated-toolchain change to a successful canary run. To reproduce a run locally
@@ -93,6 +96,7 @@ The shared harness invokes the supported `oxlint` executable directly and checks
 - syntax-only TypeScript with no project graph;
 - type-aware TypeScript plus a referenced composite project;
 - React/JSX accessibility, CommonJS and ESM Node.js, Vitest, and Jest;
+- automatic Testing Library DOM/React preset selection, test-file activation, and source-file isolation;
 - framework-specific mismatch behavior;
 - experimental React Compiler isolation;
 - unsupported configuration, timeout, and crashed-process classification;

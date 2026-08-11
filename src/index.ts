@@ -13,6 +13,7 @@ import {
   type ConfigOptions,
 } from "./options.js";
 import { composeProfiles } from "./profiles.js";
+import { withTestingLibrary } from "./testing-library.js";
 
 export type { ConfigLevel, ConfigOptions } from "./options.js";
 export {
@@ -78,9 +79,14 @@ function loadConfigArtifact(
   return config as OxlintConfig;
 }
 
-export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
+function loadRootConfig(options: ConfigOptions): OxlintConfig {
   const normalized = normalizeConfigOptions(options);
   return loadConfigArtifact(configFileName(normalized), true);
+}
+
+export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
+  const normalized = normalizeConfigOptions(options);
+  return withTestingLibrary(loadRootConfig(normalized), normalized.react);
 }
 
 /**
@@ -106,12 +112,19 @@ export function getComposedOxlintConfig(
     level: options.level,
     ai: options.ai,
   });
-  const root = getOxlintConfig(rootOptions);
+  const react =
+    Array.isArray(options.scopes) &&
+    options.scopes.some((selection) =>
+      typeof selection === "string"
+        ? selection === "react"
+        : selection?.scope === "react",
+    );
+  const root = withTestingLibrary(loadRootConfig(rootOptions), react);
   return composeScopedOxlintConfig(
     root,
     {
-      react: getOxlintConfig({ ...rootOptions, react: true }),
-      node: getOxlintConfig({ ...rootOptions, node: true }),
+      react: loadRootConfig({ ...rootOptions, react: true }),
+      node: loadRootConfig({ ...rootOptions, node: true }),
       vitest: composeProfiles(["vitest"]),
       jest: composeProfiles(["jest"]),
     },
@@ -129,11 +142,11 @@ export function getSyntaxOnlyOxlintConfig(): OxlintConfig {
 }
 
 export function getVitestOxlintConfig(): OxlintConfig {
-  return getNamedConfig("vitest");
+  return withTestingLibrary(getNamedConfig("vitest"), false);
 }
 
 export function getJestOxlintConfig(): OxlintConfig {
-  return getNamedConfig("jest");
+  return withTestingLibrary(getNamedConfig("jest"), false);
 }
 
 export function getExperimentalReactCompilerOxlintConfig(): OxlintConfig {

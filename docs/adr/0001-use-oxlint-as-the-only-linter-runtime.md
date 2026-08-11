@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-04
+- **Last updated:** 2026-08-11
 - **Deciders:** Sebastian Software maintainers
 
 ## Context
@@ -17,10 +18,15 @@ it does not need to retain the predecessor's compatibility contract.
 
 ## Decision
 
-Oxlint is the only linter runtime in the standard execution path. Published
-profiles must load and run without ESLint. ESLint configuration packages,
-parsers, and migration helpers may be used for research or one-time comparison,
-but they are not runtime dependencies of the product.
+Oxlint is the only linter process in the standard execution path. Published
+profiles are loaded and executed by Oxlint; the package does not invoke the
+ESLint CLI or maintain a second configuration pipeline.
+
+Oxlint-compatible JavaScript plugins may be package-owned runtime dependencies
+when they cover a valuable domain with no adequate native implementation. Their
+required ESLint compatibility APIs are part of that plugin runtime, not a second
+linter. ESLint configuration packages, parsers, and migration helpers remain
+research-only dependencies.
 
 The predecessor remains maintained independently for users who need its hybrid
 coverage or legacy behavior.
@@ -68,10 +74,10 @@ capabilities replace gaps without reorganizing the runtime architecture.
 
 ## Validation and review triggers
 
-Verify in CI that the package has no ESLint runtime dependency and that all
-standard fixtures execute using Oxlint alone. Revisit only if Oxlint loses a
-critical capability with no sustainable native, type-aware, or plugin-backed
-replacement.
+Verify in CI that Oxlint remains the only invoked linter, package-owned plugins
+stay file-scoped, and clean consumers resolve their complete runtime without
+extra installation steps. Revisit only if Oxlint loses a critical capability
+with no sustainable native, type-aware, or plugin-backed replacement.
 
 ## References
 

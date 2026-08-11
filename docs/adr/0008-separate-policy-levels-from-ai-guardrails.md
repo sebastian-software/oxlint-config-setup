@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-06
-- **Last updated:** 2026-08-07
+- **Last updated:** 2026-08-11
 - **Deciders:** Sebastian Software maintainers
 - **Supersedes:** [ADR 0007](0007-add-essential-and-standard-config-levels.md)
 
@@ -37,7 +37,7 @@ Expose three nested policy levels:
 3. `strict` adds `pedantic`, `style`, and `restriction`.
 
 `nursery` stays disabled at every level. Each higher level is a strict
-superset of the lower levels. Stable configurable artifacts use only native
+superset of the lower levels. Stable configurable core artifacts use only native
 Oxlint plugins; JavaScript plugins do not enter through category expansion.
 
 Category-enabled configurations are internal build drafts. During generation,
@@ -82,8 +82,12 @@ same prebuilt core root, appends explicitly ordered Oxlint file overrides, and
 keeps `options.typeAware` on the root. React and Node context deltas are scoped
 to selected file globs; Vitest and Jest add native runner rules only to canonical
 test patterns. Scripts, config files, and declaration files have narrow native
-fragments. Package-created scope identities let public rule helpers target one
-override and reject unknown or unselected scopes.
+fragments. Testing Library is an automatic package-owned override on the same
+canonical test patterns and does not add a public scope or runner dependency.
+It inherits `flat/dom` from the plugin by default and `flat/react` when the
+configuration selects React.
+Package-created scope identities let public rule helpers target one override and
+reject unknown or unselected scopes.
 
 Composition has explicit merge semantics. The root plugin array is the ordered
 union of the root and selected fragment plugins. A consumer override is appended
@@ -91,13 +95,16 @@ after package fragments and its plugin list is unioned with that required set,
 because Oxlint otherwise replaces base plugins for an override. Rule maps,
 environments, and globals remain separate Oxlint entries, so later matching
 consumer overrides have Oxlint's normal precedence without destructive package
-merging. Root loaders and all public JSON exports retain their existing complete
-artifact behavior.
+merging. Root loaders select the same complete core artifacts as the public JSON
+exports, then append the runtime-resolved Testing Library override. Static JSON
+exports remain core-only because copied JSON cannot retain that package-relative
+plugin path.
 
 The canonical E2E/Playwright and Storybook globs are documented but deliberately
-have no profile yet. Testing Library, Playwright, and Storybook must extend this
-override model after their native policy and fixture evidence are accepted; they
-do not create separate APIs.
+have no profile yet. If accepted, Playwright and Storybook extend this override
+model without separate public flags. Testing Library already follows this model
+with upstream-owned preset membership and package-boundary evidence rather than
+a duplicated per-rule fixture suite.
 
 Syntax-only TypeScript remains a narrower named configuration without
 type-aware category expansion. Vitest, Jest, and the experimental React Compiler
@@ -118,8 +125,8 @@ visible in snapshots, homepage data, and package diffs.
 - Keep general policy intensity independent from AI-specific enforcement.
 - Prevent Essential plus AI from silently acquiring Recommended or Strict
   policy.
-- Exclude experimental and JavaScript-plugin execution paths from stable
-  defaults.
+- Keep JavaScript-plugin exceptions file-scoped, removable, and outside static
+  core artifacts.
 
 ## Options considered
 
