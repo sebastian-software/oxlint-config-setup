@@ -838,7 +838,7 @@ try {
           strict: true,
           target: "ES2023",
         },
-        include: ["*.ts"],
+        include: ["consumer.ts", "valid.ts", "invalid.ts"],
       },
       null,
       2,
