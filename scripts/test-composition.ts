@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 
+import playwrightPlugin from "eslint-plugin-playwright";
 import type { OxlintConfig, OxlintOverride } from "oxlint";
 
 import {
@@ -18,6 +19,10 @@ import {
   TEST_FILE_GLOBS,
   withTestingLibrary,
 } from "../src/testing-library.js";
+import {
+  PLAYWRIGHT_FILE_GLOBS,
+  withPlaywright,
+} from "../src/playwright.js";
 
 const root: OxlintConfig = {
   env: { browser: true },
@@ -141,14 +146,27 @@ assert.deepEqual(
   SCOPED_CONFIGS,
   ["react", "node", "vitest", "jest", "scripts", "config", "declarations"],
 );
-assert.deepEqual(DEFERRED_SCOPE_GLOBS.e2e, [
-  "**/*.{e2e,playwright}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-  "**/{e2e,playwright}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+assert.deepEqual(TEST_FILE_GLOBS, [
+  "**/*.test.{ts,tsx}",
+  "**/__tests__/**/*.{ts,tsx}",
 ]);
-assert.deepEqual(DEFERRED_SCOPE_GLOBS.stories, [
-  "**/*.stories.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-  "**/{stories,storybook}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-]);
+assert.deepEqual(PLAYWRIGHT_FILE_GLOBS, ["**/*.spec.ts"]);
+assert.deepEqual(DEFERRED_SCOPE_GLOBS.stories, ["**/*.stories.{ts,tsx}"]);
+assert.doesNotMatch(
+  TEST_FILE_GLOBS.join("\n"),
+  /\.spec/u,
+  "unit-test patterns exclude Playwright spec files",
+);
+assert.doesNotMatch(
+  PLAYWRIGHT_FILE_GLOBS.join("\n"),
+  /\.test/u,
+  "Playwright patterns exclude unit-test files",
+);
+assert.doesNotMatch(
+  DEFERRED_SCOPE_GLOBS.stories.join("\n"),
+  /\.(?:test|spec)/u,
+  "Storybook's reservation is disjoint from shipped policies",
+);
 
 const automatic = withTestingLibrary(root, false);
 const domTestingLibraryOverride = automatic.overrides?.at(-1);
@@ -222,6 +240,42 @@ assert.equal(
     ),
   ).length,
   1,
+);
+
+const automaticPlaywright = withPlaywright(root);
+const playwrightOverride = automaticPlaywright.overrides?.at(-1);
+const secondPlaywrightOverride = withPlaywright(root).overrides?.at(-1);
+assert.deepEqual(playwrightOverride?.files, PLAYWRIGHT_FILE_GLOBS);
+assert.deepEqual(
+  playwrightOverride?.jsPlugins?.map((plugin) =>
+    typeof plugin === "string" ? plugin : plugin.name,
+  ),
+  ["playwright"],
+);
+assert.equal(Object.keys(playwrightOverride?.rules ?? {}).length, 37);
+assert.deepEqual(
+  playwrightOverride?.rules,
+  playwrightPlugin.configs["flat/recommended"].rules,
+);
+assert.equal(playwrightOverride?.rules?.["playwright/no-focused-test"], "error");
+assert.equal(playwrightOverride?.globals?.AbortController, "readonly");
+assert.notEqual(playwrightOverride?.rules, secondPlaywrightOverride?.rules);
+assert.notEqual(playwrightOverride?.globals, secondPlaywrightOverride?.globals);
+
+const composedPlaywright = composeScopedOxlintConfig(
+  withTestingLibrary(withPlaywright(root), false),
+  sources,
+  undefined,
+  [
+    {
+      files: ["**/*.spec.ts"],
+      rules: { "playwright/no-focused-test": "off" },
+    },
+  ],
+);
+assert.equal(
+  composedPlaywright.overrides?.at(-1)?.rules?.["playwright/no-focused-test"],
+  "off",
 );
 
 console.log("Scoped composition, merge semantics, and helper targets verified.");

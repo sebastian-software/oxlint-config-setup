@@ -93,10 +93,12 @@ export default getComposedOxlintConfig({
 and Jest runner rules use canonical test patterns, while scripts, configuration
 files, and TypeScript declarations receive their own narrow fragments. The
 `getOxlintConfig()`, `getComposedOxlintConfig()`, and the Vitest/Jest loaders
-also add Testing Library rules automatically to the same canonical test-file
-patterns. They use the plugin's official `flat/dom` preset by default and
-`flat/react` whenever React is selected. The package owns and resolves that
-runtime; there is no separate feature flag, runner requirement, or consumer
+also add Testing Library rules automatically to canonical test-file patterns.
+They use `*.test.{ts,tsx}` and `__tests__/**/*.{ts,tsx}`, with the plugin's
+official `flat/dom` preset by default and `flat/react` whenever React is
+selected. Those loaders also add the official Playwright `flat/recommended`
+preset automatically to `*.spec.ts` files. Both package-owned runtimes are
+independent of runner selection; there is no separate feature flag or consumer
 dependency to configure.
 
 The composition loader keeps `options.typeAware` on the root object. It unions
@@ -105,8 +107,8 @@ leaves Oxlint to merge later `rules`, `env`, and `globals` entries for matching
 files. Static JSON exports remain core-only because they cannot carry a
 package-relative JavaScript-plugin path.
 
-Playwright/E2E and Storybook patterns are documented as deferred; this version
-does not claim a runner or Storybook policy before a native profile is accepted.
+Storybook patterns remain deferred; this version does not claim a Storybook
+policy before a native profile is accepted.
 
 ## Shipped surfaces
 
@@ -122,6 +124,7 @@ does not claim a runner or Storybook policy before a native profile is accepted.
 | Vitest                                 | `getVitestOxlintConfig()`                    | `oxlint-config-setup/json/vitest`            | Stable                                    |
 | Jest                                   | `getJestOxlintConfig()`                      | `oxlint-config-setup/json/jest`              | Stable                                    |
 | Testing Library test files             | Automatic in the main and test-runner loaders | —                                            | Stable file-scoped policy                 |
+| Playwright spec files                  | Automatic in the main and test-runner loaders | —                                            | Stable file-scoped policy                 |
 | React Compiler diagnostics             | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler`    | Experimental warning                      |
 | Mixed repository file scopes            | `getComposedOxlintConfig()`                  | —                                            | Stable TypeScript-only composition API    |
 
@@ -189,7 +192,7 @@ prebuilt artifact or later calls.
 ## JSON consumption
 
 JSON artifacts contain the complete core objects behind the TypeScript loaders,
-without the automatic Testing Library override. Copy one through its public
+without the automatic Testing Library or Playwright overrides. Copy one through its public
 package export, then run the supported Oxlint CLI directly:
 
 ```sh
@@ -227,10 +230,10 @@ identifiers as discovery evidence. The new Strict surface approaches that
 predecessor's scale using stable native Oxlint rules, while `nursery`,
 unselected JavaScript plugins, and non-source concerns remain excluded.
 
-Oxlint remains the only lint process. The package includes the ESLint-compatible
-Testing Library plugin runtime and inherits its DOM or React flat preset for the
-automatic test-file override; it does not run ESLint or load JavaScript React
-and `react-hooks` plugins. Formatting,
+Oxlint remains the only lint process. The package includes ESLint-compatible
+Testing Library and Playwright plugin runtimes for automatic test-file and E2E
+overrides; it does not run ESLint or load JavaScript React and `react-hooks`
+plugins. Formatting,
 Markdown/MDX, spelling, and package metadata remain companion-tool concerns.
 
 ## Release verification
@@ -260,6 +263,7 @@ follow-up patch release, then verify that new version instead.
 | `oxlint-tsgolint`          | `7.0.2001`      |
 | TypeScript behavior target | `7.0.2`         |
 | Testing Library plugin     | `7.16.2`        |
+| Playwright plugin          | `2.11.0`        |
 | ESLint compatibility API   | `9.39.1`        |
 | npm clean consumer         | major 10 or 11  |
 | pnpm clean consumer        | `11.20.0`       |

@@ -4,8 +4,8 @@ import testingLibraryPlugin from "eslint-plugin-testing-library";
 import type { DummyRuleMap, OxlintConfig, OxlintOverride } from "oxlint";
 
 export const TEST_FILE_GLOBS = [
-  "**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-  "**/{__tests__,__mocks__}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+  "**/*.test.{ts,tsx}",
+  "**/__tests__/**/*.{ts,tsx}",
 ] as const;
 
 function testingLibraryRules(react: boolean): DummyRuleMap {

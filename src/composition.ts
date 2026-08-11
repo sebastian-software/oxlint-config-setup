@@ -32,14 +32,7 @@ export const CANONICAL_SCOPE_GLOBS = {
 } as const satisfies Record<ScopedConfig, readonly string[]>;
 
 export const DEFERRED_SCOPE_GLOBS = {
-  e2e: [
-    "**/*.{e2e,playwright}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-    "**/{e2e,playwright}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-  ],
-  stories: [
-    "**/*.stories.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-    "**/{stories,storybook}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
-  ],
+  stories: ["**/*.stories.{ts,tsx}"],
 } as const;
 
 export interface ScopedConfigSelection {

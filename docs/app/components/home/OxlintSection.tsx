@@ -20,7 +20,8 @@ export function OxlintSection() {
           <p className="hp-section-lead">
             Oxlint remains the only lint process. Native rules cover JavaScript,
             TypeScript, imports, React, accessibility, Node.js, Vitest, and Jest;
-            the package also resolves Testing Library checks for test files.
+            the package also resolves Testing Library and Playwright checks for
+            their canonical unit-test and Playwright spec files.
             Type-aware checks stay inside the same command through the pinned
             native backend.
           </p>
