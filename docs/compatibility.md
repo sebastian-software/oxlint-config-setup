@@ -1,7 +1,7 @@
 # Compatibility evidence
 
-- **Measured:** 2026-08-05
-- **Host:** macOS 26.5, Apple M1 Ultra, Node 24.18.0
+- **Measured:** 2026-08-11
+- **Host:** macOS 26.5, Apple M1 Ultra, Node 24.19.0
 - **CI:** Linux on the Node 24 LTS floor and the current Node 26 line
 
 ## Tested matrix
@@ -107,13 +107,19 @@ The root benchmark on the measured host reported:
 
 | Scenario                                   |    Median |       p95 |
 | ------------------------------------------ | --------: | --------: |
-| Syntax-only, one file                      | 114.87 ms | 125.64 ms |
-| Type-aware, one file                       | 247.51 ms | 315.36 ms |
-| Type-aware, representative 12-file project | 248.77 ms | 265.78 ms |
+| Syntax-only, one file                      |  64.06 ms |  66.66 ms |
+| Type-aware, one file                       | 163.15 ms | 178.56 ms |
+| Type-aware, representative 12-file project | 165.65 ms | 217.68 ms |
+| React preset representative fixture         | 163.55 ms | 167.63 ms |
 
 Run `pnpm benchmark` to reproduce. These values are observations, not latency
 SLAs; the release gate records the command and pinned environment so regressions
 can be compared on the same host.
+
+The React scenario is a bounded valid fixture that exercises the documented
+hook, key, accessibility, link, and allocation patterns. Its paired invalid
+fixture runs through the shared harness, which asserts each expected diagnostic
+separately.
 
 The earlier packaging spike measured generated JSON within ordinary noise of
 hand-authored JSON, while the TypeScript package import added about 50 ms to a

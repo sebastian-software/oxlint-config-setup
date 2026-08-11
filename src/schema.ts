@@ -88,6 +88,10 @@ const NAMED_PROFILES = new Set<RuleProfile>([
   "jest",
   "react-compiler",
 ]);
+const STABLE_NATIVE_REACT_PROFILES = new Set<RuleProfile>([
+  "react",
+  "jsx-a11y",
+]);
 const SEVERITY_RANK: Record<RuleSeverity, number> = {
   off: 0,
   warning: 1,
@@ -250,6 +254,7 @@ export function validateRuleLedger(value: unknown): readonly RuleLedgerEntry[] {
 
   const ids = new Map<string, number>();
   const ownership = new Map<string, number>();
+  const replacementOwnership = new Map<string, number>();
 
   for (const [index, candidate] of value.entries()) {
     if (candidate === null || typeof candidate !== "object") {
@@ -292,6 +297,24 @@ export function validateRuleLedger(value: unknown): readonly RuleLedgerEntry[] {
       );
     }
     assertRuleActivation(entry, index);
+
+    if (
+      STABLE_NATIVE_REACT_PROFILES.has(entry.profile as RuleProfile) &&
+      (entry.activation as RuleActivation).kind === "level" &&
+      entry.executionPath !== "native"
+    ) {
+      throw new TypeError(
+        `Stable React profile entry ${index} must use the native Oxlint execution path`,
+      );
+    }
+    if (
+      entry.profile === "react-compiler" &&
+      entry.executionPath !== "native-experimental"
+    ) {
+      throw new TypeError(
+        `React Compiler entry ${index} must use the isolated native experimental execution path`,
+      );
+    }
 
     if (entry.source === null || typeof entry.source !== "object") {
       throw new TypeError(`Rule ledger entry ${index} requires source`);
@@ -352,6 +375,16 @@ export function validateRuleLedger(value: unknown): readonly RuleLedgerEntry[] {
     }
     ownership.set(ownerKey, index);
 
+    for (const replacement of entry.replaces) {
+      const ownerIndex = replacementOwnership.get(replacement);
+      if (ownerIndex !== undefined && ownerIndex !== index) {
+        throw new TypeError(
+          `Duplicate ownership for replacement ${replacement} in entries ${ownerIndex} and ${index}`,
+        );
+      }
+      replacementOwnership.set(replacement, index);
+    }
+
     if (
       entry.executionPath === "native-experimental" &&
       entry.stability !== "experimental"
@@ -363,6 +396,15 @@ export function validateRuleLedger(value: unknown): readonly RuleLedgerEntry[] {
     if (entry.stability === "experimental" && entry.severity === "error") {
       throw new TypeError(
         `Experimental rule ${id} cannot enter as an error`,
+      );
+    }
+  }
+
+  for (const [replacement, ownerIndex] of replacementOwnership) {
+    const replacementIndex = ids.get(replacement);
+    if (replacementIndex !== undefined && replacementIndex !== ownerIndex) {
+      throw new TypeError(
+        `Duplicate ownership for ${replacement} in entries ${replacementIndex} and ${ownerIndex}`,
       );
     }
   }
