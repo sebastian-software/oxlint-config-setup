@@ -848,7 +848,6 @@ try {
     "pnpm",
     [
       "add",
-      "--offline",
       "--ignore-scripts",
       "--no-optional",
       tarballPath,
