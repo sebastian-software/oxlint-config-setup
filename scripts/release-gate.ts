@@ -159,6 +159,7 @@ assert.match(notes, /Known gaps/u);
 assert.match(readme, /npm Trusted Publishing with GitHub Actions OIDC/u);
 assert.match(readme, /Published npm versions are immutable/u);
 assert.match(readme, /follow-up patch release/u);
+assert.match(readme, /Package \/ Required/u);
 
 const publishWorkflow = read(".github/workflows/publish.yml");
 assert.match(publishWorkflow, /Verify published npm artifact/u);
@@ -166,6 +167,30 @@ assert.match(publishWorkflow, /timeout-minutes: 15/u);
 assert.match(publishWorkflow, /tsx scripts\/verify-published-package\.ts/u);
 assert.match(publishWorkflow, /npm publish --access public --provenance/u);
 assert.match(publishWorkflow, /already exists in npm; preserving the immutable/u);
+assert.match(publishWorkflow, /secrets\.RELEASE_PLEASE_TOKEN/u);
+
+const packageWorkflow = read(".github/workflows/package.yml");
+assert.match(packageWorkflow, /name: Required/u);
+assert.match(packageWorkflow, /if: \$\{\{ always\(\) \}\}/u);
+for (const prerequisite of ["verify", "consumer", "docs"]) {
+  assert.match(packageWorkflow, new RegExp(`- ${prerequisite}`, "u"));
+  assert.match(
+    packageWorkflow,
+    new RegExp(`needs\\.${prerequisite}\\.result`, "u"),
+  );
+}
+
+const releaseAutomation = read("docs/release-automation.md");
+for (const requiredText of [
+  "RELEASE_PLEASE_TOKEN",
+  "fine-grained personal access token",
+  "Issues: Read and write",
+  "Package / Required",
+  "pnpm run release:check",
+  "OIDC Trusted Publishing",
+]) {
+  assert.match(releaseAutomation, new RegExp(requiredText, "u"));
+}
 
 const publishedPackageVerifier = read("scripts/verify-published-package.ts");
 assert.match(
