@@ -44,7 +44,7 @@ const manifest = JSON.parse(read("package.json")) as {
   publishConfig?: Record<string, unknown>;
 };
 assert.deepEqual(manifest.peerDependencies, {
-  oxlint: "1.77.0",
+  oxlint: "1.78.0",
   "oxlint-tsgolint": "7.0.2001",
 });
 assert.deepEqual(manifest.publishConfig, {
@@ -118,7 +118,7 @@ assert.match(
 
 const readme = read("README.md");
 assert.match(readme, /113 active base rules/iu);
-assert.match(readme, /484 at Strict/iu);
+assert.match(readme, /485 at Strict/iu);
 assert.match(readme, /mapped about 85\.3%/iu);
 assert.match(readme, /level: "essential"/u);
 assert.match(readme, /level: "strict"/u);
@@ -322,7 +322,7 @@ assert.match(
 );
 
 const compatibility = read("docs/compatibility.md");
-for (const version of ["1.77.0", "7.0.2001", "7.0.2", "11.20.0"]) {
+for (const version of ["1.78.0", "7.0.2001", "7.0.2", "11.21.0"]) {
   assert.match(compatibility, new RegExp(version.replaceAll(".", "\\."), "u"));
 }
 

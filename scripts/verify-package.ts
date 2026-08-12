@@ -269,7 +269,10 @@ assert.equal(manifest.type, "module");
 assert.equal(manifest.sideEffects, false);
 assert.deepEqual(manifest.files, ["dist"]);
 assert.equal(manifest.engines?.node, ">=24.11.0");
-assert.equal(manifest.packageManager, "pnpm@11.20.0");
+assert.equal(
+  manifest.packageManager,
+  "pnpm@11.21.0+sha512.521705bce689924eac72f5a3587122f362689ef6571e55ba80076fd637c11132ecffada26fad4ea79c485bfddbfd3d5a2a5b05805a77e893de71ec8a6cca3bb1",
+);
 assert.deepEqual(manifest.author, {
   name: "Sebastian Software GmbH",
   url: "https://sebastian-software.com",
@@ -283,21 +286,21 @@ assert.deepEqual(manifest.publishConfig, {
   provenance: true,
 });
 assert.deepEqual(manifest.dependencies, {
-  eslint: "9.39.1",
+  eslint: "10.8.1",
   "eslint-plugin-playwright": "2.11.0",
   "eslint-plugin-storybook": "0.12.0",
   "eslint-plugin-testing-library": "7.16.2",
 });
 assert.deepEqual(manifest.optionalDependencies, undefined);
 assert.deepEqual(manifest.peerDependencies, {
-  oxlint: "1.77.0",
+  oxlint: "1.78.0",
   "oxlint-tsgolint": "7.0.2001",
 });
-assert.equal(manifest.devDependencies?.oxlint, "1.77.0");
+assert.equal(manifest.devDependencies?.oxlint, "1.78.0");
 assert.equal(manifest.devDependencies?.["oxlint-tsgolint"], "7.0.2001");
 assert.equal(manifest.devDependencies?.typescript, "7.0.2");
 assert.equal(manifest.devDependencies?.tsdown, "0.22.14");
-assert.equal(manifest.devDependencies?.tsx, "4.23.8");
+assert.equal(manifest.devDependencies?.tsx, "4.23.12");
 assert.deepEqual(manifest.exports?.["."], {
   types: "./dist/index.d.ts",
   default: "./dist/index.js",
@@ -321,7 +324,7 @@ const tsdownManifest = readManifest(
 );
 assert.equal(tsdownManifest.engines?.node, "^22.18.0 || >=24.11.0");
 if (process.env.CANARY_ALLOW_PNPM_VERSION !== "true") {
-  assert.equal(run("pnpm", ["--version"]).trim(), "11.20.0");
+  assert.equal(run("pnpm", ["--version"]).trim(), "11.21.0");
 }
 assert([10, 11].includes(Number.parseInt(run("npm", ["--version"]), 10)));
 const pnpmConfig = parseJson(run("pnpm", ["config", "list", "--json"]));
@@ -635,12 +638,12 @@ assert.equal(
   113,
 );
 assert.equal(activeRuleCount(recommended), 166);
-assert.equal(activeRuleCount(strict), 484);
+assert.equal(activeRuleCount(strict), 485);
 assert.equal(
   activeRuleCount(
     publicApi.getOxlintConfig({ level: "strict", react: true, node: true }),
   ),
-  593,
+  594,
 );
 const customized = publicApi.getOxlintConfig({ ai: true });
 publicApi.setRuleSeverity(customized, "eslint/no-warning-comments", "error");

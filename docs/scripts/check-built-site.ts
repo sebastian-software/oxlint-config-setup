@@ -47,7 +47,7 @@ for (const expected of [
   'lang="en-US"',
   "Type-aware by default",
   "Type-aware TypeScript.",
-  "pnpm add -D oxlint-config-setup oxlint@1.77.0 oxlint-tsgolint@7.0.2001",
+  "pnpm add -D oxlint-config-setup oxlint@1.78.0 oxlint-tsgolint@7.0.2001",
   "AI is an overlay, not a fourth policy level.",
   "Config input",
   "Config output",

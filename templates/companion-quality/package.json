@@ -20,7 +20,7 @@
     "*.{js,jsx,ts,tsx,json,jsonc,md,mdx}": "cspell lint --no-progress"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.7",
+    "@biomejs/biome": "2.5.8",
     "ajv-cli": "5.0.0",
     "cspell": "10.0.1",
     "husky": "9.1.7",
@@ -29,7 +29,7 @@
     "publint": "0.3.23",
     "sort-package-json": "4.0.0"
   },
-  "packageManager": "pnpm@11.20.0",
+  "packageManager": "pnpm@11.21.0",
   "engines": {
     "node": ">=24.11.0"
   }

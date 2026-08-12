@@ -52,7 +52,7 @@ export const FLAGS: readonly FlagMeta[] = [
 ];
 
 export const INSTALL_COMMAND =
-  "pnpm add -D oxlint-config-setup oxlint@1.77.0 oxlint-tsgolint@7.0.2001";
+  "pnpm add -D oxlint-config-setup oxlint@1.78.0 oxlint-tsgolint@7.0.2001";
 
 export const REPOSITORY_URL =
   "https://github.com/sebastian-software/oxlint-config-setup";

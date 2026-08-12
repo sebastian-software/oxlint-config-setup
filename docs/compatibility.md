@@ -8,14 +8,14 @@
 
 | Component         | Version                         |
 | ----------------- | ------------------------------- |
-| Oxlint            | `1.77.0`                        |
+| Oxlint            | `1.78.0`                        |
 | `oxlint-tsgolint` | `7.0.2001`                      |
 | TypeScript target | `7.0.2`                         |
 | Testing Library   | `7.16.2`                        |
 | Playwright        | `2.11.0`                        |
 | Storybook         | `0.12.0`                        |
-| ESLint API        | `9.39.1`                        |
-| pnpm              | `11.20.0`                       |
+| ESLint API        | `10.8.1`                        |
+| pnpm              | `11.21.0`                       |
 | npm consumer      | major 10 or 11                  |
 | Consumer Node.js  | `24.11.0`, `26.0.0`, current 26 |
 

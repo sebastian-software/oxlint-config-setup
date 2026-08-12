@@ -13,7 +13,7 @@ projects.
 Install the config with the exact peer versions tested as one compatibility trio:
 
 ```sh
-pnpm add -D oxlint-config-setup oxlint@1.77.0 oxlint-tsgolint@7.0.2001
+pnpm add -D oxlint-config-setup oxlint@1.78.0 oxlint-tsgolint@7.0.2001
 ```
 
 Create `oxlint.config.ts` and invoke Oxlint directly:
@@ -209,9 +209,9 @@ hashed file from `node_modules`; hashes are deliberately not public API.
 ## What the beta proves
 
 The pinned Oxlint category baseline materializes 113 active base rules at
-Essential, 166 at Recommended, and 484 at Strict. Project contexts expand that
+Essential, 166 at Recommended, and 485 at Strict. Project contexts expand that
 surface: the fully selected React + Node + AI configurations contain 170, 233,
-and 594 active rules respectively. The generated homepage inventory and
+and 595 active rules respectively. The generated homepage inventory and
 effective-config snapshots are the authority for exact membership.
 
 The package also owns 27 curated ledger entries across core, imports,
@@ -267,15 +267,15 @@ follow-up patch release, then verify that new version instead.
 | Component                  | Supported value |
 | -------------------------- | --------------- |
 | Consumer Node.js           | `>=24.11.0`     |
-| Oxlint                     | `1.77.0`        |
+| Oxlint                     | `1.78.0`        |
 | `oxlint-tsgolint`          | `7.0.2001`      |
 | TypeScript behavior target | `7.0.2`         |
 | Testing Library plugin     | `7.16.2`        |
 | Playwright plugin          | `2.11.0`        |
 | Storybook plugin           | `0.12.0`        |
-| ESLint compatibility API   | `9.39.1`        |
+| ESLint compatibility API   | `10.8.1`        |
 | npm clean consumer         | major 10 or 11  |
-| pnpm clean consumer        | `11.20.0`       |
+| pnpm clean consumer        | `11.21.0`       |
 | Repository build Node.js   | `>=24.11.0`     |
 
 Support for another Oxlint/backend/TypeScript version begins with an explicit
