@@ -244,6 +244,12 @@ artifact, and validates the published package, release tag, clean npm and pnpm
 consumers, public exports, package contents, and the GitHub Actions SLSA
 provenance attestation.
 
+Release Please authenticates with a dedicated least-privilege automation token
+so its release pull requests automatically run Package CI. `Package / Required`
+is the stable aggregate check that branch protection requires before a release
+pull request can merge. See [the release automation maintainer guide](docs/release-automation.md)
+for the required GitHub setup and recovery procedure.
+
 Each external process and request times out after 30 seconds. Registry
 propagation has at most ten attempts with 15-second delays (a maximum of seven
 minutes and 15 seconds before the remaining verification steps), and the

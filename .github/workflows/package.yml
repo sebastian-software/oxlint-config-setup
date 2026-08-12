@@ -137,3 +137,33 @@ jobs:
           node --input-type=module -e
           'import("oxlint-config-setup").then(({ getOxlintConfig, getSyntaxOnlyOxlintConfig }) => { const config = getOxlintConfig({ ai: true }); if (config.options?.typeAware !== true || config.rules?.["eslint/no-warning-comments"] !== "warn" || getSyntaxOnlyOxlintConfig().options?.typeAware !== false) process.exit(1); })'
         working-directory: consumer
+
+  required:
+    # Configure exactly "Package / Required" as the required main-branch check.
+    # Its fixed name remains stable when the version matrix changes.
+    name: Required
+    if: ${{ always() }}
+    needs:
+      - verify
+      - pack
+      - consumer
+      - docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fail when a Package job is not successful
+        env:
+          VERIFY_RESULT: ${{ needs.verify.result }}
+          PACK_RESULT: ${{ needs.pack.result }}
+          CONSUMER_RESULT: ${{ needs.consumer.result }}
+          DOCS_RESULT: ${{ needs.docs.result }}
+        run: |
+          failures=0
+          for result_name in VERIFY_RESULT PACK_RESULT CONSUMER_RESULT DOCS_RESULT; do
+            result="${!result_name}"
+            if [ "$result" != "success" ]; then
+              echo "::error title=Package prerequisite failed::${result_name#*_} finished with ${result}."
+              failures=1
+            fi
+          done
+          exit "$failures"

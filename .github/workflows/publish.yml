@@ -17,8 +17,8 @@ jobs:
     name: Prepare release
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      # Release Please receives its separate write-scoped PAT explicitly below.
+      contents: read
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
 
@@ -27,6 +27,9 @@ jobs:
         id: release
         uses: googleapis/release-please-action@0dfd8538845b8e92600d271a895a5372865d4062 # v5
         with:
+          # A dedicated token lets Package run automatically for the release PR.
+          # GITHUB_TOKEN-created pull requests instead require maintainer approval.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
