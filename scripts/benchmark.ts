@@ -53,12 +53,12 @@ const scenarios: Scenario[] = [
   {
     name: "type-aware one file",
     config: "dist/standalone/default.json",
-    input: "spikes/config-packaging/fixtures/performance-project/src/module-01.ts",
+    input: "fixtures/performance-project/src/module-01.ts",
   },
   {
     name: "type-aware 12-file project",
     config: "dist/standalone/default.json",
-    input: "spikes/config-packaging/fixtures/performance-project/src",
+    input: "fixtures/performance-project/src",
   },
   {
     name: "React preset representative fixture",
