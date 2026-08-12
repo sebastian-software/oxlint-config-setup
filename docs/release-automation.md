@@ -37,9 +37,10 @@ release PR validation:
 1. Create a fine-grained PAT for the release automation account. Set a rotation
    date, restrict repository access to `sebastian-software/oxlint-config-setup`,
    and grant only the three permissions above.
-2. In this repository's **Settings → Secrets and variables → Actions**, store
-   it as the Actions secret `RELEASE_PLEASE_TOKEN`. Never put a maintainer's
-   existing `gh` OAuth token in this secret.
+2. Store it as the Actions secret `RELEASE_PLEASE_TOKEN`, either directly in
+   this repository or at organization level with this repository included in
+   the secret's access policy. Never put a maintainer's existing `gh` OAuth
+   token in this secret.
 3. Create a branch-protection rule for `main`. Require a pull request and the
    status check **`Package / Required`** from GitHub Actions; require the branch
    to be up to date before merging. Apply the rule to administrators as well if
@@ -68,9 +69,10 @@ releases, add it to the aggregate job's `needs` list and failure check in
 If Release Please fails before opening or updating its pull request, first
 check that the fine-grained PAT has not expired or been revoked, is restricted
 to this repository, and has the three expected permissions. Generate a replacement
-with the same least-privilege scope, replace `RELEASE_PLEASE_TOKEN`, revoke the
-old token, and rerun the failed **Release Please** workflow. Do not paste the
-token into issues, pull requests, logs, or local configuration.
+with the same least-privilege scope, replace `RELEASE_PLEASE_TOKEN` at the same
+repository or organization scope, confirm that this repository still has
+access, revoke the old token, and rerun the failed **Release Please** workflow.
+Do not paste the token into issues, pull requests, logs, or local configuration.
 
 If the release PR's Package run is blocked in an approval-required state, it is
 using `GITHUB_TOKEN` or a credential that does not create normal pull-request
