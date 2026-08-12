@@ -3,7 +3,8 @@
 - **Measured:** 2026-08-05
 - **Issue:** [#5: Spike: prove TypeScript shared config and JSON artifact paths][issue]
 - **Purpose:** Provide acceptance evidence for ADR 0005
-- **Prototype:** [`spikes/config-packaging/`][prototype]
+- **Prototype:** Removed after its conclusions were incorporated into the
+  published package and its release verification.
 
 ## Executive result
 
@@ -249,11 +250,10 @@ backend. It also narrows the npm-versus-standalone gap as the project grows. The
 p95 values are noisy; median values are the useful comparison for this small
 sample.
 
-Reproduce with:
+The benchmark fixture is retained in the regular repository test surface.
+Reproduce the current package benchmark with:
 
 ```sh
-cd spikes/config-packaging
-pnpm install --frozen-lockfile
 pnpm run benchmark
 ```
 
@@ -314,6 +314,5 @@ Sebastian Software maintainers remain the decision owner.
 [node-typescript]: https://nodejs.org/api/typescript.html
 [npm]: https://registry.npmjs.org/oxlint/1.77.0
 [pnpm-corepack]: https://pnpm.io/installation#using-corepack
-[prototype]: ../../spikes/config-packaging/README.md
 [quickstart]: https://oxc.rs/docs/guide/usage/linter/quickstart.html
 [release]: https://github.com/oxc-project/oxc/releases/tag/apps_v1.77.0
