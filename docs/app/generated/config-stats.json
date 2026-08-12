@@ -3663,7 +3663,7 @@
       }
     },
     {
-      "activeRules": 484,
+      "activeRules": 485,
       "artifactKb": 18.4,
       "fileName": "config-52e6793e6c93.json",
       "plugins": 4,
@@ -3825,6 +3825,7 @@
             "eslint/no-void",
             "eslint/no-with",
             "eslint/object-shorthand",
+            "eslint/one-var",
             "eslint/operator-assignment",
             "eslint/prefer-arrow-callback",
             "eslint/prefer-const",
@@ -4193,8 +4194,8 @@
       }
     },
     {
-      "activeRules": 582,
-      "artifactKb": 22,
+      "activeRules": 583,
+      "artifactKb": 22.1,
       "fileName": "config-dc471286f051.json",
       "plugins": 6,
       "policyRules": [
@@ -4355,6 +4356,7 @@
             "eslint/no-void",
             "eslint/no-with",
             "eslint/object-shorthand",
+            "eslint/one-var",
             "eslint/operator-assignment",
             "eslint/prefer-arrow-callback",
             "eslint/prefer-const",
@@ -4829,7 +4831,7 @@
       }
     },
     {
-      "activeRules": 495,
+      "activeRules": 496,
       "artifactKb": 18.7,
       "fileName": "config-63031013708b.json",
       "plugins": 5,
@@ -4991,6 +4993,7 @@
             "eslint/no-void",
             "eslint/no-with",
             "eslint/object-shorthand",
+            "eslint/one-var",
             "eslint/operator-assignment",
             "eslint/prefer-arrow-callback",
             "eslint/prefer-const",
@@ -5378,7 +5381,7 @@
       }
     },
     {
-      "activeRules": 593,
+      "activeRules": 594,
       "artifactKb": 22.4,
       "fileName": "config-e7e1aaadf7f2.json",
       "plugins": 7,
@@ -5540,6 +5543,7 @@
             "eslint/no-void",
             "eslint/no-with",
             "eslint/object-shorthand",
+            "eslint/one-var",
             "eslint/operator-assignment",
             "eslint/prefer-arrow-callback",
             "eslint/prefer-const",
@@ -6032,7 +6036,7 @@
       }
     },
     {
-      "activeRules": 485,
+      "activeRules": 486,
       "artifactKb": 18.4,
       "fileName": "config-fb86e16760f7.json",
       "plugins": 4,
@@ -6194,6 +6198,7 @@
             "eslint/no-void",
             "eslint/no-with",
             "eslint/object-shorthand",
+            "eslint/one-var",
             "eslint/operator-assignment",
             "eslint/prefer-arrow-callback",
             "eslint/prefer-const",
@@ -6573,7 +6578,7 @@
       }
     },
     {
-      "activeRules": 583,
+      "activeRules": 584,
       "artifactKb": 22.1,
       "fileName": "config-e726676209a2.json",
       "plugins": 6,
@@ -6735,6 +6740,7 @@
             "eslint/no-void",
             "eslint/no-with",
             "eslint/object-shorthand",
+            "eslint/one-var",
             "eslint/operator-assignment",
             "eslint/prefer-arrow-callback",
             "eslint/prefer-const",
@@ -7219,7 +7225,7 @@
       }
     },
     {
-      "activeRules": 496,
+      "activeRules": 497,
       "artifactKb": 18.8,
       "fileName": "config-4352036c232f.json",
       "plugins": 5,
@@ -7381,6 +7387,7 @@
             "eslint/no-void",
             "eslint/no-with",
             "eslint/object-shorthand",
+            "eslint/one-var",
             "eslint/operator-assignment",
             "eslint/prefer-arrow-callback",
             "eslint/prefer-const",
@@ -7778,7 +7785,7 @@
       }
     },
     {
-      "activeRules": 594,
+      "activeRules": 595,
       "artifactKb": 22.4,
       "fileName": "config-bae2ef7973d1.json",
       "plugins": 7,
@@ -7940,6 +7947,7 @@
             "eslint/no-void",
             "eslint/no-with",
             "eslint/object-shorthand",
+            "eslint/one-var",
             "eslint/operator-assignment",
             "eslint/prefer-arrow-callback",
             "eslint/prefer-const",
