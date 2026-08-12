@@ -11,12 +11,15 @@ import { PolicySection } from "../components/home/PolicySection.js";
 import { ReceiptsSection } from "../components/home/ReceiptsSection.js";
 
 const DESCRIPTION =
-  "Prebuilt Oxlint configurations with three policy levels, native TypeScript coverage, and constrained AI guardrails.";
+  "A complete, type-aware Oxlint preset with three policy levels, native ecosystem coverage, and constrained AI guardrails.";
 
 export const meta: MetaFunction = () => [
-  { title: "Oxlint Config Setup — Native policy without preset sprawl" },
+  { title: "Oxlint Config Setup — Type-aware Oxlint, preconfigured" },
   { name: "description", content: DESCRIPTION },
-  { property: "og:title", content: "Oxlint Config Setup" },
+  {
+    property: "og:title",
+    content: "Oxlint Config Setup — Type-aware by default",
+  },
   { property: "og:description", content: DESCRIPTION },
   { property: "og:type", content: "website" },
   { name: "twitter:card", content: "summary" },

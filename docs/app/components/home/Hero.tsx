@@ -21,16 +21,17 @@ export function Hero() {
     <header className="hp-hero">
       <div className="hp-container hp-hero-grid">
         <div className="hp-hero-copy">
+          <p className="hp-hero-kicker">Type-aware by default</p>
           <h1 className="hp-hero-title">
-            <span>One native linter.</span>
-            <span>Three deliberate levels.</span>
-            <span>No accidental strictness.</span>
+            <span>Native Oxlint.</span>
+            <span>Type-aware TypeScript.</span>
+            <span>One complete preset.</span>
           </h1>
           <p className="hp-hero-sub">
-            Prebuilt Oxlint configurations for modern TypeScript projects. Pick
-            the policy your team can sustain, add React or Node.js where they
-            belong, and layer on AI guardrails without smuggling stricter human
-            policy into the build.
+            Run fast native rules and semantic checks such as unhandled promises
+            through one Oxlint command. Every policy level includes the pinned
+            type-aware backend; React, Node.js, and AI remain deliberate
+            additions.
           </p>
           <InstallCommand />
           <p className="hp-hero-links">
@@ -45,8 +46,10 @@ export function Hero() {
             title="oxlint.config.ts"
           />
           <p>
-            This starts with one of 24 complete core artifacts, then adds the
-            package-owned test-file override. No runtime rule graph.
+            This starts with one of 24 complete core artifacts, then adds
+            convention-based test, spec, and story overrides. Type-aware linting
+            is enabled by default; syntax-only is explicit. No parallel ESLint
+            process.
           </p>
         </div>
       </div>
