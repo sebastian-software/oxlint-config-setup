@@ -76,6 +76,7 @@
   "scripts": {
     "build": "pnpm run typecheck && tsdown && tsx scripts/generate-configs.ts",
     "benchmark": "pnpm run build && tsx scripts/benchmark.ts",
+    "benchmark:sonarjs": "tsx scripts/benchmark-sonarjs.ts",
     "canary:native-surface": "tsx scripts/native-surface.ts",
     "canary:upstream-toolchain": "tsx scripts/upstream-toolchain.ts",
     "canary:upstream": "tsx scripts/upstream-canary.ts",
@@ -88,7 +89,7 @@
     "lint": "oxlint --type-aware --deny-warnings src scripts tsdown.config.ts",
     "prepack": "pnpm run build",
     "release:check": "pnpm run check && tsx scripts/release-gate.ts",
-    "test": "pnpm run test:ledger && pnpm run test:rule-helpers && pnpm run test:composition && pnpm run test:harness && pnpm run test:companion && pnpm run test:canary && pnpm run test:package && pnpm run test:published-package-verifier && pnpm run test:published-package-timeouts",
+    "test": "pnpm run test:ledger && pnpm run test:rule-helpers && pnpm run test:composition && pnpm run test:sonarjs && pnpm run test:harness && pnpm run test:companion && pnpm run test:canary && pnpm run test:package && pnpm run test:published-package-verifier && pnpm run test:published-package-timeouts",
     "test:canary": "tsx scripts/test-upstream-canary.ts",
     "test:companion": "tsx scripts/test-companion-quality.ts",
     "test:composition": "tsx scripts/test-composition.ts",
@@ -98,11 +99,13 @@
     "test:published-package-verifier": "tsx scripts/test-published-package-verifier.ts",
     "test:published-package-timeouts": "tsx scripts/test-published-package-timeouts.ts",
     "test:rule-helpers": "tsx scripts/test-rule-helpers.ts",
+    "test:sonarjs": "tsx scripts/test-sonarjs.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "eslint": "10.8.1",
     "eslint-plugin-playwright": "2.11.0",
+    "eslint-plugin-sonarjs": "4.2.0",
     "eslint-plugin-storybook": "0.12.0",
     "eslint-plugin-testing-library": "7.16.2"
   },

@@ -22,7 +22,7 @@ approved.
 | Testing Library                | Oxlint         | Package-owned JavaScript plugin, automatic on `*.test.{ts,tsx}` and `__tests__/**/*.{ts,tsx}` | Inherits the plugin's DOM preset, or its React preset when React is selected |
 | Playwright                     | Oxlint         | Package-owned JavaScript plugin, automatic on `*.spec.ts`               | Inherits the plugin's `flat/recommended` preset                                             |
 | Storybook                      | Oxlint         | Package-owned JavaScript plugin, automatic on `*.stories.{ts,tsx}`      | Inherits the plugin's `flat/recommended` story rules                                      |
-| SonarJS                        | Deferred       | No JavaScript plugin; two branch-body candidates have no demonstrated native equivalent | Revisit only with an approved isolated runtime plus per-path native-overlap, fixer-safety, fixture, and performance evidence |
+| SonarJS                        | Oxlint         | Automatic package-owned plugin enables all 13 syntax-only predecessor rules; AI adds six more | Seven predecessor rules remain excluded because they require parser services and type information |
 | Sorting and formatting         | Companion tool | Biome via `quality:format` and `biome.json`                             | Layout is outside the linter budget                                                       |
 | JSON and package metadata      | Companion tool | Ajv, publint, and sort-package-json via `quality:json`/`quality:package` | Oxlint source coverage does not include these formats                                     |
 | Markdown and MDX               | Companion tool | markdownlint-cli2 via `quality:markdown`                                | JavaScript-plugin support does not make custom formats executable                         |
@@ -49,9 +49,11 @@ review trigger are recorded in the ledger. An Oxlint upgrade must separately
 review every generated category diff.
 
 Package-owned JavaScript-plugin integrations use a narrower evidence model: the
-package verifies activation, file isolation, runtime resolution, and a real
-diagnostic from a clean consumer. The upstream plugin suite owns individual rule
-semantics, so those rules are not duplicated as local ledger fixtures.
+package verifies activation, isolation, runtime resolution, and a real
+diagnostic from a clean consumer. The global SonarJS exception additionally has
+repository-owned valid, invalid, native-overlap, ternary-gap, fixer-safety, and
+performance evidence. The upstream plugin suites retain ownership of their
+remaining individual rule semantics.
 
 ## Turnkey companion stack
 

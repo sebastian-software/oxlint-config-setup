@@ -24,6 +24,11 @@ import {
   withPlaywright,
 } from "../src/playwright.js";
 import { STORY_FILE_GLOBS, withStorybook } from "../src/storybook.js";
+import {
+  SONARJS_AI_RULES,
+  SONARJS_RULES,
+  withSonarJS,
+} from "../src/sonarjs.js";
 
 const root: OxlintConfig = {
   env: { browser: true },
@@ -103,6 +108,59 @@ assert.equal(config.plugins?.includes("jest"), false);
 assert.deepEqual(config.overrides?.[4]?.env, consumerOverride.env);
 assert.deepEqual(config.overrides?.[4]?.globals, consumerOverride.globals);
 assert.equal(config.overrides?.[4]?.rules?.["react/jsx-key"], "off");
+
+const sonarRoot = withSonarJS(root);
+const secondSonarRoot = withSonarJS(root);
+assert.deepEqual(sonarRoot.rules?.["sonarjs/no-duplicated-branches"], "error");
+assert.deepEqual(
+  sonarRoot.jsPlugins?.map((plugin) =>
+    typeof plugin === "string" ? plugin : plugin.name,
+  ),
+  ["sonarjs"],
+);
+assert.deepEqual(
+  Object.fromEntries(
+    Object.entries(sonarRoot.rules ?? {}).filter(([rule]) =>
+      rule.startsWith("sonarjs/"),
+    ),
+  ),
+  SONARJS_RULES,
+);
+assert.notEqual(sonarRoot.rules, secondSonarRoot.rules);
+assert.notEqual(sonarRoot.jsPlugins, secondSonarRoot.jsPlugins);
+
+const sonarAiRoot = withSonarJS(root, true);
+assert.deepEqual(
+  Object.fromEntries(
+    Object.entries(sonarAiRoot.rules ?? {}).filter(([rule]) =>
+      rule.startsWith("sonarjs/"),
+    ),
+  ),
+  { ...SONARJS_RULES, ...SONARJS_AI_RULES },
+);
+
+const composedSonarRoot = composeScopedOxlintConfig(
+  sonarRoot,
+  sources,
+  ["react"],
+  [
+    {
+      files: ["**/*.generated.ts"],
+      rules: { "sonarjs/no-duplicated-branches": "off" },
+    },
+  ],
+);
+assert.equal(
+  composedSonarRoot.rules?.["sonarjs/no-duplicated-branches"],
+  "error",
+);
+assert.equal(
+  composedSonarRoot.overrides?.at(-1)?.rules?.[
+    "sonarjs/no-duplicated-branches"
+  ],
+  "off",
+);
+assert.notEqual(composedSonarRoot.jsPlugins, sonarRoot.jsPlugins);
 
 setRuleSeverity(config, "vitest/no-focused-tests", "warn", { scope: "vitest" });
 assert.equal(config.overrides?.[1]?.rules?.["vitest/no-focused-tests"], "warn");

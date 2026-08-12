@@ -24,7 +24,10 @@ package-owned plugins automatically to canonical `*.test.{ts,tsx}`/
 `__tests__/**/*.{ts,tsx}` and `*.spec.ts` files. Testing Library uses its DOM
 preset by default and React preset when React is selected; Playwright uses its
 recommended preset; Storybook uses its recommended story rules on
-`*.stories.{ts,tsx}`. SonarJS and regular-expression gaps remain explicit.
+`*.stories.{ts,tsx}`. The loaders also add all 13 syntax-only predecessor
+SonarJS rules automatically without inheriting the SonarJS preset; AI adds six
+more. The seven type-aware predecessor rules and regular-expression plugin gaps
+stay explicit.
 
 ## Start smaller when needed
 

@@ -288,6 +288,7 @@ assert.deepEqual(manifest.publishConfig, {
 assert.deepEqual(manifest.dependencies, {
   eslint: "10.8.1",
   "eslint-plugin-playwright": "2.11.0",
+  "eslint-plugin-sonarjs": "4.2.0",
   "eslint-plugin-storybook": "0.12.0",
   "eslint-plugin-testing-library": "7.16.2",
 });
@@ -334,6 +335,20 @@ assert.equal(pnpmConfig.autoInstallPeers, false);
 const workspaceSettings = readFileSync(workspaceSettingsPath, "utf8");
 assert.match(workspaceSettings, /^engineStrict: true$/mu);
 assert.match(workspaceSettings, /^autoInstallPeers: false$/mu);
+for (const packageName of [
+  "project-service",
+  "tsconfig-utils",
+  "typescript-estree",
+  "utils",
+]) {
+  assert.match(
+    workspaceSettings,
+    new RegExp(
+      `^    "@typescript-eslint/${packageName}>typescript": "7\\.0\\.2"$`,
+      "mu",
+    ),
+  );
+}
 for (const lifecycle of ["install", "postinstall", "prepare"]) {
   assert.equal(manifest.scripts?.[lifecycle], undefined);
 }
@@ -341,6 +356,7 @@ for (const lifecycle of ["install", "postinstall", "prepare"]) {
 assert.equal(manifest.devDependencies?.eslint, undefined);
 assert.equal(manifest.devDependencies?.["eslint-plugin-testing-library"], undefined);
 assert.equal(manifest.devDependencies?.["eslint-plugin-playwright"], undefined);
+assert.equal(manifest.devDependencies?.["eslint-plugin-sonarjs"], undefined);
 assert.equal(manifest.devDependencies?.["eslint-plugin-storybook"], undefined);
 assert.equal(run("git", ["ls-files", "--", "dist/**"]).trim(), "");
 assert(
@@ -445,6 +461,22 @@ for (const options of allConfigOptions()) {
     (artifact) => artifact.fileName === configFileName(options),
   );
   assert(expected);
+  assert.deepEqual(
+    loaded.jsPlugins?.map((plugin) =>
+      typeof plugin === "string" ? plugin : plugin.name,
+    ),
+    ["sonarjs"],
+  );
+  assert.equal(loaded.rules?.["sonarjs/no-duplicated-branches"], "error");
+  const sonarRuleNames = Object.keys(loaded.rules ?? {}).filter((rule) =>
+    rule.startsWith("sonarjs/"),
+  );
+  assert.equal(sonarRuleNames.length, options.ai ? 19 : 13);
+  assert.equal(loaded.rules?.["sonarjs/no-hardcoded-secrets"], "warn");
+  assert.deepEqual(
+    loaded.rules?.["sonarjs/max-union-size"],
+    options.ai ? ["error", { threshold: 5 }] : undefined,
+  );
   const testingLibraryOverride = loaded.overrides?.find((override) =>
     override.jsPlugins?.some(
       (plugin) =>
@@ -489,11 +521,52 @@ for (const options of allConfigOptions()) {
     testingLibraryOverride?.rules?.["testing-library/no-dom-import"],
     options.react ? ["error", "react"] : undefined,
   );
-  const loadedCore = { ...loaded };
+  const loadedCore = { ...loaded, rules: { ...loaded.rules } };
   delete loadedCore.overrides;
+  delete loadedCore.jsPlugins;
+  if (loadedCore.rules !== undefined) {
+    for (const rule of sonarRuleNames) delete loadedCore.rules[rule];
+  }
   assert.deepEqual(loadedCore, expected.config);
 }
-assert.equal(publicApi.getSyntaxOnlyOxlintConfig().options?.typeAware, false);
+assert.equal(
+  publicApi.getComposedOxlintConfig().rules?.[
+    "sonarjs/no-duplicated-branches"
+  ],
+  "error",
+);
+assert.equal(
+  publicApi.getOxlintConfig({ ai: true }).rules?.[
+    "sonarjs/no-duplicated-branches"
+  ],
+  publicApi.getOxlintConfig().rules?.["sonarjs/no-duplicated-branches"],
+  "AI must retain the automatic base SonarJS policy",
+);
+assert.equal(
+  publicApi.getOxlintConfig().rules?.["sonarjs/no-nested-switch"],
+  undefined,
+);
+assert.equal(
+  publicApi.getOxlintConfig({ ai: true }).rules?.[
+    "sonarjs/no-nested-switch"
+  ],
+  "error",
+);
+assert.deepEqual(
+  publicApi.getComposedOxlintConfig({ ai: true }).rules?.[
+    "sonarjs/no-duplicate-string"
+  ],
+  ["error", { threshold: 3 }],
+);
+const syntaxOnly = publicApi.getSyntaxOnlyOxlintConfig();
+assert.equal(syntaxOnly.options?.typeAware, false);
+assert.equal(syntaxOnly.rules?.["sonarjs/no-duplicated-branches"], "error");
+assert.equal(
+  publicApi.getExperimentalReactCompilerOxlintConfig().rules?.[
+    "sonarjs/no-duplicated-branches"
+  ],
+  "error",
+);
 const composedVitest = publicApi.getComposedOxlintConfig({
   scopes: ["vitest"],
 });
@@ -572,6 +645,14 @@ assert.throws(
   /Oxlint config option ai must be a boolean/u,
 );
 assert.throws(
+  () => publicApi.getOxlintConfig({ sonarjs: true } as never),
+  /Unsupported Oxlint config option: sonarjs/u,
+);
+assert.throws(
+  () => publicApi.getComposedOxlintConfig({ sonarjs: true } as never),
+  /Unsupported composed Oxlint config option: sonarjs/u,
+);
+assert.throws(
   () => publicApi.getOxlintConfig({ level: "relaxed" } as never),
   /Oxlint config option level must be one of: essential, recommended, strict/u,
 );
@@ -635,15 +716,15 @@ assert.equal(
 assert.deepEqual(composed.overrides?.at(-1)?.plugins, composed.plugins);
 assert.equal(
   activeRuleCount(publicApi.getOxlintConfig({ level: "essential" })),
-  113,
+  126,
 );
-assert.equal(activeRuleCount(recommended), 166);
-assert.equal(activeRuleCount(strict), 485);
+assert.equal(activeRuleCount(recommended), 179);
+assert.equal(activeRuleCount(strict), 498);
 assert.equal(
   activeRuleCount(
     publicApi.getOxlintConfig({ level: "strict", react: true, node: true }),
   ),
-  594,
+  607,
 );
 const customized = publicApi.getOxlintConfig({ ai: true });
 publicApi.setRuleSeverity(customized, "eslint/no-warning-comments", "error");
@@ -827,6 +908,12 @@ try {
       'assert.equal(playwright.rules["playwright/no-focused-test"], "error");',
       'assert.equal(storybook.jsPlugins.at(-1).name, "storybook");',
       'assert.equal(storybook.rules["storybook/default-exports"], "error");',
+      'assert.equal(defaultConfig.jsPlugins.at(-1).name, "sonarjs");',
+      'assert.equal(defaultConfig.rules["sonarjs/no-duplicated-branches"], "error");',
+      'assert.equal(defaultConfig.rules["sonarjs/no-hardcoded-secrets"], "warn");',
+      'assert.equal(Object.keys(defaultConfig.rules).filter((rule) => rule.startsWith("sonarjs/")).length, 13);',
+      'assert.equal(getOxlintConfig({ ai: true }).rules["sonarjs/no-nested-switch"], "error");',
+      'assert.deepEqual(getOxlintConfig({ ai: true }).rules["sonarjs/max-union-size"], ["error", { threshold: 5 }]);',
       "assert.equal(Object.keys(testingLibrary.rules).length, 15);",
       'const reactTestingLibrary = getOxlintConfig({ react: true }).overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "testing-library"));',
       "assert.equal(Object.keys(reactTestingLibrary.rules).length, 22);",
@@ -913,6 +1000,36 @@ try {
   );
 
   writeFileSync(
+    resolve(consumerRoot, "DuplicatedBranches.ts"),
+    [
+      'export function status(mode: "read" | "write" | "idle"): string {',
+      '  if (mode === "read") {',
+      '    const result = "busy";',
+      '    return result;',
+      '  } else if (mode === "write") {',
+      '    const result = "busy";',
+      '    return result;',
+      '  }',
+      '  return "idle";',
+      '}',
+      '',
+    ].join("\n"),
+  );
+  assert.throws(
+    () =>
+      run(
+        consumerOxlint,
+        ["--config", "oxlint.config.ts", "DuplicatedBranches.ts"],
+        consumerRoot,
+      ),
+    (error: unknown) =>
+      error instanceof Error &&
+      /sonarjs(?:\/|\()no-duplicated-branches/u.test(
+        String((error as Error & { stdout?: string }).stdout),
+      ),
+  );
+
+  writeFileSync(
     resolve(consumerRoot, "TestingLibrary.test.tsx"),
     'import { screen } from "@testing-library/dom";\nscreen.debug();\n',
   );
@@ -982,10 +1099,18 @@ try {
         String((error as Error & { stdout?: string }).stdout),
       ),
   );
-  run(
-    consumerOxlint,
-    ["--config", "oxlint.config.ts", "--deny-warnings", "Focused.test.ts"],
-    consumerRoot,
+  assert.throws(
+    () =>
+      run(
+        consumerOxlint,
+        ["--config", "oxlint.config.ts", "--deny-warnings", "Focused.test.ts"],
+        consumerRoot,
+      ),
+    (error: unknown) =>
+      error instanceof Error &&
+      /sonarjs(?:\/|\()no-exclusive-tests/u.test(
+        String((error as Error & { stdout?: string }).stdout),
+      ),
   );
 
   writeFileSync(
@@ -1057,12 +1182,15 @@ try {
       'const testingLibrary = config.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "testing-library"));',
       'const playwright = config.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "playwright"));',
       'const storybook = config.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "storybook"));',
+      'assert.equal(config.jsPlugins.at(-1).name, "sonarjs");',
+      'assert.equal(Object.keys(config.rules).filter((rule) => rule.startsWith("sonarjs/")).length, 13);',
       'assert.equal(testingLibrary.jsPlugins.at(-1).name, "testing-library");',
       'assert.equal(playwright.jsPlugins.at(-1).name, "playwright");',
       'assert.equal(storybook.jsPlugins.at(-1).name, "storybook");',
       'assert(statSync(playwright.jsPlugins.at(-1).specifier).isFile());',
       'assert(statSync(testingLibrary.jsPlugins.at(-1).specifier).isFile());',
       'assert(statSync(storybook.jsPlugins.at(-1).specifier).isFile());',
+      'assert(statSync(config.jsPlugins.at(-1).specifier).isFile());',
       "assert.equal(Object.keys(testingLibrary.rules).length, 15);",
       'assert.equal(storybook.rules["storybook/default-exports"], "error");',
       "",
@@ -1084,6 +1212,16 @@ try {
       "eslint/no-warning-comments"
     ],
     "warn",
+  );
+  assert.equal(
+    (aiConfig as { jsPlugins?: unknown }).jsPlugins,
+    undefined,
+  );
+  assert.equal(
+    (aiConfig as { rules?: Record<string, unknown> }).rules?.[
+      "sonarjs/no-duplicated-branches"
+    ],
+    undefined,
   );
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });

@@ -8,6 +8,7 @@ and the event that should cause it to be rerun.
 
 | Date | Note |
 | --- | --- |
+| 2026-08-12 | [SonarJS integration decision](2026-08-12-sonarjs-integration.md) |
 | 2026-08-07 | [Regexp, SonarJS, and Storybook coverage decisions](2026-08-07-regexp-sonarjs-storybook-decisions.md) |
 | 2026-08-06 | [Policy-level and AI activation](2026-08-06-policy-level-and-ai-activation.md) |
 | 2026-08-06 | [Essential level selection baseline](2026-08-06-essential-level-selection.md) |

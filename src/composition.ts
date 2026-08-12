@@ -63,6 +63,12 @@ function cloneConfig(config: OxlintConfig): OxlintConfig {
       config.categories === undefined ? undefined : { ...config.categories },
     env: config.env === undefined ? undefined : { ...config.env },
     globals: config.globals === undefined ? undefined : { ...config.globals },
+    jsPlugins:
+      config.jsPlugins === undefined || config.jsPlugins === null
+        ? config.jsPlugins
+        : config.jsPlugins.map((plugin) =>
+            typeof plugin === "string" ? plugin : { ...plugin },
+          ),
     plugins: config.plugins === undefined ? undefined : [...config.plugins],
     rules: cloneRules(config.rules),
     overrides: config.overrides?.map((override) => ({

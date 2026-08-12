@@ -17,7 +17,7 @@ type ConfigOptions = {
 };
 ```
 
-All options are fixed selectors for prebuilt artifacts. They do not dynamically assemble a configuration at consumer runtime.
+`level`, `react`, `node`, and `ai` select one of 24 prebuilt artifacts. The TypeScript loaders then append the package-owned JavaScript-plugin integrations at consumer runtime.
 
 ## Policy levels
 
@@ -86,6 +86,15 @@ AI mode does not add a JavaScript React plugin or change the React ownership
 model. It executes the same native allocation and performance diagnostics as
 the selected React policy level. `react/react-compiler` remains a separate,
 warning-only experimental configuration and is never selected by `react: true`.
+
+## Automatic SonarJS policy
+
+Every TypeScript loader enables the 13 syntax-only SonarJS rules from the
+predecessor configuration at the root. AI mode adds its six former AI
+guardrails. The package does not inherit a SonarJS preset and has no SonarJS
+feature flag. Seven predecessor rules remain excluded because they require
+parser services and type information that Oxlint JavaScript plugins do not
+provide.
 
 ## AI is independent
 
