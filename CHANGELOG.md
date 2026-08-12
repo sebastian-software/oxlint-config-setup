@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0](https://github.com/sebastian-software/oxlint-config-setup/compare/oxlint-config-setup-v0.1.1...oxlint-config-setup-v0.2.0) (2026-08-12)
+
+
+### Features
+
+* add automatic Playwright rules for E2E files ([#54](https://github.com/sebastian-software/oxlint-config-setup/issues/54)) ([e6adade](https://github.com/sebastian-software/oxlint-config-setup/commit/e6adade6fffd0baedf986a904c86bb9d92053706))
+* add automatic Storybook rules ([#55](https://github.com/sebastian-software/oxlint-config-setup/issues/55)) ([b1ffa62](https://github.com/sebastian-software/oxlint-config-setup/commit/b1ffa62ddd4fd0d6c0350e9d74af287984ec2535))
+* add automatic Testing Library rules for test files ([#53](https://github.com/sebastian-software/oxlint-config-setup/issues/53)) ([c74a54e](https://github.com/sebastian-software/oxlint-config-setup/commit/c74a54e055a71a8ea07d3280019241906c37576c))
+* add file-scoped config composition ([#50](https://github.com/sebastian-software/oxlint-config-setup/issues/50)) ([7c54596](https://github.com/sebastian-software/oxlint-config-setup/commit/7c5459635be6e7a20f29dc1ef80cff294db92058))
+
 ## [0.1.1](https://github.com/sebastian-software/oxlint-config-setup/compare/oxlint-config-setup-v0.1.0...oxlint-config-setup-v0.1.1) (2026-08-07)
 
 
