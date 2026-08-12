@@ -13,6 +13,7 @@
 | TypeScript target | `7.0.2`                         |
 | Testing Library   | `7.16.2`                        |
 | Playwright        | `2.11.0`                        |
+| Storybook         | `0.12.0`                        |
 | ESLint API        | `9.39.1`                        |
 | pnpm              | `11.20.0`                       |
 | npm consumer      | major 10 or 11                  |
@@ -52,11 +53,12 @@ regression must exceed 25% in both measurements to fail; a one-off exceedance
 is recorded as a warning so ordinary runner noise does not fail the canary.
 
 The scheduled native-upgrade job remains focused on Oxlint's native surface.
-The pinned package gate separately exercises automatic Testing Library and
-Playwright overrides from a clean consumer, including Testing Library's
-DOM/React selection and Playwright `*.spec.ts` isolation. Updating either runtime
-requires the same clean-consumer boundary check; preset membership and per-rule
-semantics remain owned by the upstream plugin suites.
+The pinned package gate separately exercises automatic Testing Library,
+Playwright, and Storybook overrides from a clean consumer, including Testing
+Library's DOM/React selection, Playwright `*.spec.ts` isolation, and Storybook
+`*.stories.{ts,tsx}` isolation. Updating any runtime requires the same
+clean-consumer boundary check; preset membership and per-rule semantics remain
+owned by the upstream plugin suites.
 
 When Renovate or another dependency update PR is ready for review, link its
 updated-toolchain change to a successful canary run. To reproduce a run locally
@@ -97,7 +99,7 @@ The shared harness invokes the supported `oxlint` executable directly and checks
 - syntax-only TypeScript with no project graph;
 - type-aware TypeScript plus a referenced composite project;
 - React/JSX accessibility, CommonJS and ESM Node.js, Vitest, and Jest;
-- automatic Testing Library DOM/React selection and Playwright `*.spec.ts` activation, each with source-file isolation;
+- automatic Testing Library DOM/React selection, Playwright `*.spec.ts`, and Storybook `*.stories.{ts,tsx}` activation, each with source-file isolation;
 - framework-specific mismatch behavior;
 - experimental React Compiler isolation;
 - unsupported configuration, timeout, and crashed-process classification;

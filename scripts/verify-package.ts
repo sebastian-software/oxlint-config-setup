@@ -79,10 +79,8 @@ interface PublicPackageApi {
     overrides?: readonly OxlintOverride[];
     scopes?: readonly ("react" | "node" | "vitest" | "jest" | "scripts" | "config" | "declarations" | { files?: readonly string[]; scope: "react" | "node" | "vitest" | "jest" | "scripts" | "config" | "declarations" })[];
   }): OxlintConfig;
-  getJestOxlintConfig(): OxlintConfig;
   getOxlintConfig(options?: ConfigOptions): OxlintConfig;
   getSyntaxOnlyOxlintConfig(): OxlintConfig;
-  getVitestOxlintConfig(): OxlintConfig;
   setRuleSeverity(
     config: OxlintConfig,
     ruleName: string,
@@ -133,10 +131,8 @@ const publicApiNames = [
   "disableRule",
   "getComposedOxlintConfig",
   "getExperimentalReactCompilerOxlintConfig",
-  "getJestOxlintConfig",
   "getOxlintConfig",
   "getSyntaxOnlyOxlintConfig",
-  "getVitestOxlintConfig",
   "setRuleSeverity",
 ];
 const trackedDiffBefore = run("git", ["diff", "--binary"]);
@@ -289,6 +285,7 @@ assert.deepEqual(manifest.publishConfig, {
 assert.deepEqual(manifest.dependencies, {
   eslint: "9.39.1",
   "eslint-plugin-playwright": "2.11.0",
+  "eslint-plugin-storybook": "0.12.0",
   "eslint-plugin-testing-library": "7.16.2",
 });
 assert.deepEqual(manifest.optionalDependencies, undefined);
@@ -305,6 +302,13 @@ assert.deepEqual(manifest.exports?.["."], {
   types: "./dist/index.d.ts",
   default: "./dist/index.js",
 });
+assert.deepEqual(
+  Object.keys(manifest.exports ?? {}).toSorted(),
+  [
+    ".",
+    ...allConfigArtifacts().map((artifact) => `./json/${artifact.publicName}`),
+  ].toSorted(),
+);
 for (const artifact of allConfigArtifacts()) {
   assert.equal(
     manifest.exports?.[`./json/${artifact.publicName}`],
@@ -334,6 +338,7 @@ for (const lifecycle of ["install", "postinstall", "prepare"]) {
 assert.equal(manifest.devDependencies?.eslint, undefined);
 assert.equal(manifest.devDependencies?.["eslint-plugin-testing-library"], undefined);
 assert.equal(manifest.devDependencies?.["eslint-plugin-playwright"], undefined);
+assert.equal(manifest.devDependencies?.["eslint-plugin-storybook"], undefined);
 assert.equal(run("git", ["ls-files", "--", "dist/**"]).trim(), "");
 assert(
   run("git", ["ls-files", "--", "scripts"])
@@ -437,10 +442,20 @@ for (const options of allConfigOptions()) {
     (artifact) => artifact.fileName === configFileName(options),
   );
   assert(expected);
-  const testingLibraryOverride = loaded.overrides?.at(-1);
+  const testingLibraryOverride = loaded.overrides?.find((override) =>
+    override.jsPlugins?.some(
+      (plugin) =>
+        typeof plugin !== "string" && plugin.name === "testing-library",
+    ),
+  );
   const playwrightOverride = loaded.overrides?.find((override) =>
     override.jsPlugins?.some(
       (plugin) => typeof plugin !== "string" && plugin.name === "playwright",
+    ),
+  );
+  const storybookOverride = loaded.overrides?.find((override) =>
+    override.jsPlugins?.some(
+      (plugin) => typeof plugin !== "string" && plugin.name === "storybook",
     ),
   );
   assert.deepEqual(playwrightOverride?.files, [
@@ -450,6 +465,10 @@ for (const options of allConfigOptions()) {
   assert.equal(Object.keys(playwrightOverride?.rules ?? {}).length, 37);
   assert.equal(playwrightOverride?.rules?.["playwright/no-focused-test"], "error");
   assert.equal(playwrightOverride?.globals?.AbortController, "readonly");
+  assert.deepEqual(storybookOverride?.files, ["**/*.stories.{ts,tsx}"]);
+  assert.equal(storybookOverride?.jsPlugins?.length, 1);
+  assert.equal(Object.keys(storybookOverride?.rules ?? {}).length, 11);
+  assert.equal(storybookOverride?.rules?.["storybook/default-exports"], "error");
   assert.deepEqual(testingLibraryOverride?.files, [
     "**/*.test.{ts,tsx}",
     "**/__tests__/**/*.{ts,tsx}",
@@ -472,29 +491,30 @@ for (const options of allConfigOptions()) {
   assert.deepEqual(loadedCore, expected.config);
 }
 assert.equal(publicApi.getSyntaxOnlyOxlintConfig().options?.typeAware, false);
-assert(publicApi.getVitestOxlintConfig().plugins?.includes("vitest"));
-assert(publicApi.getJestOxlintConfig().plugins?.includes("jest"));
-for (const config of [
-  publicApi.getVitestOxlintConfig(),
-  publicApi.getJestOxlintConfig(),
-]) {
-  const testingLibraryOverride = config.overrides?.at(-1);
-  const plugin = testingLibraryOverride?.jsPlugins?.at(-1);
-  assert(plugin !== undefined && typeof plugin !== "string");
-  assert.equal(plugin.name, "testing-library");
-  assert.equal(Object.keys(testingLibraryOverride?.rules ?? {}).length, 15);
-  assert.equal(
-    config.overrides?.find((override) =>
-      override.jsPlugins?.some(
-        (entry) => typeof entry !== "string" && entry.name === "playwright",
-      ),
-    )?.rules?.["playwright/no-focused-test"],
-    "error",
-  );
-}
+const composedVitest = publicApi.getComposedOxlintConfig({
+  scopes: ["vitest"],
+});
+const composedJest = publicApi.getComposedOxlintConfig({ scopes: ["jest"] });
+assert(composedVitest.plugins?.includes("vitest"));
+assert(composedJest.plugins?.includes("jest"));
+assert.deepEqual(
+  composedVitest.overrides?.find((override) => override.env?.vitest)?.files,
+  ["**/*.test.{ts,tsx}", "**/__tests__/**/*.{ts,tsx}"],
+);
+assert.deepEqual(
+  composedJest.overrides?.find((override) => override.env?.jest)?.files,
+  ["**/*.test.{ts,tsx}", "**/__tests__/**/*.{ts,tsx}"],
+);
 assert.equal(
   Object.keys(
-    publicApi.getComposedOxlintConfig().overrides?.at(-1)?.rules ?? {},
+    publicApi
+      .getComposedOxlintConfig()
+      .overrides?.find((override) =>
+        override.jsPlugins?.some(
+          (plugin) =>
+            typeof plugin !== "string" && plugin.name === "testing-library",
+        ),
+      )?.rules ?? {},
   ).length,
   15,
 );
@@ -788,22 +808,26 @@ try {
     [
       'import assert from "node:assert/strict";',
       'import { copyFileSync } from "node:fs";',
-      'import { addRule, configureRule, disableAllRulesBut, disableRule, getComposedOxlintConfig, getExperimentalReactCompilerOxlintConfig, getJestOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, getVitestOxlintConfig, setRuleSeverity } from "oxlint-config-setup";',
+      'import { addRule, configureRule, disableAllRulesBut, disableRule, getComposedOxlintConfig, getExperimentalReactCompilerOxlintConfig, getOxlintConfig, getSyntaxOnlyOxlintConfig, setRuleSeverity } from "oxlint-config-setup";',
       'assert(getOxlintConfig({ react: true, node: true, ai: true }).plugins.includes("react"));',
       'assert.equal(getOxlintConfig({ level: "essential" }).rules["typescript/switch-exhaustiveness-check"], "off");',
       'assert.equal(getOxlintConfig().rules["import/no-self-import"], "off");',
       'assert.equal(getOxlintConfig({ level: "strict" }).rules["import/no-self-import"], "error");',
       "assert.equal(getSyntaxOnlyOxlintConfig().options.typeAware, false);",
-      'assert(getVitestOxlintConfig().plugins.includes("vitest"));',
-      'assert(getJestOxlintConfig().plugins.includes("jest"));',
       'assert.equal(getExperimentalReactCompilerOxlintConfig().rules["react/react-compiler"], "warn");',
-      'assert.equal(getOxlintConfig().overrides.at(-1).jsPlugins.at(-1).name, "testing-library");',
-      'const playwright = getOxlintConfig().overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "playwright"));',
+      'const defaultConfig = getOxlintConfig();',
+      'const testingLibrary = defaultConfig.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "testing-library"));',
+      'const playwright = defaultConfig.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "playwright"));',
+      'const storybook = defaultConfig.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "storybook"));',
+      'assert.equal(testingLibrary.jsPlugins.at(-1).name, "testing-library");',
       'assert.equal(playwright.jsPlugins.at(-1).name, "playwright");',
       'assert.equal(playwright.rules["playwright/no-focused-test"], "error");',
-      "assert.equal(Object.keys(getOxlintConfig().overrides.at(-1).rules).length, 15);",
-      "assert.equal(Object.keys(getOxlintConfig({ react: true }).overrides.at(-1).rules).length, 22);",
-      'assert.deepEqual(getOxlintConfig({ react: true }).overrides.at(-1).rules["testing-library/no-dom-import"], ["error", "react"]);',
+      'assert.equal(storybook.jsPlugins.at(-1).name, "storybook");',
+      'assert.equal(storybook.rules["storybook/default-exports"], "error");',
+      "assert.equal(Object.keys(testingLibrary.rules).length, 15);",
+      'const reactTestingLibrary = getOxlintConfig({ react: true }).overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "testing-library"));',
+      "assert.equal(Object.keys(reactTestingLibrary.rules).length, 22);",
+      'assert.deepEqual(reactTestingLibrary.rules["testing-library/no-dom-import"], ["error", "react"]);',
       'const composed = getComposedOxlintConfig({ scopes: ["react", "vitest"], overrides: [{ files: ["**/*.test.tsx"], plugins: ["jsx-a11y"] }] });',
       'assert.equal(composed.options.typeAware, true);',
       'assert(composed.plugins.includes("vitest"));',
@@ -915,13 +939,12 @@ try {
   writeFileSync(
     resolve(consumerRoot, "consumer.ts"),
     [
-    'import { getComposedOxlintConfig, getOxlintConfig, getVitestOxlintConfig, setRuleSeverity, type ComposedConfigOptions, type ConfigLevel, type ConfigOptions, type RuleSeverity, type ScopedConfig } from "oxlint-config-setup";',
+      'import { getComposedOxlintConfig, getOxlintConfig, setRuleSeverity, type ComposedConfigOptions, type ConfigLevel, type ConfigOptions, type RuleSeverity, type ScopedConfig } from "oxlint-config-setup";',
       'const level: ConfigLevel = "essential";',
       'const severity: RuleSeverity = "warn";',
       "const options = { level, react: true, ai: true } satisfies ConfigOptions;",
       'const scope: ScopedConfig = "vitest";',
       'const composedOptions = { scopes: [scope] } satisfies ComposedConfigOptions;',
-      "void getVitestOxlintConfig();",
       "const config = getOxlintConfig(options);",
       "void getComposedOxlintConfig(composedOptions);",
       'setRuleSeverity(config, "eslint/no-warning-comments", severity);',
@@ -962,6 +985,38 @@ try {
     consumerRoot,
   );
 
+  writeFileSync(
+    resolve(consumerRoot, "MissingDefault.stories.tsx"),
+    "export const Primary = {};\n",
+  );
+  writeFileSync(
+    resolve(consumerRoot, "MissingDefault.tsx"),
+    "export const Primary = {};\n",
+  );
+  assert.throws(
+    () =>
+      run(
+        consumerOxlint,
+        [
+          "--config",
+          "oxlint.config.ts",
+          "--deny-warnings",
+          "MissingDefault.stories.tsx",
+        ],
+        consumerRoot,
+      ),
+    (error: unknown) =>
+      error instanceof Error &&
+      /storybook(?:\/|\()default-exports/u.test(
+        String((error as Error & { stdout?: string }).stdout),
+      ),
+  );
+  run(
+    consumerOxlint,
+    ["--config", "oxlint.config.ts", "--deny-warnings", "MissingDefault.tsx"],
+    consumerRoot,
+  );
+
   const installedRoot = resolve(
     consumerRoot,
     "node_modules/oxlint-config-setup",
@@ -995,13 +1050,18 @@ try {
       'import assert from "node:assert/strict";',
       'import { statSync } from "node:fs";',
       'import { getOxlintConfig } from "oxlint-config-setup";',
-      'const plugin = getOxlintConfig().overrides.at(-1).jsPlugins.at(-1);',
-      'assert.equal(plugin.name, "testing-library");',
-      'const playwright = getOxlintConfig().overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "playwright"));',
+      'const config = getOxlintConfig();',
+      'const testingLibrary = config.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "testing-library"));',
+      'const playwright = config.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "playwright"));',
+      'const storybook = config.overrides.find((override) => override.jsPlugins?.some((plugin) => plugin.name === "storybook"));',
+      'assert.equal(testingLibrary.jsPlugins.at(-1).name, "testing-library");',
       'assert.equal(playwright.jsPlugins.at(-1).name, "playwright");',
+      'assert.equal(storybook.jsPlugins.at(-1).name, "storybook");',
       'assert(statSync(playwright.jsPlugins.at(-1).specifier).isFile());',
-      'assert(statSync(plugin.specifier).isFile());',
-      "assert.equal(Object.keys(getOxlintConfig().overrides.at(-1).rules).length, 15);",
+      'assert(statSync(testingLibrary.jsPlugins.at(-1).specifier).isFile());',
+      'assert(statSync(storybook.jsPlugins.at(-1).specifier).isFile());',
+      "assert.equal(Object.keys(testingLibrary.rules).length, 15);",
+      'assert.equal(storybook.rules["storybook/default-exports"], "error");',
       "",
     ].join("\n"),
   );

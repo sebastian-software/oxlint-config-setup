@@ -10,7 +10,7 @@ Oxlint Config Setup is a native Oxlint product, not an ESLint compatibility laye
 
 ## One runtime
 
-The standard command invokes Oxlint directly. JavaScript, TypeScript, imports, React, JSX accessibility, Node.js, Vitest, and Jest are covered through native Oxlint plugins. Package-owned Testing Library and Playwright compatibility plugins apply only to canonical `*.test.{ts,tsx}`/`__tests__/**/*.{ts,tsx}` and `*.spec.ts` files. Type-aware TypeScript rules use the pinned `oxlint-tsgolint` backend through the same command.
+The standard command invokes Oxlint directly. JavaScript, TypeScript, imports, React, JSX accessibility, Node.js, Vitest, and Jest are covered through native Oxlint plugins. Package-owned Testing Library, Playwright, and Storybook compatibility plugins apply only to canonical `*.test.{ts,tsx}`/`__tests__/**/*.{ts,tsx}`, `*.spec.ts`, and `*.stories.{ts,tsx}` files. Type-aware TypeScript rules use the pinned `oxlint-tsgolint` backend through the same command.
 
 ## Prebuilt configuration selection
 
@@ -28,7 +28,7 @@ Package generation creates all 24 combinations of:
 Every selected rule is declared in a typed ledger with:
 
 - a defect class and profile owner;
-- minimum level or named activation;
+- minimum level, file-scoped activation, or named experimental activation;
 - severity and options;
 - execution path and stability;
 - rationale, fixtures, replacements, conflicts, and a review trigger; and

@@ -31,10 +31,6 @@ export const CANONICAL_SCOPE_GLOBS = {
   declarations: ["**/*.d.ts", "**/*.d.cts", "**/*.d.mts"],
 } as const satisfies Record<ScopedConfig, readonly string[]>;
 
-export const DEFERRED_SCOPE_GLOBS = {
-  stories: ["**/*.stories.{ts,tsx}"],
-} as const;
-
 export interface ScopedConfigSelection {
   files?: readonly string[];
   scope: ScopedConfig;

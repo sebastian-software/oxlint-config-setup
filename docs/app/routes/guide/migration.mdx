@@ -19,12 +19,12 @@ Treat migration as a behavior change, not a package-name replacement.
 
 The package does not preserve every historical plugin identity. Stable native
 Oxlint rules take ownership where they cover the same defect. Testing Library
-and Playwright are exceptions: the main and test-runner loaders apply their
+and Playwright are exceptions: the TypeScript loaders apply their
 package-owned plugins automatically to canonical `*.test.{ts,tsx}`/
 `__tests__/**/*.{ts,tsx}` and `*.spec.ts` files. Testing Library uses its DOM
 preset by default and React preset when React is selected; Playwright uses its
-recommended preset. `*.stories.{ts,tsx}` remains a reserved Storybook boundary;
-Storybook, SonarJS, and regular-expression gaps remain explicit.
+recommended preset; Storybook uses its recommended story rules on
+`*.stories.{ts,tsx}`. SonarJS and regular-expression gaps remain explicit.
 
 ## Start smaller when needed
 

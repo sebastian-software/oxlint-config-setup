@@ -75,6 +75,7 @@ function isRuleSelected(
     case "ai":
       return ai;
     case "named":
+    case "scoped":
       return true;
     case "level":
       return (

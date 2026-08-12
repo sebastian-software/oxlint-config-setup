@@ -98,18 +98,21 @@ because Oxlint otherwise replaces base plugins for an override. Rule maps,
 environments, and globals remain separate Oxlint entries, so later matching
 consumer overrides have Oxlint's normal precedence without destructive package
 merging. Root loaders select the same complete core artifacts as the public JSON
-exports, then append the runtime-resolved Testing Library and Playwright
-overrides. Static JSON exports remain core-only because copied JSON cannot
+exports, then append the runtime-resolved Testing Library, Playwright, and
+Storybook overrides. Static JSON exports remain core-only because copied JSON cannot
 retain those package-relative plugin paths.
 
-`*.stories.{ts,tsx}` is reserved as Storybook's file boundary but deliberately
-has no profile yet. Testing Library and Playwright follow the automatic override
-model without separate public flags, with upstream-owned preset membership and
+Testing Library, Playwright, and Storybook follow the automatic override model
+without separate public flags, with upstream-owned preset membership and
 package-boundary evidence rather than duplicated per-rule fixture suites.
+Storybook is deliberately limited to `*.stories.{ts,tsx}`; `.story.*`, MDX,
+custom story globs, and `.storybook/main.*` are outside the automatic contract.
 
 Syntax-only TypeScript remains a narrower named configuration without
-type-aware category expansion. Vitest, Jest, and the experimental React Compiler
-remain separate named configurations with their existing stability boundaries.
+type-aware category expansion. The experimental React Compiler remains a
+separate named configuration. Vitest and Jest are selected as mutually
+exclusive file-scoped policies on canonical test files rather than complete
+root configurations.
 
 Exact rule counts are generated product data rather than architecture. They may
 change only through a reviewed Oxlint version or policy update and remain
