@@ -14,6 +14,7 @@ import {
 } from "./options.js";
 import { composeProfiles } from "./profiles.js";
 import { withPlaywright } from "./playwright.js";
+import { withSonarJS } from "./sonarjs.js";
 import { withStorybook } from "./storybook.js";
 import { withTestingLibrary } from "./testing-library.js";
 
@@ -88,9 +89,10 @@ function loadRootConfig(options: ConfigOptions): OxlintConfig {
 
 export function getOxlintConfig(options: ConfigOptions = {}): OxlintConfig {
   const normalized = normalizeConfigOptions(options);
+  const root = loadRootConfig(normalized);
   return withStorybook(
     withTestingLibrary(
-      withPlaywright(loadRootConfig(normalized)),
+      withPlaywright(withSonarJS(root, normalized.ai)),
       normalized.react,
     ),
   );
@@ -107,7 +109,11 @@ export function getComposedOxlintConfig(
     throw new TypeError("Composed Oxlint config options must be an object");
   }
   for (const key of Object.keys(options)) {
-    if (!(["level", "ai", "scopes", "overrides"] as const).includes(key as never)) {
+    if (
+      !(["level", "ai", "scopes", "overrides"] as const).includes(
+        key as never,
+      )
+    ) {
       throw new TypeError(`Unsupported composed Oxlint config option: ${key}`);
     }
   }
@@ -126,9 +132,10 @@ export function getComposedOxlintConfig(
         ? selection === "react"
         : selection?.scope === "react",
     );
+  const prebuiltRoot = loadRootConfig(rootOptions);
   const root = withStorybook(
     withTestingLibrary(
-      withPlaywright(loadRootConfig(rootOptions)),
+      withPlaywright(withSonarJS(prebuiltRoot, rootOptions.ai)),
       react,
     ),
   );
@@ -146,7 +153,7 @@ export function getComposedOxlintConfig(
 }
 
 function getNamedConfig(name: NamedArtifact, typeAware = true): OxlintConfig {
-  return loadConfigArtifact(`${name}.json`, typeAware);
+  return withSonarJS(loadConfigArtifact(`${name}.json`, typeAware));
 }
 
 export function getSyntaxOnlyOxlintConfig(): OxlintConfig {

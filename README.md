@@ -105,6 +105,14 @@ selected. Those loaders also add the official Playwright and Storybook
 runner selection; there is no separate feature flag or consumer dependency to
 configure.
 
+SonarJS is an automatic root integration with no feature flag. Every TypeScript
+loader enables the 13 syntax-only rules from the predecessor configuration;
+AI mode adds its six former AI guardrails. No upstream preset is inherited.
+The original severities and options are preserved, including a warning for
+`no-hardcoded-secrets`, union size 5, and duplicate-string threshold 3.
+The seven predecessor rules that require parser services remain excluded
+because Oxlint's JavaScript-plugin runtime does not provide type information.
+
 The composition loader keeps `options.typeAware` on the root object. It unions
 required plugins into consumer overrides, appends consumer overrides last, and
 leaves Oxlint to merge later `rules`, `env`, and `globals` entries for matching
@@ -127,6 +135,7 @@ package-relative JavaScript-plugin path.
 | Testing Library test files             | Automatic in the TypeScript loaders          | —                                            | Stable file-scoped policy                 |
 | Playwright spec files                  | Automatic in the TypeScript loaders          | —                                            | Stable file-scoped policy                 |
 | Storybook story files                  | Automatic in the TypeScript loaders          | —                                            | Stable file-scoped policy                 |
+| Duplicate branch bodies                | Automatic in the TypeScript loaders          | —                                            | One curated SonarJS rule                  |
 | React Compiler diagnostics             | `getExperimentalReactCompilerOxlintConfig()` | `oxlint-config-setup/json/react-compiler`    | Experimental warning                      |
 | Mixed repository file scopes            | `getComposedOxlintConfig()`                  | —                                            | Stable TypeScript-only composition API    |
 
@@ -194,7 +203,8 @@ prebuilt artifact or later calls.
 ## JSON consumption
 
 JSON artifacts contain the complete core objects behind the TypeScript loaders,
-without the automatic Testing Library, Playwright, or Storybook overrides. Copy
+without the automatic Testing Library, Playwright, or Storybook overrides, and
+without the automatic SonarJS runtime. Copy
 one through its public package export, then run the supported Oxlint CLI directly:
 
 ```sh
@@ -208,11 +218,12 @@ hashed file from `node_modules`; hashes are deliberately not public API.
 
 ## What the beta proves
 
-The pinned Oxlint category baseline materializes 113 active base rules at
-Essential, 166 at Recommended, and 485 at Strict. Project contexts expand that
-surface: the fully selected React + Node + AI configurations contain 170, 233,
-and 595 active rules respectively. The generated homepage inventory and
-effective-config snapshots are the authority for exact membership.
+The pinned Oxlint category baseline materializes 113 native active base rules at
+Essential, 166 at Recommended, and 485 at Strict. TypeScript loader results add
+13 automatic SonarJS base rules, while AI adds another six. The generated
+homepage inventory and effective-config snapshots are the authority for exact
+native membership; package verification separately asserts the JavaScript-plugin
+policy.
 
 The package also owns 27 curated ledger entries across core, imports,
 TypeScript, React, accessibility, Node.js, Vitest, Jest, AI, and experimental
@@ -234,7 +245,8 @@ unselected JavaScript plugins, and non-source concerns remain excluded.
 
 Oxlint remains the only lint process. The package includes ESLint-compatible
 Testing Library, Playwright, and Storybook plugin runtimes for automatic
-test-file, E2E, and story overrides; it does not run ESLint or load JavaScript
+test-file, E2E, and story overrides. It also supplies one explicitly selected
+SonarJS diagnostic in every TypeScript loader; it does not run ESLint or load JavaScript
 React and `react-hooks` plugins. Formatting,
 Markdown/MDX, spelling, and package metadata remain companion-tool concerns.
 
@@ -273,6 +285,7 @@ follow-up patch release, then verify that new version instead.
 | Testing Library plugin     | `7.16.2`        |
 | Playwright plugin          | `2.11.0`        |
 | Storybook plugin           | `0.12.0`        |
+| SonarJS plugin             | `4.2.0`         |
 | ESLint compatibility API   | `10.8.1`        |
 | npm clean consumer         | major 10 or 11  |
 | pnpm clean consumer        | `11.21.0`       |

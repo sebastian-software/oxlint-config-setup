@@ -34,6 +34,12 @@ at that level and may add explicitly AI-only guardrails. For example,
 `essential` plus AI does not activate recommended import policy or strict
 exhaustive-switch policy.
 
+Every TypeScript loader automatically enables all 13 syntax-only SonarJS rules
+from the predecessor configuration. It does not inherit an upstream preset or
+add a prebuilt JSON permutation. AI mode adds six further predecessor
+guardrails. Seven type-aware rules remain excluded because the JavaScript
+plugin runtime does not supply parser services.
+
 Two execution contracts remain separate named configurations:
 
 ```ts

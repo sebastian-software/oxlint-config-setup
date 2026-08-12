@@ -117,7 +117,7 @@ assert.match(
 );
 
 const readme = read("README.md");
-assert.match(readme, /113 active base rules/iu);
+assert.match(readme, /113 native active base rules/iu);
 assert.match(readme, /485 at Strict/iu);
 assert.match(readme, /mapped about 85\.3%/iu);
 assert.match(readme, /level: "essential"/u);

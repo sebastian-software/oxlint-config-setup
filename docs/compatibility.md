@@ -1,6 +1,6 @@
 # Compatibility evidence
 
-- **Measured:** 2026-08-11
+- **Measured:** 2026-08-12
 - **Host:** macOS 26.5, Apple M1 Ultra, Node 24.19.0
 - **CI:** Linux on the Node 24 LTS floor and the current Node 26 line
 
@@ -14,6 +14,7 @@
 | Testing Library   | `7.16.2`                        |
 | Playwright        | `2.11.0`                        |
 | Storybook         | `0.12.0`                        |
+| SonarJS           | `4.2.0`                         |
 | ESLint API        | `10.8.1`                        |
 | pnpm              | `11.21.0`                       |
 | npm consumer      | major 10 or 11                  |
@@ -54,10 +55,10 @@ is recorded as a warning so ordinary runner noise does not fail the canary.
 
 The scheduled native-upgrade job remains focused on Oxlint's native surface.
 The pinned package gate separately exercises automatic Testing Library,
-Playwright, and Storybook overrides from a clean consumer, including Testing
+Playwright, Storybook, and automatic SonarJS behavior from a clean consumer, including Testing
 Library's DOM/React selection, Playwright `*.spec.ts` isolation, and Storybook
 `*.stories.{ts,tsx}` isolation. Updating any runtime requires the same
-clean-consumer boundary check; preset membership and per-rule semantics remain
+clean-consumer boundary check; preset membership and remaining per-rule semantics remain
 owned by the upstream plugin suites.
 
 When Renovate or another dependency update PR is ready for review, link its

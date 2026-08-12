@@ -2,6 +2,12 @@ packages:
   - "docs"
 engineStrict: true
 autoInstallPeers: false
+peerDependencyRules:
+  allowedVersions:
+    "@typescript-eslint/project-service>typescript": "7.0.2"
+    "@typescript-eslint/tsconfig-utils>typescript": "7.0.2"
+    "@typescript-eslint/typescript-estree>typescript": "7.0.2"
+    "@typescript-eslint/utils>typescript": "7.0.2"
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:

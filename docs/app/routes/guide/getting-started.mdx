@@ -49,7 +49,8 @@ export default getOxlintConfig({
 
 The loader selects one of 24 complete core artifacts, then adds package-owned
 Testing Library, Playwright, and Storybook overrides from their official flat
-presets.
+presets. It also adds the package's single curated SonarJS duplicate-branch
+diagnostic automatically.
 
 ## Run Oxlint directly
 
@@ -58,8 +59,8 @@ pnpm oxlint .
 ```
 
 Add the same command to `package.json` and CI. Oxlint remains the only lint
-process; the TypeScript loader resolves package-owned Testing Library and
-Playwright compatibility plugins for their canonical files.
+process; the TypeScript loader resolves all selected package-owned compatibility
+plugins.
 
 ## Choose your next guide
 

@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-04
-- **Last updated:** 2026-08-11
+- **Last updated:** 2026-08-12
 - **Deciders:** Sebastian Software maintainers
 
 ## Context
@@ -28,6 +28,8 @@ Prefer native Oxlint rules for every defect class they cover adequately.
 JavaScript plugins are allowed only for valuable domains with no adequate native
 implementation. Every plugin-backed integration must be explicit in the
 architecture, removable, file-scoped, and backed by package-boundary evidence.
+When a defect class applies to all source files, a plugin may instead be an
+explicit automatic root integration with a deliberately curated rule surface.
 
 Testing Library, Playwright, and Storybook are accepted exceptions. The
 type-aware TypeScript loaders apply their official presets automatically to
@@ -37,6 +39,15 @@ disjoint canonical file conventions: Testing Library on `*.test.{ts,tsx}` and
 when React is selected; the other integrations use `flat/recommended`. The
 package owns each plugin runtime; static JSON artifacts remain native core
 configurations because copied JSON cannot retain package-relative plugin paths.
+
+SonarJS is accepted as an automatic root integration in every TypeScript
+loader. It enables the 13 syntax-only rules from the predecessor configuration
+and no preset; AI adds its six former guardrails. The public SonarJS entrypoint
+loads the full plugin. The automatic integration has a same-host performance
+budget below 10x. Seven type-aware predecessor rules are excluded because the
+JavaScript-plugin bridge supplies no parser services. `no-all-duplicated-branches`
+was not part of the predecessor and remains excluded to avoid duplicate
+diagnostics on `if` and `switch` paths.
 
 The standard React profile uses native Oxlint React rules. It does not load a
 JavaScript React plugin to chase parity with either React plugin ecosystem.
@@ -90,6 +101,8 @@ activation boundary, runtime ownership, and removal condition. The package must
 verify activation, isolation, runtime resolution, consumer precedence, and one
 real clean-consumer diagnostic. Upstream plugin suites own individual rule
 semantics unless a concrete integration regression requires local evidence.
+Root plugins additionally require native-overlap, fixer-safety, explicit-gap,
+and bounded same-host performance evidence.
 Review on every Oxlint minor upgrade because JavaScript-plugin support is not
 covered by the normal semantic-versioning promise.
 
