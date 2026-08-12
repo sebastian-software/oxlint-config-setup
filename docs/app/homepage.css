@@ -115,6 +115,14 @@
   max-width: 48rem;
 }
 
+.hp-hero-kicker {
+  color: var(--hp-accent);
+  font: 700 0.76rem/1 var(--hp-mono);
+  letter-spacing: 0.1em;
+  margin: 0 0 1.15rem;
+  text-transform: uppercase;
+}
+
 .hp-hero-title,
 .hp-section-title,
 .hp-closing h2 {

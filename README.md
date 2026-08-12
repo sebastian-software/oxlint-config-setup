@@ -1,6 +1,7 @@
 # Oxlint Config Setup
 
-Opinionated, prebuilt Oxlint configurations for modern TypeScript projects.
+Opinionated, prebuilt, type-aware Oxlint configurations for modern TypeScript
+projects.
 
 > [!IMPORTANT]
 > `v0.1.0` is the current published release. It is a reviewed beta rather than a
@@ -34,9 +35,11 @@ pnpm oxlint .
 
 `level` accepts `"essential"`, `"recommended"`, or `"strict"` and defaults to
 `"recommended"`. `react`, `node`, and `ai` default to `false`. The loader
-selects one of 24 complete, prebuilt JSON configurations. It never composes
-rules at runtime. Every configurable surface includes core, TypeScript syntax,
-and type-aware TypeScript behavior.
+selects one of 24 complete, prebuilt JSON core configurations, then adds
+package-owned Testing Library, Playwright, and Storybook overrides from their
+official flat presets for canonical test, spec, and story files. Every
+configurable surface includes core, TypeScript syntax, and type-aware TypeScript
+behavior.
 
 Use `essential` for the smaller adoption baseline:
 

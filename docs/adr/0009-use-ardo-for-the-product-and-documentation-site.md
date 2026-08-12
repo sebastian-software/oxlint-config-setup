@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-06
+- **Last updated:** 2026-08-12
 - **Deciders:** Sebastian Software maintainers
 
 ## Context
@@ -30,6 +31,17 @@ the getting-started guide as the next path. It uses a precise, candid,
 engineering-oriented voice and supports claims with repository artifacts rather
 than testimonials or estimated metrics.
 
+The primary homepage promise is the verified product mechanism: complete,
+prebuilt configurations combine native Oxlint coverage with the pinned
+type-aware TypeScript backend, enabled by default across the configurable policy
+levels. Package-owned Testing Library, Playwright, and Storybook compatibility
+runtimes extend that single Oxlint process only for canonical test, spec, and
+story files. Policy levels, project contexts, and AI guardrails support this
+promise instead of competing with it. Competitive novelty claims such as
+"first" or "only" require dated comparison evidence; without that evidence,
+public copy states the mechanism and its user-facing consequence rather than
+broad market superiority.
+
 Long-form guides, reference pages, and generated API documentation use the read
 register. They prioritize predictable navigation, code examples, prerequisites,
 and exact behavior over homepage art direction.
@@ -57,6 +69,8 @@ owned by the `docs/` workspace rather than this ADR.
 - Generate static, searchable pages that work on GitHub Pages or another static
   host.
 - Connect public claims to the package's deterministic source artifacts.
+- Make the combination of complete native and type-aware coverage easy to
+  understand without relying on an unverifiable category claim.
 - Give contributors and coding agents one discoverable documentation surface.
 
 ## Options considered
@@ -103,9 +117,10 @@ also continues a framework already used successfully by the predecessor.
 ## Validation and review triggers
 
 CI type-checks and statically builds the Ardo workspace, verifies expected
-routes and homepage copy in the generated output, and rejects drift in generated
-configuration statistics. Interactive controls must remain keyboard-operable,
-screen-reader named, responsive, and usable with reduced motion.
+routes and the type-aware-by-default promise in the generated output, and
+rejects drift in generated configuration statistics. Interactive controls must
+remain keyboard-operable, screen-reader named, responsive, and usable with
+reduced motion.
 
 Review this decision if Ardo can no longer produce the required static output,
 the product needs authenticated or server-backed documentation, the homepage

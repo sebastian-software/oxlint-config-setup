@@ -15,15 +15,16 @@ export function OxlintSection() {
       <div className="hp-container hp-split">
         <div className="hp-section-head">
           <h2 className="hp-section-title" id="hp-oxlint-title">
-            Oxlint is not the fast lane. It is the road.
+            Type information without the second linter.
           </h2>
           <p className="hp-section-lead">
-            Oxlint remains the only lint process. Native rules cover JavaScript,
-            TypeScript, imports, React, accessibility, Node.js, Vitest, and Jest;
-            the package also resolves Testing Library, Playwright, and Storybook
-            checks for their canonical unit-test, spec, and story files.
-            Type-aware checks stay inside the same command through the pinned
-            native backend.
+            Native Oxlint rules cover JavaScript, TypeScript, imports, React,
+            accessibility, Node.js, Vitest, and Jest. When a TypeScript rule
+            needs semantic information, the same command uses the pinned{" "}
+            <code>oxlint-tsgolint</code> backend. Package-owned Testing Library,
+            Playwright, and Storybook compatibility runtimes remain scoped to
+            canonical test, spec, and story files. There is no parallel ESLint
+            process.
           </p>
           <p className="hp-section-close">
             One configuration model. One diagnostic stream. One place to update.

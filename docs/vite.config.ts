@@ -28,7 +28,7 @@ export default defineConfig({
         neutral: 155,
       },
       description:
-        "Opinionated, prebuilt Oxlint configurations for modern TypeScript projects.",
+        "Opinionated, prebuilt, type-aware Oxlint configurations for modern TypeScript projects.",
       lang: "en-US",
       linkCheck: {
         checkAnchors: true,

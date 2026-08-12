@@ -248,7 +248,7 @@ const allowPinnedPeerMismatch =
 assert.equal(manifest.name, "oxlint-config-setup");
 assert.equal(
   manifest.description,
-  "Opinionated, prebuilt Oxlint configurations for modern TypeScript projects.",
+  "Opinionated, prebuilt, type-aware Oxlint configurations for modern TypeScript projects.",
 );
 assert.equal(
   manifest.homepage,
