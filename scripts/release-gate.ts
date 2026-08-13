@@ -123,7 +123,20 @@ assert.match(contributing, /ADRs are living records/iu);
 const adrConvention = read("docs/adr/README.md");
 assert.match(adrConvention, /living, mutable records/iu);
 assert.match(adrConvention, /update the existing ADR in place/iu);
-assert.doesNotMatch(adrConvention, /0013/u);
+assert.match(
+  adrConvention,
+  /0013-release-coordinated-toolchain-pins\.md/u,
+);
+
+const toolchainPolicyDecision = read(
+  "docs/adr/0013-release-coordinated-toolchain-pins.md",
+);
+assert.match(toolchainPolicyDecision, /\*\*Status:\*\* Accepted/u);
+assert.match(toolchainPolicyDecision, /exact, coordinated.*peer versions/su);
+assert.match(
+  toolchainPolicyDecision,
+  /canary tests the latest upstream.*without changing the supported pair/su,
+);
 
 const projectLanguageDecision = read(
   "docs/adr/0006-use-us-english-as-the-project-language.md",
@@ -198,6 +211,8 @@ assert.ok(
   readme.includes(expectedInstallCommand),
   "README install command must match the expected toolchain",
 );
+assert.match(readme, /one exact, coordinated\npeer pair/u);
+assert.match(readme, /ADR 0013/u);
 const supportedMatrix = section(
   readme,
   "## Supported matrix",
@@ -352,6 +367,30 @@ const packageJobs = asRecord(
   readWorkflow(".github/workflows/package.yml").jobs,
   "Package workflow jobs",
 );
+const packageVerifyJob = asRecord(
+  packageJobs.verify,
+  "Package verify job",
+);
+const packageVerifyStrategy = asRecord(
+  packageVerifyJob.strategy,
+  "Package verify job strategy",
+);
+const packageVerifyMatrix = asRecord(
+  packageVerifyStrategy.matrix,
+  "Package verify job matrix",
+);
+const packageVerifyRows = asArray(
+  packageVerifyMatrix.include,
+  "Package verify job matrix include",
+);
+assert.equal(packageVerifyRows.length, 2);
+for (const [index, value] of packageVerifyRows.entries()) {
+  const row = asRecord(value, `Package verify job matrix include[${index}]`);
+  assert.equal(row.oxlint, expectedVersions.oxlint);
+  assert.equal(row.tsgolint, expectedVersions.oxlintTsgolint);
+  assert.equal(row.typescript, expectedVersions.typescript);
+  assert.equal(row.pnpm, expectedVersions.pnpm);
+}
 const requiredPackageJob = asRecord(
   packageJobs.required,
   "Package required job",
@@ -451,5 +490,24 @@ for (const version of [
 ]) {
   assert.match(compatibility, new RegExp(version.replaceAll(".", "\\."), "u"));
 }
+assert.match(compatibility, /one exact, coordinated Oxlint/iu);
+assert.match(compatibility, /ADR 0013/u);
+
+const upstreamCanary = read(".github/workflows/upstream-canary.yml");
+assert.doesNotMatch(upstreamCanary, /pnpm: latest/u);
+const upstreamCanaryPnpmVersions = [
+  ...upstreamCanary.matchAll(/^\s+pnpm: (\S+)$/gmu),
+].map(([, version]) => version);
+assert.equal(upstreamCanaryPnpmVersions.length, 2);
+assert.deepEqual(
+  [...new Set(upstreamCanaryPnpmVersions)],
+  [expectedVersions.pnpm],
+  "upstream canary must use the pinned repository pnpm in both matrix rows",
+);
+
+assert.doesNotMatch(
+  read("docs/release-review.md"),
+  /DEFER \| Expanded version ranges/u,
+);
 
 console.log("v0.1 beta release review and documentation gate verified.");

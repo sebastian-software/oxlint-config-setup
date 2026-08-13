@@ -1,6 +1,7 @@
 # v0.1 beta keep/adjust/defer review
 
 - **Review date:** 2026-08-06
+- **Last updated:** 2026-08-13
 - **Review status:** **Complete** for the beta candidate
 - **Publication status:** `v0.1.0` was subsequently published with npm Trusted Publishing
 
@@ -19,7 +20,7 @@
 | ADJUST | JavaScript-plugin domains | Testing Library, Playwright, and Storybook are package-owned automatic file-scoped integrations; SonarJS restores syntax-only predecessor parity automatically at the root, with six additional AI rules; regex gaps remain deferred. |
 | DEFER | Stable React Compiler | Compiler diagnostics remain an isolated warning until upstream stability changes. |
 | KEEP | Automated publication | Release Please and npm Trusted Publishing publish released versions from `main`. |
-| DEFER | Expanded version ranges | New Oxlint, tsgolint, TypeScript, Node, or package-manager versions require a full matrix run. |
+| ADJUST | Coordinated toolchain support | Oxlint and tsgolint remain one exact peer pair; the canary qualifies updates for a full matrix and coordinated package release rather than widening support automatically. |
 
 ## Exit evidence
 

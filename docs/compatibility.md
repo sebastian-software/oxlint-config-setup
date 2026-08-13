@@ -4,6 +4,23 @@
 - **Host:** macOS 26.5, Apple M1 Ultra, Node 24.19.0
 - **CI:** Linux on the Node 24 LTS floor and the current Node 26 line
 
+## Supported-version policy
+
+The published runtime contract is one exact, coordinated Oxlint and
+`oxlint-tsgolint` peer pair. The TypeScript version below is the behavior target
+used to build and validate that pair; it is not a consumer peer. pnpm is pinned
+for reproducible repository and clean-consumer checks, not as a consumer
+runtime requirement. Node.js follows the ranged engine policy in ADR 0010.
+
+New upstream versions become supported only after a dependency pull request
+updates the manifest and shared expected-version source, regenerates artifacts,
+and passes the full release and documentation gates. Normal release automation
+then publishes the new exact pair. The previous package release continues to
+support its own documented pair.
+
+See [ADR 0013](adr/0013-release-coordinated-toolchain-pins.md) for the rationale,
+rejected range models, and review triggers.
+
 ## Tested matrix
 
 | Component         | Version                         |
@@ -21,7 +38,8 @@
 | Consumer Node.js  | `24.11.0`, `26.0.0`, current 26 |
 
 CI job names and environment variables record this version trio. Upgrading any
-member reruns the entire matrix rather than relying on a broad peer range.
+member reruns the entire matrix rather than widening the peer contract from
+canary evidence alone.
 
 ## Upstream compatibility canary
 
@@ -30,9 +48,9 @@ and can also be started with `workflow_dispatch`. It keeps the checked-in
 manifest, lockfile, peer ranges, and supported-version claim pinned. On the
 same Linux runner, it first measures the pinned toolchain, then resolves the
 latest Oxlint, `oxlint-tsgolint`, and TypeScript versions only into
-`node_modules`. It runs on the Node 24 LTS floor with the supported pnpm and on
-the current Node 26 line with current pnpm; neither combination is a release
-matrix claim.
+`node_modules`. It runs on the Node 24 LTS floor and the current Node 26 line
+with the pinned repository pnpm; neither combination extends the published
+runtime pair.
 
 The canary reports install, type, config, diagnostic, snapshot, packaging, and
 performance results separately. Diagnostic coverage includes behavioral
@@ -43,10 +61,10 @@ and a Markdown diff for review. A native surface change is a snapshot failure,
 not an automatic support update.
 
 The canary supplies each clean consumer with the overlaid peer tarballs. Its npm
-consumer suppresses peer resolution only for that intentional pinned-versus-
-upstream mismatch; the package verifier still asserts the published exact peer
-contract. This keeps a known peer-range boundary from masquerading as a runtime
-or packaging compatibility regression.
+consumer suppresses peer resolution only for that intentional
+published-versus-upstream mismatch; the package verifier still asserts the
+published exact peer contract. This keeps a known support boundary from
+masquerading as a runtime or packaging compatibility regression.
 
 Performance compares two fresh upstream measurements with a pinned baseline on
 the same runner, using the existing one-thread warm-up and sample protocol. A
@@ -72,7 +90,6 @@ pnpm run benchmark > canary-artifacts/pinned-benchmark.json
 pnpm run canary:upstream-toolchain -- --record canary-artifacts/requested-upstream-versions.json
 pnpm update --latest --no-save --lockfile=false oxlint oxlint-tsgolint typescript
 pnpm run canary:upstream-toolchain -- --verify canary-artifacts/requested-upstream-versions.json --output canary-artifacts
-CANARY_ALLOW_PNPM_VERSION=true \
 CANARY_ALLOW_PINNED_PEER_MISMATCH=true \
 CANARY_OUTPUT_DIR=canary-artifacts \
 CANARY_PERFORMANCE_BASELINE=canary-artifacts/pinned-benchmark.json \
