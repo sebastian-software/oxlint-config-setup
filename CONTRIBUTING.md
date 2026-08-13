@@ -1,6 +1,6 @@
 # Contributing
 
-The project combines design records with an executable pre-beta package. Small,
+The project combines design records with a published pre-1.0 package. Small,
 reviewable pull requests are preferred over a single large specification dump.
 
 ## Project language

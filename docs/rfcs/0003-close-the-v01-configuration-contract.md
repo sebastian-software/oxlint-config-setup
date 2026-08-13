@@ -59,7 +59,7 @@ ledger schema.
 | Warning-level defaults | The three base levels contain no warnings. Warning-level policy requires an explicit overlay or named experimental configuration; v0.1 uses AI and React Compiler respectively. |
 | Public migration fixtures | Focused repository-owned fixtures and clean packed consumers support the beta's behavioral-coverage claim. A broader compatibility claim would require a separately reviewed public migration corpus. |
 | Ledger implementation | TypeScript owns the schema, ledger, generators, package source, and validation scripts. Generated JSON and Markdown remain committed outputs checked for drift. |
-| First-beta plugin domains | None. Later releases accepted Testing Library and Playwright as package-owned automatic file-scoped integrations; Storybook, SonarJS, and regular-expression plugins remain research. |
+| First-beta plugin domains | None. Later releases accepted Testing Library, Playwright, and Storybook as package-owned automatic file-scoped integrations and SonarJS as an automatic root integration. The regular-expression plugin remains research. |
 
 ## Consequences
 

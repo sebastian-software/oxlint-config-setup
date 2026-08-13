@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 
 import type { OxlintConfig } from "oxlint";
 
+import { renderConfigStats } from "../docs/scripts/config-stats.js";
 import { allConfigArtifacts } from "../src/artifacts.js";
 import { ruleLedger } from "../src/ledger.js";
 import { assertGeneratedContent } from "./generation.js";
@@ -117,6 +118,7 @@ function effectiveProjection(config: OxlintConfig): unknown {
 
 const generated = new Map<string, string>([
   ["docs/rule-catalog.md", renderCatalog()],
+  ["docs/app/generated/config-stats.json", renderConfigStats()],
   [
     "fixtures/snapshots/effective-configs.json",
     `${JSON.stringify(
