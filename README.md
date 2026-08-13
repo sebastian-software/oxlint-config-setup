@@ -4,9 +4,9 @@ Opinionated, prebuilt, type-aware Oxlint configurations for modern TypeScript
 projects.
 
 > [!IMPORTANT]
-> `v0.1.0` is the current published release. It is a reviewed beta rather than a
-> stable or mature release; the package, rule ledger, generated JSON, behavioral
-> fixtures, and release gate are complete.
+> The package is published but remains pre-1.0 rather than stable or mature.
+> See the [changelog](CHANGELOG.md) for the current release and compatibility
+> notes.
 
 ## Install
 

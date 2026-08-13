@@ -840,7 +840,14 @@ try {
   assert.deepEqual(packedManifest.author, manifest.author);
   assert.deepEqual(packedManifest.funding, manifest.funding);
   const packedReadme = run("tar", ["-xOf", tarballPath, "package/README.md"]);
-  assert.match(packedReadme, /`v0\.1\.0` is the current published release\./u);
+  assert.match(
+    packedReadme,
+    /The package is published but remains pre-1\.0 rather than stable or mature\./u,
+  );
+  assert.doesNotMatch(
+    packedReadme,
+    /`v\d+\.\d+\.\d+` is the current published release\./u,
+  );
   assert.doesNotMatch(packedReadme, /publishing remains an explicit maintainer action/u);
 
   const oxlintPackageRoot = realpathSync(
