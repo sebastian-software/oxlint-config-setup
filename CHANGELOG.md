@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/sebastian-software/oxlint-config-setup/compare/oxlint-config-setup-v0.2.0...oxlint-config-setup-v0.3.0) (2026-08-13)
+
+
+### Features
+
+* add automatic SonarJS diagnostics ([#86](https://github.com/sebastian-software/oxlint-config-setup/issues/86)) ([d8ecdb7](https://github.com/sebastian-software/oxlint-config-setup/commit/d8ecdb74b3554e7784aa753c9955b63458ad1599))
+
+
+### Bug Fixes
+
+* keep release documentation truthful ([#88](https://github.com/sebastian-software/oxlint-config-setup/issues/88)) ([6010d86](https://github.com/sebastian-software/oxlint-config-setup/commit/6010d869e88d4d0b57dbca7b75a40bff86c71430))
+
 ## [0.2.0](https://github.com/sebastian-software/oxlint-config-setup/compare/oxlint-config-setup-v0.1.1...oxlint-config-setup-v0.2.0) (2026-08-12)
 
 
