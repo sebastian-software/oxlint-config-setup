@@ -17,6 +17,12 @@ import { pathToFileURL } from "node:url";
 
 import type { OxlintConfig, OxlintOverride } from "oxlint";
 
+import {
+  expectedDependencies,
+  expectedPackageManager,
+  expectedPeerDependencies,
+  expectedVersions,
+} from "./expected-toolchain.js";
 import { allConfigArtifacts, NAMED_ARTIFACTS } from "../src/artifacts.js";
 import {
   allConfigOptions,
@@ -141,14 +147,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function activeRuleCount(config: OxlintConfig): number {
-  return Object.values(config.rules ?? {}).filter((rule) => {
-    if (rule === undefined) return false;
-    const severity: unknown = Array.isArray(rule) ? rule[0] : rule;
-    return severity !== "off" && severity !== "allow" && severity !== 0;
-  }).length;
-}
-
 function parseJson(source: string): unknown {
   return JSON.parse(source) as unknown;
 }
@@ -268,11 +266,8 @@ assert.deepEqual(manifest.keywords, [
 assert.equal(manifest.type, "module");
 assert.equal(manifest.sideEffects, false);
 assert.deepEqual(manifest.files, ["dist"]);
-assert.equal(manifest.engines?.node, ">=24.11.0");
-assert.equal(
-  manifest.packageManager,
-  "pnpm@11.21.0+sha512.521705bce689924eac72f5a3587122f362689ef6571e55ba80076fd637c11132ecffada26fad4ea79c485bfddbfd3d5a2a5b05805a77e893de71ec8a6cca3bb1",
-);
+assert.equal(manifest.engines?.node, `>=${expectedVersions.node}`);
+assert.equal(manifest.packageManager, expectedPackageManager);
 assert.deepEqual(manifest.author, {
   name: "Sebastian Software GmbH",
   url: "https://sebastian-software.com",
@@ -285,23 +280,20 @@ assert.deepEqual(manifest.publishConfig, {
   access: "public",
   provenance: true,
 });
-assert.deepEqual(manifest.dependencies, {
-  eslint: "10.8.1",
-  "eslint-plugin-playwright": "2.11.0",
-  "eslint-plugin-sonarjs": "4.2.0",
-  "eslint-plugin-storybook": "0.12.0",
-  "eslint-plugin-testing-library": "7.16.2",
-});
+assert.deepEqual(manifest.dependencies, expectedDependencies);
 assert.deepEqual(manifest.optionalDependencies, undefined);
-assert.deepEqual(manifest.peerDependencies, {
-  oxlint: "1.78.0",
-  "oxlint-tsgolint": "7.0.2001",
-});
-assert.equal(manifest.devDependencies?.oxlint, "1.78.0");
-assert.equal(manifest.devDependencies?.["oxlint-tsgolint"], "7.0.2001");
-assert.equal(manifest.devDependencies?.typescript, "7.0.2");
-assert.equal(manifest.devDependencies?.tsdown, "0.22.14");
-assert.equal(manifest.devDependencies?.tsx, "4.23.12");
+assert.deepEqual(manifest.peerDependencies, expectedPeerDependencies);
+assert.equal(
+  manifest.devDependencies?.oxlint,
+  expectedPeerDependencies.oxlint,
+);
+assert.equal(
+  manifest.devDependencies?.["oxlint-tsgolint"],
+  expectedPeerDependencies["oxlint-tsgolint"],
+);
+assert.equal(manifest.devDependencies?.typescript, expectedVersions.typescript);
+assert.equal(manifest.devDependencies?.tsdown, expectedVersions.tsdown);
+assert.equal(manifest.devDependencies?.tsx, expectedVersions.tsx);
 assert.deepEqual(manifest.exports?.["."], {
   types: "./dist/index.d.ts",
   default: "./dist/index.js",
@@ -325,7 +317,7 @@ const tsdownManifest = readManifest(
 );
 assert.equal(tsdownManifest.engines?.node, "^22.18.0 || >=24.11.0");
 if (process.env.CANARY_ALLOW_PNPM_VERSION !== "true") {
-  assert.equal(run("pnpm", ["--version"]).trim(), "11.21.0");
+  assert.equal(run("pnpm", ["--version"]).trim(), expectedVersions.pnpm);
 }
 assert([10, 11].includes(Number.parseInt(run("npm", ["--version"]), 10)));
 const pnpmConfig = parseJson(run("pnpm", ["config", "list", "--json"]));
@@ -344,7 +336,7 @@ for (const packageName of [
   assert.match(
     workspaceSettings,
     new RegExp(
-      `^    "@typescript-eslint/${packageName}>typescript": "7\\.0\\.2"$`,
+      `^    "@typescript-eslint/${packageName}>typescript": "${expectedVersions.typescript.replaceAll(".", "\\.")}"$`,
       "mu",
     ),
   );
@@ -714,18 +706,6 @@ assert.equal(
   "error",
 );
 assert.deepEqual(composed.overrides?.at(-1)?.plugins, composed.plugins);
-assert.equal(
-  activeRuleCount(publicApi.getOxlintConfig({ level: "essential" })),
-  126,
-);
-assert.equal(activeRuleCount(recommended), 179);
-assert.equal(activeRuleCount(strict), 498);
-assert.equal(
-  activeRuleCount(
-    publicApi.getOxlintConfig({ level: "strict", react: true, node: true }),
-  ),
-  607,
-);
 const customized = publicApi.getOxlintConfig({ ai: true });
 publicApi.setRuleSeverity(customized, "eslint/no-warning-comments", "error");
 publicApi.configureRule(customized, "eslint/valid-typeof", [

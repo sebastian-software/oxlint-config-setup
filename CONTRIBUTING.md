@@ -53,6 +53,12 @@ pnpm install --frozen-lockfile
 pnpm run release:check
 ```
 
+Package and toolchain pins are owned by `package.json` and
+`scripts/expected-toolchain.ts`. Update both in the same dependency change;
+package verification, generated statistics, public documentation, and the
+release gate derive from or validate against that shared expected-version
+module.
+
 All repository scripts are TypeScript. `tsx` executes them, `tsc --noEmit`
 checks them, and tsdown builds the publishable ESM and declarations. The package
 verifier performs two clean byte-identical builds, verifies the exact tarball,

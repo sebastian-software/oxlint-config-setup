@@ -2,6 +2,7 @@ import type {
   ConfigLevel,
   ConfigSelection,
 } from "../../lib/configStats.js";
+import { expectedInstallCommand } from "../../../../scripts/expected-toolchain.js";
 
 export type LevelMeta = {
   description: string;
@@ -51,8 +52,7 @@ export const FLAGS: readonly FlagMeta[] = [
   },
 ];
 
-export const INSTALL_COMMAND =
-  "pnpm add -D oxlint-config-setup oxlint@1.78.0 oxlint-tsgolint@7.0.2001";
+export const INSTALL_COMMAND = expectedInstallCommand;
 
 export const REPOSITORY_URL =
   "https://github.com/sebastian-software/oxlint-config-setup";

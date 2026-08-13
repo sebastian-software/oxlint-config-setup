@@ -4,6 +4,8 @@ description: Install the tested Oxlint trio, select a prebuilt policy, and run o
 order: 1
 ---
 
+import { INSTALL_COMMAND } from "../../components/home/configuratorData.js";
+
 # Getting Started
 
 Oxlint Config Setup ships complete configurations that combine native Oxlint rules with type-aware TypeScript checks by default. The normal path is one loader, one configuration object, and one Oxlint command; syntax-only linting is a separate, explicit choice.
@@ -20,9 +22,7 @@ Oxlint Config Setup ships complete configurations that combine native Oxlint rul
 
 Keep the preset, Oxlint, and the native type-aware backend on the versions verified together:
 
-```sh
-pnpm add -D oxlint-config-setup oxlint@1.78.0 oxlint-tsgolint@7.0.2001
-```
+<pre><code>{INSTALL_COMMAND}</code></pre>
 
 ## Create `oxlint.config.ts`
 
