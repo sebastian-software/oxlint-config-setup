@@ -3,6 +3,14 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseDocument } from "yaml";
 
+import { ruleLedger } from "../src/ledger.js";
+import {
+  expectedInstallCommand,
+  expectedPackageManager,
+  expectedPeerDependencies,
+  expectedVersions,
+} from "./expected-toolchain.js";
+
 const repositoryRoot = resolve(import.meta.dirname, "..");
 
 function read(relativePath: string): string {
@@ -29,6 +37,53 @@ function asString(value: unknown, description: string): string {
   return value as string;
 }
 
+function asNumber(value: unknown, description: string): number {
+  assert.equal(typeof value, "number", `${description} must be a number`);
+  return value as number;
+}
+
+const generatedStats = asRecord(
+  JSON.parse(read("docs/app/generated/config-stats.json")) as unknown,
+  "generated configuration stats",
+);
+const generatedConfigurations = asArray(
+  generatedStats.configurations,
+  "generated configuration stats configurations",
+);
+
+function baseRuleCount(level: string): number {
+  for (const [index, value] of generatedConfigurations.entries()) {
+    const configuration = asRecord(
+      value,
+      `generated configuration stats configurations[${index}]`,
+    );
+    const selection = asRecord(
+      configuration.selection,
+      `generated configuration stats configurations[${index}].selection`,
+    );
+    if (
+      selection.level === level &&
+      selection.react === false &&
+      selection.node === false &&
+      selection.ai === false
+    ) {
+      return asNumber(
+        configuration.activeRules,
+        `generated configuration stats configurations[${index}].activeRules`,
+      );
+    }
+  }
+  throw new Error(`Missing generated base configuration stats for ${level}`);
+}
+
+function section(source: string, start: string, end: string): string {
+  const startIndex = source.indexOf(start);
+  assert.notEqual(startIndex, -1, `Missing section start: ${start}`);
+  const endIndex = source.indexOf(end, startIndex + start.length);
+  assert.notEqual(endIndex, -1, `Missing section end: ${end}`);
+  return source.slice(startIndex, endIndex);
+}
+
 function readWorkflow(relativePath: string): YamlRecord {
   const document = parseDocument(read(relativePath), { uniqueKeys: true });
   assert.equal(
@@ -40,13 +95,22 @@ function readWorkflow(relativePath: string): YamlRecord {
 }
 
 const manifest = JSON.parse(read("package.json")) as {
+  devDependencies?: Record<string, string>;
+  packageManager?: string;
   peerDependencies?: Record<string, string>;
   publishConfig?: Record<string, unknown>;
 };
-assert.deepEqual(manifest.peerDependencies, {
-  oxlint: "1.78.0",
-  "oxlint-tsgolint": "7.0.2001",
-});
+assert.deepEqual(manifest.peerDependencies, expectedPeerDependencies);
+assert.equal(
+  manifest.devDependencies?.oxlint,
+  expectedPeerDependencies.oxlint,
+);
+assert.equal(
+  manifest.devDependencies?.["oxlint-tsgolint"],
+  expectedPeerDependencies["oxlint-tsgolint"],
+);
+assert.equal(manifest.devDependencies?.typescript, expectedVersions.typescript);
+assert.equal(manifest.packageManager, expectedPackageManager);
 assert.deepEqual(manifest.publishConfig, {
   access: "public",
   provenance: true,
@@ -117,8 +181,45 @@ assert.match(
 );
 
 const readme = read("README.md");
-assert.match(readme, /113 native active base rules/iu);
-assert.match(readme, /485 at Strict/iu);
+const essentialRuleCount = baseRuleCount("essential");
+const recommendedRuleCount = baseRuleCount("recommended");
+const strictRuleCount = baseRuleCount("strict");
+assert.ok(
+  readme.includes(
+    `materializes ${essentialRuleCount} native active base rules at\nEssential, ${recommendedRuleCount} at Recommended, and ${strictRuleCount} at Strict`,
+  ),
+  "README native rule counts must match generated configuration stats",
+);
+assert.ok(
+  readme.includes(`owns ${ruleLedger.length} curated ledger entries`),
+  "README curated ledger count must match src/ledger.ts",
+);
+assert.ok(
+  readme.includes(expectedInstallCommand),
+  "README install command must match the expected toolchain",
+);
+const supportedMatrix = section(
+  readme,
+  "## Supported matrix",
+  "## Project documents",
+);
+for (const version of [
+  expectedVersions.node,
+  expectedVersions.oxlint,
+  expectedVersions.oxlintTsgolint,
+  expectedVersions.typescript,
+  expectedVersions.testingLibrary,
+  expectedVersions.playwright,
+  expectedVersions.storybook,
+  expectedVersions.sonarjs,
+  expectedVersions.eslint,
+  expectedVersions.pnpm,
+]) {
+  assert.ok(
+    supportedMatrix.includes(version),
+    `README supported matrix must include ${version}`,
+  );
+}
 assert.match(readme, /mapped about 85\.3%/iu);
 assert.match(readme, /level: "essential"/u);
 assert.match(readme, /level: "strict"/u);
@@ -142,6 +243,10 @@ for (const surface of [
 }
 
 const migration = read("docs/migration.md");
+assert.ok(
+  migration.includes(`all ${ruleLedger.length} curated ledger entries`),
+  "migration guide curated ledger count must match src/ledger.ts",
+);
 for (const assignment of [
   "Oxlint",
   "Companion tool",
@@ -173,6 +278,16 @@ for (const concern of [
 ]) {
   assert.match(migration, new RegExp(concern.replace(".", "\\."), "u"));
 }
+
+const adoption = read("docs/adoption.md");
+assert.ok(
+  adoption.includes(expectedInstallCommand),
+  "adoption guide install command must match the expected toolchain",
+);
+assert.ok(
+  adoption.includes(`Node.js \`${expectedVersions.node}\` or later`),
+  "adoption guide Node.js requirement must match the expected toolchain",
+);
 
 const review = read("docs/release-review.md");
 assert.match(review, /\*\*Review status:\*\* \*\*Complete\*\*/u);
@@ -322,7 +437,18 @@ assert.match(
 );
 
 const compatibility = read("docs/compatibility.md");
-for (const version of ["1.78.0", "7.0.2001", "7.0.2", "11.21.0"]) {
+for (const version of [
+  expectedVersions.node,
+  expectedVersions.oxlint,
+  expectedVersions.oxlintTsgolint,
+  expectedVersions.typescript,
+  expectedVersions.testingLibrary,
+  expectedVersions.playwright,
+  expectedVersions.storybook,
+  expectedVersions.sonarjs,
+  expectedVersions.eslint,
+  expectedVersions.pnpm,
+]) {
   assert.match(compatibility, new RegExp(version.replaceAll(".", "\\."), "u"));
 }
 

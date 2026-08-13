@@ -1,6 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
+import { expectedInstallCommand } from "../../scripts/expected-toolchain.js";
+
 const clientDirectory = resolve(import.meta.dirname, "../build/client");
 
 if (!existsSync(clientDirectory)) {
@@ -47,7 +49,7 @@ for (const expected of [
   'lang="en-US"',
   "Type-aware by default",
   "Type-aware TypeScript.",
-  "pnpm add -D oxlint-config-setup oxlint@1.78.0 oxlint-tsgolint@7.0.2001",
+  expectedInstallCommand,
   "AI is an overlay, not a fourth policy level.",
   "Config input",
   "Config output",
