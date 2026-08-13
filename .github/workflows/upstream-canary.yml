@@ -24,7 +24,7 @@ jobs:
           - node: 24.11.0
             pnpm: 11.21.0
           - node: 26.x
-            pnpm: latest
+            pnpm: 11.21.0
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,7 +52,6 @@ jobs:
           pnpm run canary:upstream-toolchain -- --verify canary-artifacts/requested-upstream-versions.json --output canary-artifacts
       - name: Run the native compatibility canary
         env:
-          CANARY_ALLOW_PNPM_VERSION: "true"
           CANARY_ALLOW_PINNED_PEER_MISMATCH: "true"
           CANARY_NATIVE_ONLY: "true"
           CANARY_OUTPUT_DIR: canary-artifacts

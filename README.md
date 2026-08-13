@@ -292,8 +292,12 @@ follow-up patch release, then verify that new version instead.
 | Repository build Node.js   | `>=24.11.0`     |
 
 Support for another Oxlint/backend/TypeScript version begins with an explicit
-matrix run because the type-aware backend is outside Oxlint's normal semantic
-versioning policy.
+matrix run. Oxlint and `oxlint-tsgolint` are published as one exact, coordinated
+peer pair because npm ranges cannot express compatibility between two coupled
+peers. The weekly upstream canary finds candidate updates, but support changes
+only after the new pair passes the complete release matrix and ships in a new
+package release. See [ADR 0013](docs/adr/0013-release-coordinated-toolchain-pins.md)
+for the policy and tradeoffs.
 
 ## Project documents
 

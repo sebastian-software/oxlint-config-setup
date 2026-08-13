@@ -50,3 +50,4 @@ navigation. Future updates use the living-record lifecycle above.
 | [0010](0010-require-node-24-lts.md)                                | Require Node.js 24 LTS or newer                       | Accepted           |
 | [0011](0011-publish-the-documentation-site-with-github-actions.md) | Publish the documentation site with GitHub Actions    | Accepted           |
 | [0012](0012-make-the-homepage-light-first-and-user-switchable.md)  | Make the homepage light-first and user-switchable     | Accepted           |
+| [0013](0013-release-coordinated-toolchain-pins.md)                 | Release coordinated toolchain pins                    | Accepted           |
