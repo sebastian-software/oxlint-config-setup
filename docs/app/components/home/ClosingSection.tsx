@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { ArdoLink as Link } from "ardo/runtime";
 
 import { InstallCommand } from "./InstallCommand.js";
 

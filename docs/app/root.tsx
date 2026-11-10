@@ -12,9 +12,6 @@ import {
   ArdoSidebarSection,
   ArdoSocialLink,
 } from "ardo/ui";
-import config from "virtual:ardo/config";
-import type { MetaFunction } from "react-router";
-import "ardo/ui/styles.css";
 import "@fontsource-variable/schibsted-grotesk/index.css";
 import "@fontsource/fragment-mono/index.css";
 import "@fontsource-variable/jetbrains-mono/index.css";
@@ -25,11 +22,6 @@ import "./homepage.css";
 const REPOSITORY_URL =
   "https://github.com/sebastian-software/oxlint-config-setup";
 
-export const meta: MetaFunction = () => [
-  { title: config.title },
-  { name: "description", content: config.description },
-];
-
 export function Layout({ children }: { children: React.ReactNode }) {
   return <ArdoRootLayout lang="en-US">{children}</ArdoRootLayout>;
 }
@@ -39,7 +31,7 @@ export const ErrorBoundary = ArdoErrorBoundary;
 export default function Root() {
   return (
     <ArdoRoot
-      config={config}
+      theme={{ accent: 155, color: 155, neutral: 155 }}
       editLink={{
         pattern: `${REPOSITORY_URL}/edit/main/docs/app/routes/:path`,
         text: "Edit this page on GitHub",
@@ -47,7 +39,7 @@ export default function Root() {
       lastUpdated={{ enabled: true, text: "Last updated" }}
     >
       <ArdoHeader
-        logo={<ProductMark />}
+        logo={<span className="hp-header-mark"><ProductMark /></span>}
         searchPlaceholder="Search the documentation..."
         themeToggle
       >

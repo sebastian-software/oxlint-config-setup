@@ -2,6 +2,8 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 import { expectedInstallCommand } from "../../scripts/expected-toolchain.js";
+import { SCOPED_CONFIGS } from "../../src/composition.js";
+import { CONFIG_LEVELS } from "../../src/levels.js";
 
 const clientDirectory = resolve(import.meta.dirname, "../build/client");
 
@@ -60,6 +62,25 @@ for (const expected of [
 ]) {
   if (!renderedHtml.includes(expected)) {
     throw new Error(`Static output is missing required content: ${expected}`);
+  }
+}
+
+// Ardo resolves indexed-access aliases from their authoritative readonly tuples.
+// Require the generated Values code block, rather than duplicate authored lists.
+for (const [page, choices] of [
+  ["configlevel", CONFIG_LEVELS],
+  ["scopedconfig", SCOPED_CONFIGS],
+] as const) {
+  const apiPage = htmlFiles.find((file) =>
+    file.replaceAll("\\", "/").endsWith(`/api-reference/types/${page}/index.html`),
+  );
+  if (!apiPage) throw new Error(`Missing public API alias page: ${page}`);
+  const html = readFileSync(apiPage, "utf8");
+  const codeBlocks = [...html.matchAll(/<pre\b[^>]*>[\s\S]*?<\/pre>/g)].map(([block]) =>
+    block.replace(/<[^>]+>/g, "").replaceAll("&quot;", '"'),
+  );
+  if (!codeBlocks.some((block) => choices.every((choice) => block.includes(`"${choice}"`)))) {
+    throw new Error(`Public API ${page} omits its generated literal Values: ${choices.join(", ")}`);
   }
 }
 
