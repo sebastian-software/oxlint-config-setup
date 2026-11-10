@@ -183,6 +183,18 @@
   margin: 1rem 0 0;
 }
 
+/* Header logos share a centered slot; hero mark spacing must not leak into it. */
+.hp-header-mark {
+  align-items: center;
+  display: inline-flex;
+}
+
+.hp-header-mark .hp-product-mark {
+  height: 1.875rem;
+  margin: 0;
+  width: 1.875rem;
+}
+
 .hp-product-mark {
   color: var(--ardo-color-accent, #167a42);
   display: block;

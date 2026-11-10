@@ -1,4 +1,4 @@
-import type { MetaFunction } from "react-router";
+import type { ArdoMetaFunction as MetaFunction } from "ardo/runtime";
 
 import { AiSection } from "../components/home/AiSection.js";
 import { ClosingSection } from "../components/home/ClosingSection.js";
