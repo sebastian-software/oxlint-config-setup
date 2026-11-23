@@ -1,6 +1,6 @@
 {
   "name": "oxlint-config-setup",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Opinionated, prebuilt, type-aware Oxlint configurations for modern TypeScript projects.",
   "keywords": [
     "oxlint",
